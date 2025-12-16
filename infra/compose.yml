@@ -1,0 +1,179 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: bidops-postgres
+    environment:
+      POSTGRES_USER: bidops
+      POSTGRES_PASSWORD: bidops
+      POSTGRES_DB: bidops
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bidops -d bidops"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: bidops-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  opensearch:
+    image: opensearchproject/opensearch:2.15.0
+    container_name: bidops-opensearch
+    environment:
+      - cluster.name=bidops-os
+      - node.name=os01
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - plugins.security.disabled=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    volumes:
+      - os_data:/usr/share/opensearch/data
+      - os_logs:/usr/share/opensearch/logs
+      - ./opensearch/opensearch.yml:/usr/share/opensearch/config/opensearch.yml:ro
+
+  dashboards:
+    image: opensearchproject/opensearch-dashboards:2.15.0
+    container_name: bidops-dashboards
+    environment:
+      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+    ports:
+      - "5601:5601"
+    depends_on:
+      - opensearch
+
+  # Azurite is optional - only needed when STORAGE_PROVIDER=azure
+  # For local dev with filesystem storage, you can skip this service
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: bidops-azurite
+    command: azurite-blob --blobHost 0.0.0.0 --loose
+    ports:
+      - "10000:10000"
+    volumes:
+      - azurite:/data
+    profiles:
+      - azure-storage
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: bidops-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.102.0
+    container_name: bidops-otel
+    command: ["--config=/etc/otel-collector.yml"]
+    volumes:
+      - ./otel/otel-collector.yml:/etc/otel-collector.yml:ro
+    ports:
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+
+  prometheus:
+    image: prom/prometheus
+    container_name: bidops-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus:/prometheus
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+
+  grafana:
+    image: grafana/grafana
+    container_name: bidops-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=bidops
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    container_name: bidops-api
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - AUTH_PROVIDER=local
+      - JWT_SECRET=dev-secret-change
+      - WEB_ORIGIN=http://localhost:8080
+      - DATABASE_URL=postgresql://bidops:bidops@postgres:5432/bidops?schema=public
+      - OPENSEARCH_HOST=http://opensearch:9200
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      # Storage: use local filesystem by default
+      - STORAGE_PROVIDER=local
+      - LOCAL_STORAGE_PATH=/app/data/storage
+      - ATTACHMENTS_CONTAINER=attachments
+      # For Azure storage (when STORAGE_PROVIDER=azure):
+      # - AZURE_STORAGE_CONNECTION_STRING=UseDevelopmentStorage=true;DefaultBlobEndpoint=http://azurite:10000/devstoreaccount1;
+    volumes:
+      # Mount local storage directory for file persistence
+      - api_storage:/app/data/storage
+    depends_on:
+      - postgres
+      - redis
+      - opensearch
+    ports:
+      - "4000:4000"
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        - VITE_API_URL=${WEB_API_URL:-http://localhost:4000}
+    container_name: bidops-web
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+
+volumes:
+  pgdata:
+  os_data:
+  os_logs:
+  azurite:
+  prometheus:
+  grafana:
+  api_storage:
+
+x-bake:
+  group:
+    default:
+      targets:
+        - api
+        - web

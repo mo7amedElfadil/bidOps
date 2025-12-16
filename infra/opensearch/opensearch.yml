@@ -1,0 +1,13 @@
+cluster:
+  name: bidops-os
+network:
+  host: 0.0.0.0
+node:
+  name: os01
+discovery:
+  type: single-node
+plugins:
+  security:
+    disabled: true
+
+

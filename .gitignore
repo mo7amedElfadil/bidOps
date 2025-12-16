@@ -1,0 +1,26 @@
+# Node
+node_modules
+pnpm-lock.yaml
+
+# Build
+dist
+build
+.turbo
+coverage
+
+# Env
+.env
+env/*.local
+
+# OS/editor
+.DS_Store
+*.swp
+*.log
+
+# Local storage data (for STORAGE_PROVIDER=local)
+data/storage/
+
+# Editor
+.cursor/
+.editorconfig
+

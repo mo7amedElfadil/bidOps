@@ -1,0 +1,291 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  CONTRIBUTOR
+  VIEWER
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  role      Role     @default(VIEWER)
+  team      String?
+  passwordHash String?
+  tenantId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  opportunities Opportunity[] @relation("OwnerOpps")
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  name      String
+  tenantId  String   @default("default")
+  sector    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  opportunities Opportunity[]
+
+  @@index([name])
+  @@unique([name, tenantId])
+}
+
+model Opportunity {
+  id             String   @id @default(uuid())
+  clientId       String
+  ownerId        String?
+  tenderRef      String?
+  title          String
+  description    String?
+  sourcePortal   String?
+  discoveryDate  DateTime?
+  submissionDate DateTime?
+  status         String?
+  stage          String?
+  priorityRank   Int?
+  daysLeft       Int?
+  modeOfSubmission String?
+  bondRequired   Boolean? @default(false)
+  bondAmount     Float?
+  validityDays   Int?
+  dataOwner      String?
+  tenantId       String   @default("default")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id])
+  owner  User?  @relation("OwnerOpps", fields: [ownerId], references: [id])
+  boqItems        BoQItem[]
+  vendorQuotes    VendorQuote[]
+  pricingPacks    PricingPack[]
+  outcomes        Outcome[]
+  complianceClauses ComplianceClause[]
+  clarifications  Clarification[]
+}
+
+model BoQItem {
+  id            String   @id @default(uuid())
+  opportunityId String
+  lineNo        Int
+  category      String?
+  description   String
+  qty           Float    @default(1)
+  unit          String?
+  oem           String?
+  sku           String?
+  unitCost      Float    @default(0)
+  markup        Float    @default(0) // e.g., 0.15 for 15%
+  unitPrice     Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+  @@index([opportunityId])
+}
+
+model VendorQuote {
+  id            String   @id @default(uuid())
+  opportunityId String
+  vendor        String
+  quoteNo       String?
+  validity      DateTime?
+  leadTimeDays  Int?
+  currency      String?
+  files         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+  @@index([opportunityId])
+}
+
+model PricingPack {
+  id            String   @id @default(uuid())
+  opportunityId String
+  version       Int      @default(1)
+  baseCost      Float    @default(0)
+  overheads     Float    @default(0) // fraction, e.g., 0.1
+  contingency   Float    @default(0) // fraction
+  fxRate        Float    @default(1)
+  margin        Float    @default(0.15)
+  totalPrice    Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+  approvals   Approval[]
+  @@index([opportunityId])
+}
+
+enum ApprovalType {
+  LEGAL
+  FINANCE
+  EXECUTIVE
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Approval {
+  id         String         @id @default(uuid())
+  packId     String
+  type       ApprovalType
+  approverRole String?
+  approverId String?
+  status     ApprovalStatus @default(PENDING)
+  signedOn   DateTime?
+  signature  String?
+  remarks    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  pack PricingPack @relation(fields: [packId], references: [id])
+  @@index([packId])
+}
+
+enum OutcomeStatus {
+  WON
+  LOST
+  WITHDRAWN
+  CANCELLED
+}
+
+model Outcome {
+  id            String        @id @default(uuid())
+  opportunityId String
+  status        OutcomeStatus
+  date          DateTime
+  winner        String?
+  awardValue    Float?
+  notes         String?
+  reasonCodes   String[]
+  createdAt     DateTime @default(now())
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+  @@index([opportunityId])
+}
+
+model AwardStaging {
+  id            String   @id @default(uuid())
+  portal        String
+  tenderRef     String?
+  buyer         String?
+  title         String?
+  closeDate     DateTime?
+  awardDate     DateTime?
+  winners       String[]
+  awardValue    Float?
+  codes         String[]
+  notes         String?
+  rawPath       String?
+  sourceUrl     String?
+  status        String?   // new/parsed/curated
+  createdAt     DateTime @default(now())
+}
+
+model AwardEvent {
+  id         String   @id @default(uuid())
+  portal     String
+  tenderRef  String?
+  buyer      String?
+  title      String?
+  awardDate  DateTime?
+  winners    String[]
+  awardValue Float?
+  codes      String[]
+  sourceUrl  String?
+  createdAt  DateTime @default(now())
+}
+
+model Attachment {
+  id          String   @id @default(uuid())
+  entityType  String
+  entityId    String
+  filename    String
+  size        Int
+  version     Int       @default(1)
+  hash        String
+  storagePath String
+  tenantId    String    @default("default")
+  createdAt   DateTime  @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String
+  action    String
+  entity    String
+  before    Json?
+  after     Json?
+  ip        String?
+  timestamp DateTime @default(now())
+}
+
+model ComplianceClause {
+  id             String   @id @default(uuid())
+  opportunityId  String
+  section        String?
+  clauseNo       String?
+  requirementText String
+  mandatoryFlag  Boolean  @default(false)
+  response       String?
+  status         String?  // compliant/partial/non-compliant/tbd
+  evidence       String?
+  owner          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+  @@index([opportunityId])
+}
+
+model Clarification {
+  id            String   @id @default(uuid())
+  opportunityId String
+  questionNo    String
+  text          String
+  status        String?    // open/submitted/answered/closed
+  submittedOn   DateTime?
+  responseOn    DateTime?
+  responseText  String?
+  file          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+  @@index([opportunityId])
+}
+
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  type       String   // email
+  to         String
+  subject    String
+  body       String
+  status     String   @default("pending") // pending|sent|failed
+  attempts   Int      @default(0)
+  lastError  String?
+  createdAt  DateTime @default(now())
+  sentAt     DateTime?
+}
+
+
