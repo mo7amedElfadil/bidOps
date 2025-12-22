@@ -8,6 +8,10 @@ export default function AwardsStagingPage() {
 	const [error, setError] = useState<string | null>(null)
 	const [curating, setCurating] = useState<string | null>(null)
 	const [filter, setFilter] = useState({ q: '', status: 'all' })
+	const [range, setRange] = useState({ from: '', to: '' })
+	const [running, setRunning] = useState(false)
+	const [runError, setRunError] = useState<string | null>(null)
+	const [runSummary, setRunSummary] = useState<string | null>(null)
 
 	async function load() {
 		setLoading(true)
@@ -46,6 +50,27 @@ export default function AwardsStagingPage() {
 			setError(e.message || 'Failed to curate record')
 		}
 		setCurating(null)
+	}
+
+	async function runCollector() {
+		setRunning(true)
+		setRunError(null)
+		setRunSummary(null)
+		try {
+			const res = await api.triggerCollector({
+				adapterId: 'monaqasat',
+				fromDate: range.from || undefined,
+				toDate: range.to || undefined
+			})
+			if (res && (res as any).error) {
+				setRunError((res as any).error)
+			} else {
+				setRunSummary('Collector run completed. Refresh to see new records.')
+			}
+		} catch (e: any) {
+			setRunError(e.message || 'Collector run failed')
+		}
+		setRunning(false)
 	}
 
 	return (
@@ -94,6 +119,41 @@ export default function AwardsStagingPage() {
 						<option value="curated">curated</option>
 					</select>
 					<span className="text-sm text-slate-600">Curated: {rows.filter(r => r.status === 'curated').length}</span>
+				</div>
+
+				<div className="mt-4 rounded border bg-white p-4 shadow-sm">
+					<div className="flex flex-wrap items-end gap-3">
+						<div>
+							<label className="text-xs font-medium text-slate-600">From date (YYYY-MM-DD)</label>
+							<input
+								type="date"
+								className="mt-1 block w-[160px] rounded border px-3 py-1.5 text-sm"
+								value={range.from}
+								onChange={e => setRange({ ...range, from: e.target.value })}
+							/>
+						</div>
+						<div>
+							<label className="text-xs font-medium text-slate-600">To date (YYYY-MM-DD)</label>
+							<input
+								type="date"
+								className="mt-1 block w-[160px] rounded border px-3 py-1.5 text-sm"
+								value={range.to}
+								onChange={e => setRange({ ...range, to: e.target.value })}
+							/>
+						</div>
+						<button
+							className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+							onClick={runCollector}
+							disabled={running}
+						>
+							{running ? 'Running...' : 'Run Monaqasat Collector'}
+						</button>
+						<span className="text-xs text-slate-500">
+							Filters apply to award date. Leave empty to fetch recent awards.
+						</span>
+					</div>
+					{runError && <p className="mt-3 text-sm text-red-600">{runError}</p>}
+					{runSummary && <p className="mt-3 text-sm text-green-700">{runSummary}</p>}
 				</div>
 
 				{error && <p className="mt-4 text-sm text-red-600">{error}</p>}
@@ -163,4 +223,3 @@ export default function AwardsStagingPage() {
 		</div>
 	)
 }
-

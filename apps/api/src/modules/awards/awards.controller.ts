@@ -25,10 +25,15 @@ export class AwardsController {
 		return this.svc.curate(id)
 	}
 
+	@Post('collect')
+	@Roles('MANAGER','ADMIN')
+	collect(@Body() body: { adapterId?: string; fromDate?: string; toDate?: string }) {
+		return this.svc.triggerCollector(body)
+	}
+
 	@Get('events')
 	events() {
 		return this.svc.listEvents()
 	}
 }
-
 

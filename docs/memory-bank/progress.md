@@ -47,6 +47,11 @@
   * Settings UI: Added holiday calendar and retention policy configuration
   * Docs: Updated analytics to defer Power BI integration; ingest to target Monaqasat; retention policy and bilingual notes
   * Collectors: Monaqasat adapter now parses awarded tenders list and tender details for winners/award value
+  * Collectors: Monaqasat adapter forces English locale and captures buyer names from details
+  * Collectors: Added HTTP server to trigger runs with date range; UI supports manual trigger
+  * Collectors: Deduplication by portal+tenderRef (delete+insert)
+  * Dev ops: Monitoring services moved behind compose profile; added `make up-monitoring`
+  * API: Fixed AuditInterceptor bootstrap crash; API now starts in Docker
 * Next:
   * Rate limiting defaults + security headers docs (hardening sweep)
   * Validate Monaqasat adapter against live pages; add edge-case handling

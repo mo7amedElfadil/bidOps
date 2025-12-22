@@ -142,6 +142,7 @@ GET /auth/callback      # Handles callback → redirects with token fragment
 | POST | `/awards/staging` | Create staging record | MANAGER, ADMIN |
 | POST | `/awards/staging/:id/curate` | Curate staging record | MANAGER, ADMIN |
 | GET | `/awards/events` | List curated award events | All |
+| POST | `/awards/collect` | Trigger collector run with optional date range | MANAGER, ADMIN |
 
 ### Analytics
 | Method | Path | Description | Roles |

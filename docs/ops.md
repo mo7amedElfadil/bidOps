@@ -31,6 +31,7 @@ make up
 |--------|-------------|
 | `make bootstrap` | Install toolchains, pnpm, pre-commit hooks |
 | `make up` | Start all services (Docker Compose) |
+| `make up-monitoring` | Start monitoring stack (Grafana/Prometheus/OTEL/Dashboards) |
 | `make down` | Stop all services |
 | `make logs` | Tail logs from all services |
 | `make logs-backend` | Tail API and workers logs |
@@ -85,6 +86,7 @@ make up
 | `otel-collector` | 4317, 4318 | OpenTelemetry collector |
 | `api` | 4000 | BidOps API |
 | `web` | 8080 | BidOps Web UI |
+| `collectors` | (internal) | Award collectors server (Playwright) |
 
 ### Optional Services
 

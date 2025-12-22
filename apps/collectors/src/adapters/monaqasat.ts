@@ -16,19 +16,34 @@ export class MonaqasatAdapter extends BaseAdapter {
 			userAgent:
 				'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 		})
+		await context.addCookies([
+			{
+				name: '.AspNetCore.Culture',
+				value: 'c=en|uic=en',
+				domain: 'monaqasat.mof.gov.qa',
+				path: '/',
+				httpOnly: true,
+				secure: true
+			}
+		])
 		const page = await context.newPage()
 		const records: AwardRecord[] = []
 		const perRowDelay = Number(process.env.MONAQASAT_DELAY_MS ?? process.env.COLLECTOR_RATE_LIMIT_MS ?? 800)
 
 		try {
+			const fromDate = this.parseIsoDate(process.env.MONAQASAT_FROM_DATE || '')
+			const toDate = this.parseIsoDate(process.env.MONAQASAT_TO_DATE || '')
 			const awardedPath = process.env.MONAQASAT_AWARDED_PATH || '/TendersOnlineServices/AwardedTenders/1'
 			const awardedUrl = new URL(awardedPath, this.portalUrl).toString()
 			await page.goto(awardedUrl, { waitUntil: 'networkidle', timeout: 30000 })
-			await page.waitForSelector('.custom--table .custom-cards', { timeout: 15000 }).catch(() => {
+			await page.waitForSelector('.custom-cards, .custom--table', { timeout: 15000 }).catch(() => {
 				console.warn(`[${this.id}] Awarded tenders table not found`)
 			})
 
-			const cards = await page.$$('.custom--table .custom-cards')
+			let cards = await page.$$('.custom-cards')
+			if (cards.length === 0) {
+				cards = await page.$$('.custom--table .custom-cards')
+			}
 			const detailPage = await context.newPage()
 
 			for (const card of cards) {
@@ -49,12 +64,15 @@ export class MonaqasatAdapter extends BaseAdapter {
 					const titleAnchor = el.querySelector('.col-header .card-title a') as HTMLAnchorElement | null
 					const title = text(titleAnchor)
 					const tenderHref = titleAnchor?.getAttribute('href') || ''
-					const awardDateText = findRowValue('تاريخ الترسية')
+					const awardDateText =
+						findRowValue('تاريخ الترسية') ||
+						findRowValue('Award date') ||
+						findRowValue('Awarded Date')
 
 					let buyer = ''
 					const buyerCol = el.querySelector('.col-md-3.cards-col')
 					const buyerLabel = text(buyerCol?.querySelector('.col-header .card-label'))
-					if (buyerLabel.includes('الجهة')) {
+					if (buyerLabel.includes('الجهة') || buyerLabel.includes('Entity') || buyerLabel.includes('Ministry')) {
 						buyer = text(buyerCol?.querySelector('.col-header .card-title'))
 					}
 
@@ -76,6 +94,21 @@ export class MonaqasatAdapter extends BaseAdapter {
 					if (detail.awardValue) awardValue = detail.awardValue
 					if (detail.awardDate) awardDate = detail.awardDate
 					if (detail.winners.length) winners = detail.winners
+					if (!summary.buyer && detail.buyer) {
+						summary.buyer = detail.buyer
+					}
+				}
+
+				if (awardDate) {
+					const awardDay = this.startOfDay(awardDate)
+					if (fromDate && awardDay < fromDate) {
+						await this.delay(perRowDelay)
+						continue
+					}
+					if (toDate && awardDay > toDate) {
+						await this.delay(perRowDelay)
+						continue
+					}
 				}
 
 				records.push({
@@ -119,16 +152,34 @@ export class MonaqasatAdapter extends BaseAdapter {
 		return new Date(year, month - 1, day)
 	}
 
+	private parseIsoDate(value?: string): Date | undefined {
+		if (!value) return undefined
+		const match = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/)
+		if (!match) return undefined
+		const year = Number(match[1])
+		const month = Number(match[2])
+		const day = Number(match[3])
+		return new Date(year, month - 1, day)
+	}
+
+	private startOfDay(date: Date): Date {
+		return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+	}
+
 	private async parseTenderDetails(page: Page, detailUrl: string) {
 		await page.goto(detailUrl, { waitUntil: 'domcontentloaded', timeout: 30000 })
 		const result = await page.evaluate(() => {
 			const text = (node: Element | null | undefined) => node?.textContent?.trim() || ''
 			const awardDateText = text(document.querySelector('#lblAwardedDate'))
 			const awardValueText = text(document.querySelector('#lbl_award'))
+			const buyer = text(document.querySelector('#lblRequesterEntity'))
 
 			const winners: string[] = []
 			const headers = Array.from(document.querySelectorAll('h3'))
-			const target = headers.find(h => (h.textContent || '').includes('بيانات الشركات التي تم الترسية عليها'))
+			const target = headers.find(h => {
+				const value = h.textContent || ''
+				return value.includes('بيانات الشركات التي تم الترسية عليها') || value.includes('Awarded companies data')
+			})
 			const table = target?.nextElementSibling?.querySelector('table')
 			if (table) {
 				for (const row of Array.from(table.querySelectorAll('tbody tr'))) {
@@ -137,13 +188,14 @@ export class MonaqasatAdapter extends BaseAdapter {
 				}
 			}
 
-			return { awardDateText, awardValueText, winners }
+			return { awardDateText, awardValueText, winners, buyer }
 		})
 
 		return {
 			awardDate: this.parseDate(result.awardDateText),
 			awardValue: this.parseValue(this.normalizeDigits(result.awardValueText)),
-			winners: Array.from(new Set(result.winners))
+			winners: Array.from(new Set(result.winners)),
+			buyer: result.buyer
 		}
 	}
 }

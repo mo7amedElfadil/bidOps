@@ -4,7 +4,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
-import { AuditInterceptor } from './interceptors/audit.interceptor';
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule, { cors: true });
@@ -22,9 +21,6 @@ async function bootstrap() {
 		})
 	);
 
-	// Global audit interceptor for mutating requests
-	app.useGlobalInterceptors(app.get(AuditInterceptor));
-
 	const config = new DocumentBuilder()
 		.setTitle('ITSQ BidOps API')
 		.setDescription('REST API for BidOps')
@@ -40,5 +36,4 @@ async function bootstrap() {
 }
 
 bootstrap();
-
 

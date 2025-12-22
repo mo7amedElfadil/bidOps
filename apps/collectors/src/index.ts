@@ -93,6 +93,12 @@ async function runAdapter(adapterId: string): Promise<CollectorStats> {
  * Store a single award record in staging
  */
 async function storeAward(award: AwardRecord): Promise<void> {
+	if (award.tenderRef) {
+		await prisma.awardStaging.deleteMany({
+			where: { portal: award.portal, tenderRef: award.tenderRef }
+		})
+	}
+
 	await prisma.awardStaging.create({
 		data: {
 			portal: award.portal,
@@ -104,8 +110,7 @@ async function storeAward(award: AwardRecord): Promise<void> {
 			awardValue: award.awardValue,
 			codes: award.codes || [],
 			status: 'new',
-			// Store additional metadata as JSON if needed
-			// metadata: { currency: award.currency, sourceUrl: award.sourceUrl }
+			sourceUrl: award.sourceUrl
 		}
 	})
 }
@@ -154,10 +159,71 @@ function printSummary(results: CollectorStats[]): void {
 /**
  * Main entry point
  */
+let running = false
+
+async function runWithRange(adapterId: string | undefined, fromDate?: string, toDate?: string) {
+	if (running) {
+		return { error: 'Collector already running' }
+	}
+	running = true
+
+	const prevFrom = process.env.MONAQASAT_FROM_DATE
+	const prevTo = process.env.MONAQASAT_TO_DATE
+	process.env.MONAQASAT_FROM_DATE = fromDate || ''
+	process.env.MONAQASAT_TO_DATE = toDate || ''
+	if (adapterId) process.env.COLLECTOR_ONLY = adapterId
+
+	try {
+		const results = adapterId ? [await runAdapter(adapterId)] : await runAll()
+		return { results }
+	} finally {
+		if (prevFrom !== undefined) process.env.MONAQASAT_FROM_DATE = prevFrom
+		else delete process.env.MONAQASAT_FROM_DATE
+		if (prevTo !== undefined) process.env.MONAQASAT_TO_DATE = prevTo
+		else delete process.env.MONAQASAT_TO_DATE
+		if (adapterId) delete process.env.COLLECTOR_ONLY
+		running = false
+	}
+}
+
 async function main(): Promise<void> {
 	console.log('Award Collectors starting...')
 	console.log(`Mode: ${process.env.COLLECTOR_MODE || 'once'}`)
 	console.log(`Adapters registered: ${adapters.map(a => a.id).join(', ')}`)
+
+	if (process.env.COLLECTOR_SERVER === 'true') {
+		const { createServer } = await import('http')
+		const port = Number(process.env.COLLECTOR_PORT || 4100)
+		const server = createServer(async (req, res) => {
+			if (req.method === 'GET' && req.url === '/health') {
+				res.writeHead(200, { 'content-type': 'application/json' })
+				res.end(JSON.stringify({ status: 'ok' }))
+				return
+			}
+			if (req.method === 'POST' && req.url === '/run') {
+				let body = ''
+				req.on('data', chunk => (body += chunk))
+				req.on('end', async () => {
+					try {
+						const parsed = body ? JSON.parse(body) : {}
+						const result = await runWithRange(parsed.adapterId, parsed.fromDate, parsed.toDate)
+						res.writeHead(200, { 'content-type': 'application/json' })
+						res.end(JSON.stringify(result))
+					} catch (err: any) {
+						res.writeHead(400, { 'content-type': 'application/json' })
+						res.end(JSON.stringify({ error: err.message || 'Invalid request' }))
+					}
+				})
+				return
+			}
+			res.writeHead(404, { 'content-type': 'application/json' })
+			res.end(JSON.stringify({ error: 'Not found' }))
+		})
+		server.listen(port, () => {
+			console.log(`Collector server listening on ${port}`)
+		})
+		return
+	}
 
 	const mode = process.env.COLLECTOR_MODE || 'once'
 

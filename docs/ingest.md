@@ -62,7 +62,7 @@ interface SourceAdapter {
 | Adapter | ID | Status | Description |
 |---------|-----|--------|-------------|
 | Sample | `sample` | ✅ Active | Demo adapter with sample data |
-| Monaqasat | `monaqasat` | 🚧 In progress | Qatar MoF Monaqasat (public awards only) |
+| Monaqasat | `monaqasat` | 🚧 In progress | Qatar MoF Monaqasat (public awards only, English locale enforced) |
 | Qatar Gov | `qatar-gov` | 🔧 Template | Qatar e-Procurement portal (template) |
 
 ### Adding New Adapters
@@ -85,6 +85,11 @@ COLLECTOR_ONLY=sample make collectors-run
 # Scheduled mode (continuous)
 COLLECTOR_MODE=scheduled COLLECTOR_INTERVAL_MINUTES=60 make collectors-run
 ```
+
+UI-triggered runs can call `POST /awards/collect` with `fromDate` and `toDate` (YYYY-MM-DD).
+
+Deduplication:
+- Monaqasat runs delete existing staging rows by `portal+tenderRef` before inserting new rows.
 
 ## Environment Variables
 

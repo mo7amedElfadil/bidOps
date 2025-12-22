@@ -1,8 +1,10 @@
 SHELL := /bin/bash
-COMPOSE := docker compose --env-file .env -f infra/compose.yml
+COMPOSE_BASE := docker compose --env-file .env -f infra/compose.yml
+COMPOSE := $(COMPOSE_BASE)
+COMPOSE_MONITORING := $(COMPOSE_BASE) --profile monitoring
 DB_URL := postgresql://bidops:bidops@localhost:5432/bidops?schema=public
 
-.PHONY: bootstrap up down db-migrate db-seed db-reset api-dev web-dev workers-dev collectors-run lint test build pack-sample parse-rfp pbi-export
+.PHONY: bootstrap up down db-migrate db-seed db-reset api-dev web-dev workers-dev collectors-run lint test build build-packages pack-sample parse-rfp pbi-export
 .PHONY: logs logs-monitoring logs-backend logs-frontend api-start-4000 api-smoke
 .PHONY: rebuild rebuild-nc
 
@@ -14,6 +16,9 @@ bootstrap:
 
 up:
 	$(COMPOSE) up -d
+
+up-monitoring:
+	$(COMPOSE_MONITORING) up -d
 
 down:
 	$(COMPOSE) down -v
@@ -51,6 +56,9 @@ test:
 
 build:
 	@pnpm build
+
+build-packages:
+	@pnpm --filter @itsq-bidops/parser-tools build
 
 api-start-4000:
 	@PORT=4000 DATABASE_URL=postgresql://bidops:bidops@localhost:5432/bidops?schema=public node apps/api/dist/main.js
@@ -99,7 +107,7 @@ logs:
 	$(COMPOSE) logs -f --tail=200
 
 logs-monitoring:
-	$(COMPOSE) logs -f --tail=200 grafana prometheus otel-collector opensearch dashboards
+	$(COMPOSE_MONITORING) logs -f --tail=200 grafana prometheus otel-collector dashboards
 
 logs-backend:
 	$(COMPOSE) logs -f --tail=200 api
@@ -117,5 +125,3 @@ rebuild-nc:
 	@echo "Rebuilding (no cache) $(if $(SERVICES),$(SERVICES),all services) with bake..."
 	@COMPOSE_BAKE=true $(COMPOSE) build --no-cache $(SERVICES)
 	@$(COMPOSE) up -d $(SERVICES)
-
-

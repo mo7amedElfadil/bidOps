@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable } from '@nestjs/common'
 import { PrismaService } from '../../prisma/prisma.service'
 
 @Injectable()
@@ -58,6 +58,19 @@ export class AwardsService {
 			take: limit
 		})
 	}
-}
 
+	async triggerCollector(payload: { adapterId?: string; fromDate?: string; toDate?: string }) {
+		const url = process.env.COLLECTORS_URL || 'http://collectors:4100'
+		const res = await fetch(`${url}/run`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify(payload || {})
+		})
+		if (!res.ok) {
+			const text = await res.text()
+			throw new BadRequestException(text || 'Collector request failed')
+		}
+		return res.json()
+	}
+}
 

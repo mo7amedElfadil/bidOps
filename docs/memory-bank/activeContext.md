@@ -1,4 +1,4 @@
-* Current focus: Monaqasat awarded tenders adapter implemented; validate selectors and winners parsing. Hardening sweep in progress (holiday calendar, retention).
+* Current focus: Monaqasat collector now triggerable from UI with date range; validate collector server stability.
 * Recent changes:
   - Built all remaining web UI pages (Clarifications, Pricing, Approvals, Submission, Outcomes)
   - Updated Opportunities List with navigation links to all opportunity sections

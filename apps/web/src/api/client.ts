@@ -294,6 +294,12 @@ export const api = {
 	listAwardEvents() {
 		return request<AwardEvent[]>('/awards/events')
 	},
+	triggerCollector(payload: { adapterId?: string; fromDate?: string; toDate?: string }) {
+		return request<{ results?: unknown; error?: string }>(`/awards/collect`, {
+			method: 'POST',
+			body: JSON.stringify(payload || {})
+		})
+	},
 
 	// Search
 	searchAttachments(q: string) {

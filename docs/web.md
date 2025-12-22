@@ -13,6 +13,7 @@ UI scope and behaviors:
 - SLA settings editor (warn/alert/urgent thresholds)
 - Holiday calendar and retention settings (admin configurable)
 - English and Arabic content support
+- Award staging can trigger Monaqasat collector with date range (from/to)
 
 ## Implemented Routes
 
