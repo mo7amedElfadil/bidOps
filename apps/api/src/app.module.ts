@@ -18,6 +18,7 @@ import { SubmissionModule } from './modules/submission/submission.module';
 import { OutcomesModule } from './modules/outcomes/outcomes.module';
 import { AwardsModule } from './modules/awards/awards.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { TenantModule } from './tenant/tenant.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { RolesGuard } from './auth/roles.guard';
 
@@ -27,6 +28,7 @@ import { RolesGuard } from './auth/roles.guard';
 			ttl: Number(process.env.RATE_LIMIT_TTL || 60),
 			limit: Number(process.env.RATE_LIMIT_LIMIT || 120)
 		}]),
+		TenantModule,
 		AuthModule, OpportunitiesModule, ClientsModule, ImportModule, SettingsModule, AttachmentsModule, SearchModule, ComplianceModule, ClarificationsModule, PricingModule, ApprovalsModule, SubmissionModule, OutcomesModule, AwardsModule, AnalyticsModule
 	],
 	controllers: [HealthController],
@@ -37,6 +39,6 @@ import { RolesGuard } from './auth/roles.guard';
 		{ provide: 'APP_GUARD', useClass: RolesGuard }
 	]
 })
-export class AppModule {}
+export class AppModule { }
 
 
