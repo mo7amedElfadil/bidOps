@@ -1,101 +1,149 @@
-import { chromium } from 'playwright'
+import { chromium, Page } from 'playwright'
 import { BaseAdapter, AwardRecord } from './base.js'
 
 export class MonaqasatAdapter extends BaseAdapter {
 	id = 'monaqasat'
 	label = 'Monaqasat (MoF)'
-	portalUrl = 'http://monaqasat.mof.gov.qa/'
+	portalUrl = process.env.MONAQASAT_PORTAL_URL || 'https://monaqasat.mof.gov.qa'
 
 	async run(): Promise<AwardRecord[]> {
 		console.log(`[${this.id}] Starting collection from ${this.portalUrl}...`)
-		const browser = await chromium.launch({ headless: true })
-		const page = await browser.newPage()
+		const browser = await chromium.launch({
+			headless: true,
+			args: ['--no-sandbox', '--disable-setuid-sandbox']
+		})
+		const context = await browser.newContext({
+			userAgent:
+				'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+		})
+		const page = await context.newPage()
 		const records: AwardRecord[] = []
+		const perRowDelay = Number(process.env.MONAQASAT_DELAY_MS ?? process.env.COLLECTOR_RATE_LIMIT_MS ?? 800)
 
 		try {
-			// Note: This target URL might be flaky or require VPN. 
-			// We wrap in try-catch to allow partial success or mock data in dev.
-			await page.goto(this.portalUrl, { waitUntil: 'networkidle', timeout: 30000 }).catch(e => {
-                console.warn(`[${this.id}] Failed to load page: ${e.message}`)
-            })
-			
-			const pageTitle = await page.title().catch(() => 'Unknown')
-			console.log(`[${this.id}] Connected to: ${pageTitle}`)
+			const awardedPath = process.env.MONAQASAT_AWARDED_PATH || '/TendersOnlineServices/AwardedTenders/1'
+			const awardedUrl = new URL(awardedPath, this.portalUrl).toString()
+			await page.goto(awardedUrl, { waitUntil: 'networkidle', timeout: 30000 })
+			await page.waitForSelector('.custom--table .custom-cards', { timeout: 15000 }).catch(() => {
+				console.warn(`[${this.id}] Awarded tenders table not found`)
+			})
 
-            // For now, we simulate finding results because we can't guarantee access to the gov portal from this env
-            // TODO: Replace with real selectors once site structure is confirmed
-            const mockTenders = [
-                { text: 'Supply of Oracle Licenses', ref: 'M-101', title: 'Oracle Licensing', date: new Date() },
-                { text: 'Construction of new road', ref: 'C-202', title: 'Road Construction', date: new Date() },
-				{ text: 'Cloud Migration Services for Govt Agency', ref: 'IT-303', title: 'Cloud Migration', date: new Date() }
-            ]
+			const cards = await page.$$('.custom--table .custom-cards')
+			const detailPage = await context.newPage()
 
-            for (const t of mockTenders) {
-                if (await this.isRelevant(t.text)) {
-                    records.push({
-                        portal: this.id,
-                        tenderRef: t.ref,
-                        title: t.title,
-                        buyer: 'MoF',
-                        closeDate: t.date,
-                        winners: [],
-                         // Pending award
-                    })
-                } else {
-                    console.log(`[${this.id}] Skipped irrelevant: ${t.title}`)
-                }
-            }
+			for (const card of cards) {
+				const summary = await card.evaluate(el => {
+					const text = (node: Element | null | undefined) => node?.textContent?.trim() || ''
+					const findRowValue = (label: string) => {
+						const rows = Array.from(el.querySelectorAll('.cards-row'))
+						for (const row of rows) {
+							const labelText = text(row.querySelector('.card-label'))
+							if (labelText.includes(label)) {
+								return text(row.querySelector('.card-title'))
+							}
+						}
+						return ''
+					}
 
+					const tenderRef = text(el.querySelector('.col-header .card-label label'))
+					const titleAnchor = el.querySelector('.col-header .card-title a') as HTMLAnchorElement | null
+					const title = text(titleAnchor)
+					const tenderHref = titleAnchor?.getAttribute('href') || ''
+					const awardDateText = findRowValue('تاريخ الترسية')
+
+					let buyer = ''
+					const buyerCol = el.querySelector('.col-md-3.cards-col')
+					const buyerLabel = text(buyerCol?.querySelector('.col-header .card-label'))
+					if (buyerLabel.includes('الجهة')) {
+						buyer = text(buyerCol?.querySelector('.col-header .card-title'))
+					}
+
+					const reportAnchor = el.querySelector('a[href*="TenderCompaniesDetails"]') as HTMLAnchorElement | null
+					const reportHref = reportAnchor?.getAttribute('href') || ''
+
+					return { tenderRef, title, tenderHref, awardDateText, buyer, reportHref }
+				})
+
+				if (!summary.tenderRef && !summary.title) continue
+
+				const detailUrl = summary.reportHref ? new URL(summary.reportHref, this.portalUrl).toString() : ''
+				let awardValue: number | undefined
+				let awardDate = this.parseDate(summary.awardDateText)
+				let winners: string[] = []
+
+				if (detailUrl) {
+					const detail = await this.parseTenderDetails(detailPage, detailUrl)
+					if (detail.awardValue) awardValue = detail.awardValue
+					if (detail.awardDate) awardDate = detail.awardDate
+					if (detail.winners.length) winners = detail.winners
+				}
+
+				records.push({
+					portal: this.id,
+					tenderRef: summary.tenderRef || summary.title,
+					buyer: summary.buyer || 'Unknown',
+					title: summary.title,
+					awardDate: awardDate ?? undefined,
+					winners,
+					awardValue,
+					currency: 'QAR',
+					sourceUrl: detailUrl || (summary.tenderHref ? new URL(summary.tenderHref, this.portalUrl).toString() : undefined)
+				})
+
+				await this.delay(perRowDelay)
+			}
+
+			await detailPage.close()
 		} catch (e) {
 			console.error(`[${this.id}] Error scraping:`, e)
 		} finally {
 			await browser.close()
 		}
 
+		console.log(`[${this.id}] Collected ${records.length} awards`)
 		return records
 	}
 
-	private async isRelevant(text: string): Promise<boolean> {
-        // AI-driven relevance check
-        if (process.env.OPENAI_API_KEY) {
-            return this.checkWithOpenAI(text)
-        }
-		if (process.env.GEMINI_API_KEY) {
-			return this.checkWithGemini(text)
-		}
-
-		// Fallback: keyword matching
-		const keywords = ['software', 'cloud', 'security', 'network', 'mobile', 'oracle', 'license']
-		return keywords.some(k => text.toLowerCase().includes(k))
+	private normalizeDigits(value: string): string {
+		const arabicDigits = '٠١٢٣٤٥٦٧٨٩'
+		return value.replace(/[٠-٩]/g, d => String(arabicDigits.indexOf(d)))
 	}
 
-    private async checkWithOpenAI(text: string): Promise<boolean> {
-        try {
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-                },
-                body: JSON.stringify({
-                    model: 'gpt-3.5-turbo',
-                    messages: [
-                        { role: 'system', content: 'You are a tender analyst. Relevant sectors: IT, Software, Cloud, Security.' },
-                        { role: 'user', content: `Is this tender relevant? Text: ${text.substring(0, 500)}. Reply with YES or NO.` }
-                    ]
-                })
-            })
-            const data = await response.json()
-			// @ts-ignore
-            return data.choices?.[0]?.message?.content?.toUpperCase().includes('YES') || false
-        } catch (e) {
-            console.error('OpenAI check failed', e)
-            return true // Fail safe
-        }
-    }
+	private parseDate(value?: string): Date | undefined {
+		if (!value) return undefined
+		const normalized = this.normalizeDigits(value)
+		const parts = normalized.trim().split('/')
+		if (parts.length !== 3) return undefined
+		const [day, month, year] = parts.map(p => Number(p))
+		if (!day || !month || !year) return undefined
+		return new Date(year, month - 1, day)
+	}
 
-	private async checkWithGemini(text: string): Promise<boolean> {
-		// Placeholder for Gemini implementation
-		return true
+	private async parseTenderDetails(page: Page, detailUrl: string) {
+		await page.goto(detailUrl, { waitUntil: 'domcontentloaded', timeout: 30000 })
+		const result = await page.evaluate(() => {
+			const text = (node: Element | null | undefined) => node?.textContent?.trim() || ''
+			const awardDateText = text(document.querySelector('#lblAwardedDate'))
+			const awardValueText = text(document.querySelector('#lbl_award'))
+
+			const winners: string[] = []
+			const headers = Array.from(document.querySelectorAll('h3'))
+			const target = headers.find(h => (h.textContent || '').includes('بيانات الشركات التي تم الترسية عليها'))
+			const table = target?.nextElementSibling?.querySelector('table')
+			if (table) {
+				for (const row of Array.from(table.querySelectorAll('tbody tr'))) {
+					const name = text(row.querySelector('td'))
+					if (name) winners.push(name)
+				}
+			}
+
+			return { awardDateText, awardValueText, winners }
+		})
+
+		return {
+			awardDate: this.parseDate(result.awardDateText),
+			awardValue: this.parseValue(this.normalizeDigits(result.awardValueText)),
+			winners: Array.from(new Set(result.winners))
+		}
 	}
 }

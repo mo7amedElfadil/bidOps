@@ -43,13 +43,18 @@
   * Collectors: Adapter framework with Sample adapter and Qatar Gov template; staging insert and scheduling support
   * Awards UI: Web staging and curated awards pages with curate action
   * Frontend refreshed with TanStack Query + protected layout/nav; opportunity overview shell; attachment search; SLA settings UI; tracker wizard cleanup; auth helper redirects on 401
+  * Settings: Added holiday calendar and retention policy endpoints
+  * Settings UI: Added holiday calendar and retention policy configuration
+  * Docs: Updated analytics to defer Power BI integration; ingest to target Monaqasat; retention policy and bilingual notes
+  * Collectors: Monaqasat adapter now parses awarded tenders list and tender details for winners/award value
 * Next:
   * Rate limiting defaults + security headers docs (hardening sweep)
-  * First award collector adapter with real source (select portal and wire adapter)
-  * Power BI integration and curated tables
+  * Validate Monaqasat adapter against live pages; add edge-case handling
+  * Power BI integration deferred; maintain CSV exports for PBI import
 * Issues:
   * Port 4000 conflicts from stray host node process (if present, kill process then `make up`)
   * Web API URL baked at build; ensure `WEB_API_URL` set before rebuild
+  * Playwright host deps missing; run `pnpm --filter @itsq-bidops/collectors exec playwright install --with-deps`
 * Decision log:
   * 2025-12-06: Documentation aligned with `project_plan.md` and `context.md`
   * 2025-12-06: ORM = Prisma (confirmed)
@@ -58,4 +63,7 @@
   * 2025-12-06: Storage = Local filesystem for dev, Azure Blob for prod (STORAGE_PROVIDER toggle)
   * 2025-12-06: All core web UIs implemented (Clarifications, Pricing, Approvals, Submission, Outcomes)
   * 2025-12-07: Margin guardrail enforced via `PRICING_MIN_MARGIN`; observability dashboards provisioned; collectors adapter framework with Qatar Gov template
-  * Pending: First award portal target
+  * 2025-12-08: First award portal target = Monaqasat (public data only)
+  * 2025-12-08: Power BI integration deferred; CSV exports remain current integration point
+  * 2025-12-08: Retention default = 5 years with external backups
+  * Pending: Monaqasat selectors/sample award HTML; SLA holiday behavior; bilingual UI scope

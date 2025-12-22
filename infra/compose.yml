@@ -60,6 +60,8 @@ services:
       - "5601:5601"
     depends_on:
       - opensearch
+    profiles:
+      - monitoring
 
   # Azurite is optional - only needed when STORAGE_PROVIDER=azure
   # For local dev with filesystem storage, you can skip this service
@@ -90,6 +92,8 @@ services:
     ports:
       - "4317:4317" # OTLP gRPC
       - "4318:4318" # OTLP HTTP
+    profiles:
+      - monitoring
 
   prometheus:
     image: prom/prometheus
@@ -103,6 +107,8 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
       - "--web.enable-lifecycle"
+    profiles:
+      - monitoring
 
   grafana:
     image: grafana/grafana
@@ -118,6 +124,8 @@ services:
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    profiles:
+      - monitoring
 
   api:
     image: node:20-alpine

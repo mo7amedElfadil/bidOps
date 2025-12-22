@@ -13,6 +13,7 @@ Covers award-result collectors, portal adapters, parsing, and scheduling.
 ┌──────────────────────────────────────────────────────┐
 │              Source Adapters (Playwright)            │
 │  - SampleAdapter                                     │
+│  - MonaqasatAdapter                                  │
 │  - QatarGovAdapter                                   │
 └──────────────────────────┬───────────────────────────┘
                            │
@@ -61,6 +62,7 @@ interface SourceAdapter {
 | Adapter | ID | Status | Description |
 |---------|-----|--------|-------------|
 | Sample | `sample` | ✅ Active | Demo adapter with sample data |
+| Monaqasat | `monaqasat` | 🚧 In progress | Qatar MoF Monaqasat (public awards only) |
 | Qatar Gov | `qatar-gov` | 🔧 Template | Qatar e-Procurement portal (template) |
 
 ### Adding New Adapters
@@ -92,11 +94,15 @@ COLLECTOR_MODE=scheduled COLLECTOR_INTERVAL_MINUTES=60 make collectors-run
 | `COLLECTOR_INTERVAL_MINUTES` | `60` | Minutes between scheduled runs |
 | `COLLECTOR_ONLY` | (empty) | Run only specific adapter |
 | `COLLECTOR_SAMPLE_ENABLED` | `true` | Enable sample adapter |
+| `COLLECTOR_MONAQASAT_ENABLED` | `false` | Enable Monaqasat adapter |
 | `COLLECTOR_QATAR_GOV_ENABLED` | `false` | Enable Qatar Gov adapter |
 | `COLLECTOR_RATE_LIMIT_MS` | `1000` | Delay between requests |
 | `QATAR_GOV_PORTAL_URL` | `https://portal.gov.qa` | Base portal URL |
 | `QATAR_GOV_AWARDS_PATH` | `/en/awards` | Awards listing path |
 | `QATAR_GOV_DELAY_MS` | `800` | Per-row delay for Qatar Gov |
+| `MONAQASAT_PORTAL_URL` | `https://monaqasat.mof.gov.qa` | Base portal URL |
+| `MONAQASAT_AWARDED_PATH` | `/TendersOnlineServices/AwardedTenders/1` | Awarded tenders path |
+| `MONAQASAT_DELAY_MS` | `800` | Per-row delay for Monaqasat |
 
 ## API Endpoints
 

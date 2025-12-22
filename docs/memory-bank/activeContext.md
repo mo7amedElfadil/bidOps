@@ -1,4 +1,4 @@
-* Current focus: All core web UIs implemented. Guardrails added for pricing margins. Observability dashboards wired. Ready to harden and pick first real award portal.
+* Current focus: Monaqasat awarded tenders adapter implemented; validate selectors and winners parsing. Hardening sweep in progress (holiday calendar, retention).
 * Recent changes:
   - Built all remaining web UI pages (Clarifications, Pricing, Approvals, Submission, Outcomes)
   - Updated Opportunities List with navigation links to all opportunity sections
@@ -17,12 +17,14 @@
   - Iteration B (Compliance Matrix & Clarifications) ✓
   - Iteration C (Pricing & Approvals, Submission Pack, Outcomes) ✓
 * Next priorities:
-  1. Hardening: Rate limiting tuning, security headers documentation (pass through code and docs)
-  2. M3: Select first external award portal and implement real adapter + scheduling + curation UI
-  3. Power BI model and curated warehouse tables (M4)
-  4. Manifest signing/verification and approval signatures (submission/approvals hardening)
+  1. Hardening: SLA holiday calendar config; retention policy config; security docs pass
+  2. M3: Validate Monaqasat adapter against live pages; tune parsing (winners, award value)
+  3. Power BI integration deferred; continue using CSV exports
+  4. Submission/approval signing alignment with PM/Executive flow
 * Pending decisions:
-  - First portal to target for award ingestion (Qatar Government Procurement Portal?)
+  - Monaqasat selectors validation and edge cases (missing winner tables, multiple winners)
+  - Holiday calendar behavior in SLA (calendar days vs business days)
+  - Bilingual UI scope (full i18n vs content-only)
 * Risks:
   - Portal ToS or anti-bot controls
   - Parsing quality on PDFs

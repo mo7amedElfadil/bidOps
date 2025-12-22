@@ -154,6 +154,10 @@ GET /auth/callback      # Handles callback → redirects with token fragment
 |--------|------|-------------|-------|
 | GET | `/settings/sla` | Get SLA thresholds | All |
 | PUT | `/settings/sla` | Update SLA thresholds | MANAGER, ADMIN |
+| GET | `/settings/holidays` | Get SLA holiday calendar dates | All |
+| PUT | `/settings/holidays` | Update SLA holiday calendar dates | MANAGER, ADMIN |
+| GET | `/settings/retention` | Get retention policy (years) | All |
+| PUT | `/settings/retention` | Update retention policy (years) | ADMIN |
 
 ## Security
 

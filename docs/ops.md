@@ -259,6 +259,12 @@ docker exec bidops-postgres pg_dump -U bidops bidops > backup.sql
 cat backup.sql | docker exec -i bidops-postgres psql -U bidops bidops
 ```
 
+### Retention Policy
+
+- Default retention: 5 years.
+- Maintain external backups per policy (offsite or separate Azure subscription).
+- Retention period configurable via `GET/PUT /settings/retention` (ADMIN).
+
 ### Monitoring Alerts
 
 Configure alerts in Grafana for:

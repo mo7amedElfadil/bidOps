@@ -265,6 +265,24 @@ export const api = {
 			body: JSON.stringify(payload)
 		})
 	},
+	getHolidaySettings() {
+		return request<{ dates: string[] }>(`/settings/holidays`)
+	},
+	setHolidaySettings(payload: { dates: string[] }) {
+		return request<{ dates: string[] }>(`/settings/holidays`, {
+			method: 'PUT',
+			body: JSON.stringify(payload)
+		})
+	},
+	getRetentionPolicy() {
+		return request<{ years: number }>(`/settings/retention`)
+	},
+	setRetentionPolicy(payload: { years: number }) {
+		return request<{ years: number }>(`/settings/retention`, {
+			method: 'PUT',
+			body: JSON.stringify(payload)
+		})
+	},
 
 	// Awards
 	listAwardStaging() {

@@ -6,8 +6,8 @@ BoQ and approvals:
 - Vendor quotes with validity and lead time
 - Margin guardrails and escalation (minimum margin enforced by `PRICING_MIN_MARGIN`)
 - Approval chain: Legal → Finance → Executive
+- Simple signer approval captured from assigned PM/Executive
 - Freeze and pack versioning
--
 PricingPack structure (versioned):
 - `version`, `base_cost`, `overheads`, `contingency`, `fx_rate`, `margins`, `total_price`, `approvals[]`
 - Scenario pricing (what-if margins/FX) may be added in V2.
@@ -21,4 +21,3 @@ Endpoints
 Notes
 - All endpoints tenant-scoped by JWT
 - Audit entries recorded on mutations
-

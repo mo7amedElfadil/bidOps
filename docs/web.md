@@ -11,6 +11,8 @@ UI scope and behaviors:
 - Outcome recording with reason codes
 - Attachment search across entities
 - SLA settings editor (warn/alert/urgent thresholds)
+- Holiday calendar and retention settings (admin configurable)
+- English and Arabic content support
 
 ## Implemented Routes
 
@@ -31,7 +33,7 @@ UI scope and behaviors:
 | `/awards/staging` | Awards Staging | Review and curate collected awards |
 | `/awards/events` | Curated Awards | View curated award events |
 | `/search` | Attachment Search | Search attachments via `/search?q=` |
-| `/settings/sla` | SLA Settings | View/edit warn/alert/urgent thresholds |
+| `/settings/sla` | SLA Settings | View/edit thresholds, holiday calendar, retention policy |
 | `/auth/callback` | Auth Callback | Handles OAuth redirect |
 | `/auth/dev` | Dev Login | Local development authentication |
 

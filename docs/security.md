@@ -28,5 +28,6 @@ Data residency & privacy
 - All data hosted in Azure Qatar Central; at-rest and in-transit encryption.
 - Row-level security (RLS) for sensitive commercial data.
 - Follow portal ToS and robots.txt for collectors; throttling and scheduling applied.
-
+- Data retention default: 5 years with external backups; policy configurable by admin.
+- Bilingual content support: English and Arabic data entry.
 

@@ -2,8 +2,8 @@
 
 **Document Purpose**: This plan serves as the single source of truth for the ITSQ BidOps platform development. It captures the complete vision, current implementation status, architecture decisions, and roadmap. This document is maintained in the Memory Bank and should be consulted at the start of every development session.
 
-**Last Updated**: 2025-12-06  
-**Status**: M0 Foundations Complete, M1 Core Features In Progress
+**Last Updated**: 2025-12-08  
+**Status**: M0–M2 Complete, M3 External Collector In Progress
 
 ---
 
@@ -835,13 +835,13 @@ ATTACHMENTS_CONTAINER=attachments
 - ✅ Create staging (`POST /awards/staging`)
 - ✅ Curate (`POST /awards/staging/:id/curate`)
 - ✅ Events list (`GET /awards/events`)
-- ⚠️ Web UI: Curation interface (planned)
+- ✅ Web UI: Staging and curated views
 
 **Analytics Module**:
 - ✅ Awards CSV export (`GET /analytics/export/awards.csv`)
 - ✅ Opportunities CSV export (`GET /analytics/export/opportunities.csv`)
 - ✅ Tenant scoping on opportunities export
-- ⚠️ Power BI integration (planned)
+- ⚠️ Power BI integration deferred (CSV exports active)
 
 **Workers**:
 - ✅ SLA tick job (`slaTick`) - Evaluates SLA thresholds and creates notifications
@@ -854,7 +854,8 @@ ATTACHMENTS_CONTAINER=attachments
 - ✅ Scaffold created
 - ✅ Playwright setup
 - ✅ Sample collector inserting `AwardStaging` row
-- ⚠️ First real portal adapter (pending decision on target portal)
+- ✅ Monaqasat adapter implemented (public awards)
+- ⚠️ Live validation pending (Playwright host deps required)
 
 ### Known Issues & Limitations
 
@@ -938,12 +939,12 @@ ATTACHMENTS_CONTAINER=attachments
 
 ### Iteration D – External Awards Collector (⏳ Planned)
 
-**Status**: Scaffold complete, first adapter pending
+**Status**: Monaqasat adapter implemented; validation pending
 
 **Tasks**:
 - ✅ Collector scaffold with Playwright
 - ✅ Staging and curation API endpoints
-- ⚠️ First portal adapter (decision pending on target portal)
+- ✅ First portal adapter (Monaqasat)
 - ⚠️ Entity resolution (winner → Competitor fuzzy matching)
 - ⚠️ Curation UI for staging records
 - ⚠️ Scheduled runs (daily at configured times)
@@ -955,17 +956,17 @@ ATTACHMENTS_CONTAINER=attachments
 - `apps/collectors/src/adapters/*` - Portal adapters (future)
 - `apps/api/src/modules/awards/*` - Awards API
 
-**Decision Pending**: Which portal to target first? (Consider: API availability, data quality, legal/ToS constraints)
+**Decision Pending**: Monaqasat live validation + edge cases (missing winner table, multiple winners)
 
 ### Iteration E – Analytics & Power BI (⏳ Planned)
 
-**Status**: CSV exports complete, Power BI integration pending
+**Status**: CSV exports complete, Power BI integration deferred
 
 **Tasks**:
 - ✅ Awards CSV export
 - ✅ Opportunities CSV export
 - ⚠️ Curated warehouse tables (star schema)
-- ⚠️ Power BI semantic model
+- ⚠️ Power BI semantic model (deferred)
 - ⚠️ Executive dashboards (pipeline, win rate, velocity, competitor stats)
 - ⚠️ Scheduled refresh jobs
 - ⚠️ Email digests (weekly summaries)
@@ -1464,7 +1465,7 @@ make web-dev
 4. Curate records (human review)
 5. Measure numeric parse error rate (should be ≤ 2%)
 
-**Status**: ⚠️ Pending first portal adapter
+**Status**: ⚠️ Monaqasat adapter implemented; live validation pending
 
 ### Dashboards
 
@@ -1477,7 +1478,7 @@ make web-dev
 4. Test drill-downs (client → opportunities → details)
 5. Verify data aligns with DB snapshots
 
-**Status**: ⚠️ Pending Power BI integration
+**Status**: ⚠️ Power BI integration deferred (CSV exports active)
 
 ### Operations
 
@@ -1489,7 +1490,7 @@ make web-dev
 3. Run `make collectors-run` - verify awards ingested
 4. Verify CI pipeline builds and pushes images
 
-**Status**: ✅ `make up` works, ✅ `make parse-rfp` works, ⚠️ `make collectors-run` pending first adapter, ⚠️ CI image push pending
+**Status**: ✅ `make up` works, ✅ `make parse-rfp` works, ⚠️ `make collectors-run` blocked by Playwright host deps, ⚠️ CI image push pending
 
 ---
 
@@ -1719,4 +1720,3 @@ For questions or issues:
 **End of Plan Document**
 
 This plan is a living document and should be updated as the project evolves. All developers should read this plan at the start of each session to maintain context and alignment.
-

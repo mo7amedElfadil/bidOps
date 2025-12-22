@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "pnpm -w --filter @itsq-bidops/parser-tools build",
     "dev": "ts-node-dev --respawn --transpile-only -r dotenv/config src/main.ts",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
