@@ -13,8 +13,11 @@ export class MonaqasatAdapter extends BaseAdapter {
 			args: ['--no-sandbox', '--disable-setuid-sandbox']
 		})
 		const context = await browser.newContext({
-			userAgent:
-				'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+			userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+			locale: 'en-US',
+			extraHTTPHeaders: {
+				'Accept-Language': 'en-US,en;q=0.9,en-GB;q=0.7,ar;q=0.5'
+			}
 		})
 		await context.addCookies([
 			{
@@ -37,6 +40,8 @@ export class MonaqasatAdapter extends BaseAdapter {
 			const awardedPath = process.env.MONAQASAT_AWARDED_PATH || '/TendersOnlineServices/AwardedTenders/1'
 			const detailPage = await context.newPage()
 
+			await this.ensureEnglish(page)
+			await this.ensureEnglish(detailPage)
 			let pageNum = 1
 			while (pageNum <= maxPages) {
 				const awardedUrl = this.buildPagedUrl(awardedPath, pageNum)
@@ -189,6 +194,16 @@ export class MonaqasatAdapter extends BaseAdapter {
 
 	private startOfDay(date: Date): Date {
 		return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+	}
+
+	private async ensureEnglish(page: Page) {
+		const changeLangUrl = new URL('/Main/ChangeLang?returnURL=%2F', this.portalUrl).toString()
+		try {
+			await page.goto(changeLangUrl, { waitUntil: 'domcontentloaded', timeout: 30000 })
+			await page.waitForTimeout(500)
+		} catch (err: any) {
+			console.warn(`[${this.id}] English switch skipped: ${err.message || err}`)
+		}
 	}
 
 	private buildPagedUrl(path: string, pageNum: number): string {

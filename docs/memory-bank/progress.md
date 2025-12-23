@@ -75,6 +75,7 @@
   * Settings: stage and status picklists are now configurable and drive opportunity dropdowns
   * Collectors: Available tender run accepts date filters so `/tenders/collect` can pull a date window
   * Collectors: Monaqasat available tender adapter now walks pages until the requested `fromDate` window or `MONAQASAT_TENDER_MAX_PAGES`, mirroring the awards crawler
+  * Collectors: Monaqasat award + available adapters now force English locale via headers, culture cookie, and ChangeLang
 * Next:
   * Rate limiting defaults + security headers docs (hardening sweep)
   * Validate Monaqasat adapter against live pages; add edge-case handling

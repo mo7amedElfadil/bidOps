@@ -63,6 +63,7 @@ model Opportunity {
   title          String
   description    String?
   sourcePortal   String?
+  sourceTenderId String?
   discoveryDate  DateTime?
   submissionDate DateTime?
   startDate      DateTime?
@@ -78,6 +79,8 @@ model Opportunity {
   tenantId       String   @default("default")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  goNoGoStatus   ApprovalStatus @default(PENDING)
+  goNoGoUpdatedAt DateTime?
 
   client Client @relation(fields: [clientId], references: [id])
   owner  User?  @relation("OwnerOpps", fields: [ownerId], references: [id])
@@ -259,18 +262,34 @@ enum ApprovalStatus {
 model Approval {
   id         String         @id @default(uuid())
   packId     String
+  stage      ApprovalStage @default(GO_NO_GO)
   type       ApprovalType
   approverRole String?
   approverId String?
   status     ApprovalStatus @default(PENDING)
+  comment    String?
+  attachments Json?
+  requestedAt DateTime?
+  decidedAt   DateTime?
+  reworkCount Int @default(0)
+  lateDecision Boolean @default(false)
   signedOn   DateTime?
   signature  String?
   remarks    String?
+  sourceTenderId String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   pack PricingPack @relation(fields: [packId], references: [id])
   @@index([packId])
+}
+
+enum ApprovalStage {
+  GO_NO_GO
+  WORKING
+  PRICING
+  FINAL_SUBMISSION
+  CLARIFICATIONS
 }
 
 enum OutcomeStatus {

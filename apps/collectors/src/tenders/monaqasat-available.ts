@@ -1,4 +1,4 @@
-import { chromium } from 'playwright'
+import { chromium, Page } from 'playwright'
 import { BaseTenderAdapter, TenderListingRecord } from './base.js'
 
 export class MonaqasatAvailableAdapter extends BaseTenderAdapter {
@@ -13,8 +13,11 @@ export class MonaqasatAvailableAdapter extends BaseTenderAdapter {
 			args: ['--no-sandbox', '--disable-setuid-sandbox']
 		})
 		const context = await browser.newContext({
-			userAgent:
-				'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+			userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+			locale: 'en-US',
+			extraHTTPHeaders: {
+				'Accept-Language': 'en-US,en;q=0.9,en-GB;q=0.7,ar;q=0.5'
+			}
 		})
 		await context.addCookies([
 			{
@@ -36,6 +39,7 @@ export class MonaqasatAvailableAdapter extends BaseTenderAdapter {
 		try {
 			const availablePath =
 				process.env.MONAQASAT_AVAILABLE_PATH || '/TendersOnlineServices/AvailableMinistriesTenders/1'
+			await this.ensureEnglish(page)
 			let pageNum = 1
 			let stop = false
 
@@ -193,6 +197,16 @@ export class MonaqasatAvailableAdapter extends BaseTenderAdapter {
 	private buildPagedUrl(path: string, pageNum: number): string {
 		const normalized = path.replace(/\/\d+$/, '')
 		return new URL(`${normalized}/${pageNum}`, this.portalUrl).toString()
+	}
+
+	private async ensureEnglish(page: Page) {
+		const changeLangUrl = new URL('/Main/ChangeLang?returnURL=%2F', this.portalUrl).toString()
+		try {
+			await page.goto(changeLangUrl, { waitUntil: 'domcontentloaded', timeout: 30000 })
+			await page.waitForTimeout(500)
+		} catch (err: any) {
+			console.warn(`[${this.id}] English switch skipped: ${err.message || err}`)
+		}
 	}
 
 	private parseFilterDate(value?: string, endOfDay = false): Date | undefined {

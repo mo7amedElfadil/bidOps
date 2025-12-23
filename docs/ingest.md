@@ -150,6 +150,7 @@ Deduplication:
 - The Monaqasat available-tender adapter now scans `AvailableMinistriesTenders/{page}` sequentially, matching the award collector's paging strategy. It increments the page number until it reaches the requested `fromDate` window or the configurable page cap.
 - Date filtering uses `MONAQASAT_TENDER_FROM_DATE`/`MONAQASAT_TENDER_TO_DATE` (YYYY-MM-DD). The collector filters each card as it goes and stops when earlier pages fall entirely before `fromDate`, so runs stay efficient while still honoring the date window passed from the UI.
 - Use `MONAQASAT_TENDER_MAX_PAGES` (default `10`) to bound how many pages are fetched per run, preventing runaway scraping while still covering the window that executives typically request.
+- Monaqasat adapters force the English locale via `Accept-Language` headers, culture cookies, and an explicit `/Main/ChangeLang` call so fields are consistent even when the portal defaults to Arabic.
 
 ### Curated Events
 

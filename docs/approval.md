@@ -53,6 +53,12 @@ Consultants need a single, obvious path from spotting a tender on Monaqasat thro
 
 ## 2. Tender → Opportunity Go/No-Go Approval
 
+### Data model additions
+- `Approval.stage` enum: `GO_NO_GO`, `WORKING`, `PRICING`, `FINAL_SUBMISSION`, `CLARIFICATIONS`.
+- `Approval.comment`, `Approval.attachments` (string[] or JSON), `Approval.requestedAt`, `Approval.decidedAt`, `Approval.reworkCount`, `Approval.lateDecision`.
+- `Approval.sourceTenderId` (nullable FK to `MinistryTender`).
+- `Opportunity.awaitingGoNoGo` (bool), `Opportunity.goNoGoStatus` (`PENDING|APPROVED|REJECTED`).
+
 ### Frontend tasks
 1. Available Tenders list/card shows a primary CTA `Request Work Approval`.
 2. Clicking it opens a modal collecting:
@@ -67,14 +73,29 @@ Consultants need a single, obvious path from spotting a tender on Monaqasat thro
    * `sourceTenderId` (nullable, links to `MinistryTender`).
    * `comment`, `attachments[]` (optional metadata for audit).
 2. Endpoint changes:
-   * `POST /approvals/request` – new endpoint to raise a Go/No-Go request from a tender; payload includes the tender ID, manager ID, and optional comment/attachments.
-   * Existing `/approvals/:packId/bootstrap` should accept the enhanced payload so bootstrap can create staged approvals (GO_NO_GO first, then the rest).
+   * `POST /approvals/request` – raise Go/No-Go request from a tender; payload includes tender ID, optional comment/attachments, optional `assignBidOwnerIds`.
+   * `POST /approvals/:packId/bootstrap` – accept staged approvals (GO_NO_GO first, then WORKING/PRICING/FINAL).
+   * `POST /tenders/:id/promote` – now used only after Go/No-Go approval unless user has override permission.
 3. Opportunity gating:
    * The opportunity is created with a flag `awaitingGoNoGo = true`.
    * Board filters hide opportunities until `Go/No-Go` approved (or show a dedicated lane).
    * Prevent bid work (boq/pricing/attachments) until `Go/No-Go` status flips.
 4. SLA/escalation:
    * Scheduler reminder when `GO_NO_GO` remains pending >48h: enqueue notification to Manager and escalate to Director.
+5. Audit:
+   * Record `requestedAt`, `decidedAt`, `comment`, `attachments` on the approval.
+   * Log `actorId`, `action`, and previous status in `AuditLog`.
+
+### API payloads
+```
+POST /approvals/request
+{
+  "sourceTenderId": "uuid",
+  "comment": "optional rationale",
+  "attachments": ["attachmentId1", "attachmentId2"],
+  "assignBidOwnerIds": ["userId1", "userId2"]
+}
+```
 
 ## 3. Multi-stage Approval Sequence
 
@@ -86,14 +107,32 @@ Consultants need a single, obvious path from spotting a tender on Monaqasat thro
 Each stage follows: `Draft → In Review → Changes Requested → Resubmitted → Approved / Approved w/ Conditions → Rejected → Superseded`.
 
 ### Backend enforcement
-* Approvals table gets columns `stage`, `status`, `comment`, `changesRequestedDueDate`, `attachments`.
-* Transition logic forbids approving PRICING until WORKING is Approved.
-* Decision endpoint `/approvals/decision/:id` now records comment, attachments, status, and optional `dueDate` when “Changes Requested”.
-* On approval, record `artifactVersion` and lock associated boards.
+* Approvals table stores `stage`, `status`, `comment`, `changesRequestedDueDate`, `attachments`, `requestedAt`, `decidedAt`.
+* Transition guard:
+  - Cannot set PRICING to `In Review` until WORKING `Approved`.
+  - Cannot set FINAL to `In Review` until PRICING `Approved`.
+* Decision endpoint `/approvals/decision/:id` records comment, attachments, status, and optional `dueDate` when “Changes Requested”.
+* On approval, record `artifactVersion` for pricing pack and lock associated artifacts.
+
+### API payloads
+```
+POST /approvals/decision/:id
+{
+  "status": "APPROVED|REJECTED|CHANGES_REQUESTED|RESUBMITTED",
+  "comment": "optional",
+  "attachments": ["attachmentId1"],
+  "changesRequestedDueDate": "YYYY-MM-DD"
+}
+```
 
 ### Frontend
 * Approval card shows stage, type label, status, comment, attachments, and “Next action” CTA.
 * “Changes Requested” renders required actions and due date; next approver can mark “Resubmitted.”
+* Stage guard banners show “Blocked by <stage>” with responsible approver and last comment.
+* Role-based CTA text:
+  - Manager: “Approve Working Stage”
+  - Finance: “Approve Pricing Stage”
+  - Executive/PM: “Approve Final Submission”
 
 ## 4. Reminders & Submission Checklist
 
@@ -111,6 +150,17 @@ Each item stores `doneBy`, `doneAt`, `notes`, `attachment`.
 * Track `bondReminderSentAt` to avoid duplicates.
 * Additional reminders: “Internal review freeze” at T-3 and “Portal upload rehearsal” at T-2.
 
+### API payloads
+```
+PATCH /opportunities/:id/checklist
+{
+  "bondPurchased": { "done": true, "attachmentId": "uuid", "notes": "optional" },
+  "formsCompleted": { "done": false },
+  "finalPdfReady": { "done": true },
+  "portalCredentialsVerified": { "done": false }
+}
+```
+
 ## 5. Locking/Change Control
 
 Technical tasks:
@@ -118,6 +168,17 @@ Technical tasks:
 * Introduce `ChangeRequest` model storing: `opportunityId`, `changes`, `impact`, `requestedBy`, `status`, `approverStage`.
 * API `POST /change-requests` allows edits post-approval. Changes must go back to each stage (WORKING → PRICING → FINAL). On approval, mark previous baseline `Superseded`.
 * UI shows change request status and link to new approval baseline.
+
+### API payloads
+```
+POST /change-requests
+{
+  "opportunityId": "uuid",
+  "changes": "text or diff summary",
+  "impact": "cost/schedule/compliance notes",
+  "requestedBy": "userId"
+}
+```
 
 ## 6. Role-based Workflow Clarity
 
@@ -149,5 +210,3 @@ Tasks:
 3. Frontend UI (status chips, buttons, checklist, change request flows).  
 4. Role-based messaging and reminders.  
 5. Ops/test run and documentation finalization.  
-
-Once we approve this expanded plan, I can proceed with the first phase (audit + instrumentation) or go directly into backend work—please confirm the priority.	

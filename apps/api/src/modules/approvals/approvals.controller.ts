@@ -3,6 +3,7 @@ import { TenantService } from '../../tenant/tenant.service'
 import { ApprovalsService } from './approvals.service'
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard'
 import { Roles } from '../../auth/roles.decorator'
+import { RequestWorkApprovalDto } from './dto/request-work-approval.dto'
 
 @Controller('approvals')
 @UseGuards(JwtAuthGuard)
@@ -18,6 +19,12 @@ export class ApprovalsController {
 	@Get('review')
 	review(@Req() req: any) {
 		return this.svc.reviewOverview(req.user?.tenantId || 'default')
+	}
+
+	@Post('request')
+	@Roles('MANAGER','ADMIN')
+	request(@Body() body: RequestWorkApprovalDto, @Req() req: any) {
+		return this.svc.requestWorkApproval(body, req.user || {})
 	}
 
 	@Post(':packId/bootstrap')

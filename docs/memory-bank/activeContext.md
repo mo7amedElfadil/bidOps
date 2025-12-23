@@ -15,6 +15,7 @@
   - Attachments: Download endpoint + AI extraction (prompt + selected files) to draft compliance, clarifications, proposal sections
   - Tenders: Available ministry tenders collector + UI list with promote-to-opportunity action
   - Tenders: Monaqasat available-tender adapter now walks pages until the requested date window (or `MONAQASAT_TENDER_MAX_PAGES`) so date-range filtering works like the award collector
+  - Collectors: Monaqasat award + available adapters now force English locale via headers, culture cookie, and ChangeLang
   - Users: Admin user management module and UI
   - All API modules have tenant scoping and RBAC
   - Frontend refreshed with TanStack Query, protected layout/nav, opportunity overview shell, attachment search, SLA settings UI, and consistent opportunity tab headers
