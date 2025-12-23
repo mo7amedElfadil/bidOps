@@ -7,13 +7,13 @@ import { Page } from '../../components/Page'
 
 export default function Board() {
 	const { data, isLoading } = useQuery({
-		queryKey: ['opportunities'],
-		queryFn: () => api.listOpportunities()
+		queryKey: ['opportunities', 'board'],
+		queryFn: () => api.listOpportunities({ page: 1, pageSize: 200 })
 	})
 
 	const byStage = useMemo(
 		() =>
-			(data || []).reduce((acc, item) => {
+			(data?.items || []).reduce((acc, item) => {
 				const k = item.stage || 'Unstaged'
 				;(acc[k] ||= []).push(item)
 				return acc
@@ -66,5 +66,4 @@ export default function Board() {
 		</Page>
 	)
 }
-
 

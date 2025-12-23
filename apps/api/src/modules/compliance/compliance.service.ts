@@ -3,6 +3,7 @@ import { Injectable, BadRequestException } from '@nestjs/common'
 import { PrismaService } from '../../prisma/prisma.service'
 import { BlobService } from '../../files/blob.service'
 import pdf from 'pdf-parse'
+import { parse } from 'csv-parse/sync'
 
 @Injectable()
 export class ComplianceService {
@@ -51,6 +52,28 @@ export class ComplianceService {
 		return { created: createData.length }
 	}
 
+	async importCsv(opportunityId: string, file: any) {
+		if (!file) throw new BadRequestException('file is required')
+		const text = file.buffer.toString('utf-8')
+		const records = parse(text, { columns: true, skip_empty_lines: true, trim: true })
+		const createData = (records as any[]).map((row, index) => ({
+			opportunityId,
+			section: row['Section']?.toString()?.trim() || undefined,
+			clauseNo: row['ClauseNo']?.toString()?.trim() || String(index + 1),
+			requirementText: row['Requirement']?.toString()?.trim() || '',
+			mandatoryFlag: String(row['Mandatory'] || '').toLowerCase() === 'yes',
+			response: row['Response']?.toString()?.trim() || undefined,
+			status: row['Status']?.toString()?.trim() || undefined,
+			owner: row['Owner']?.toString()?.trim() || undefined,
+			evidence: row['Evidence']?.toString()?.trim() || undefined
+		})).filter(row => row.requirementText)
+		if (!createData.length) {
+			throw new BadRequestException('No valid compliance rows found in CSV')
+		}
+		await this.prisma.complianceClause.createMany({ data: createData })
+		return { created: createData.length }
+	}
+
 	async exportCsv(opportunityId: string) {
 		const rows = await this.list(opportunityId)
 		const headers = ['ClauseNo','Section','Mandatory','Requirement','Response','Status','Owner','Evidence']
@@ -78,5 +101,4 @@ function escapeCsv(s: string) {
 	}
 	return s
 }
-
 

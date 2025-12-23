@@ -31,4 +31,10 @@ Mail:
 - SMTP_PORT
 - SMTP_FROM
 
+AI extraction:
+- AI_PROVIDER (openai|gemini)
+- OPENAI_API_KEY
+- OPENAI_MODEL
+- GEMINI_API_KEY
+- GEMINI_MODEL
 

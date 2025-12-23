@@ -15,6 +15,7 @@ Covers award-result collectors, portal adapters, parsing, and scheduling.
 │  - SampleAdapter                                     │
 │  - MonaqasatAdapter                                  │
 │  - QatarGovAdapter                                   │
+│  - MonaqasatAvailableAdapter                         │
 └──────────────────────────┬───────────────────────────┘
                            │
                            ▼
@@ -38,7 +39,7 @@ Covers award-result collectors, portal adapters, parsing, and scheduling.
 interface AwardRecord {
   portal: string
   tenderRef: string
-  buyer: string
+  client: string
   title: string
   awardDate: Date
   winners: string[]
@@ -63,6 +64,7 @@ interface SourceAdapter {
 |---------|-----|--------|-------------|
 | Sample | `sample` | ✅ Active | Demo adapter with sample data |
 | Monaqasat | `monaqasat` | 🚧 In progress | Qatar MoF Monaqasat (public awards only, English locale enforced) |
+| Monaqasat Available | `monaqasat_available` | 🚧 In progress | Qatar MoF Available Ministry Tenders (purchase link + close date) |
 | Qatar Gov | `qatar-gov` | 🔧 Template | Qatar e-Procurement portal (template) |
 
 ### Adding New Adapters
@@ -87,9 +89,16 @@ COLLECTOR_MODE=scheduled COLLECTOR_INTERVAL_MINUTES=60 make collectors-run
 ```
 
 UI-triggered runs can call `POST /awards/collect` with `fromDate` and `toDate` (YYYY-MM-DD).
+Available tenders can be fetched via `POST /tenders/collect` (adapter `monaqasat_available`).
+
+Awarded tenders pagination:
+- Collector walks pages in order until it reaches a page whose newest award date is earlier than `fromDate` (or hits `MONAQASAT_MAX_PAGES`).
+- This ensures older pages are scanned when a date range is set.
 
 Deduplication:
-- Monaqasat runs delete existing staging rows by `portal+tenderRef` before inserting new rows.
+- In-memory de-duplication per run (prefers `tenderRef`, falls back to `sourceUrl` or title).
+- Staging cleanup per run removes older duplicates for `portal+tenderRef`.
+- Inserts delete existing staging rows by `portal+tenderRef` (or `portal+sourceUrl` when `tenderRef` is missing) before creating.
 
 ## Environment Variables
 
@@ -100,6 +109,7 @@ Deduplication:
 | `COLLECTOR_ONLY` | (empty) | Run only specific adapter |
 | `COLLECTOR_SAMPLE_ENABLED` | `true` | Enable sample adapter |
 | `COLLECTOR_MONAQASAT_ENABLED` | `false` | Enable Monaqasat adapter |
+| `COLLECTOR_MONAQASAT_AVAILABLE_ENABLED` | `false` | Enable Monaqasat available tenders adapter |
 | `COLLECTOR_QATAR_GOV_ENABLED` | `false` | Enable Qatar Gov adapter |
 | `COLLECTOR_RATE_LIMIT_MS` | `1000` | Delay between requests |
 | `QATAR_GOV_PORTAL_URL` | `https://portal.gov.qa` | Base portal URL |
@@ -107,6 +117,8 @@ Deduplication:
 | `QATAR_GOV_DELAY_MS` | `800` | Per-row delay for Qatar Gov |
 | `MONAQASAT_PORTAL_URL` | `https://monaqasat.mof.gov.qa` | Base portal URL |
 | `MONAQASAT_AWARDED_PATH` | `/TendersOnlineServices/AwardedTenders/1` | Awarded tenders path |
+| `MONAQASAT_AVAILABLE_PATH` | `/TendersOnlineServices/AvailableMinistriesTenders/1` | Available ministry tenders path |
+| `MONAQASAT_MAX_PAGES` | `10` | Max pages to scan when collecting awards |
 | `MONAQASAT_DELAY_MS` | `800` | Per-row delay for Monaqasat |
 
 ## API Endpoints
@@ -118,6 +130,17 @@ Deduplication:
 | GET | `/awards/staging` | List staging records |
 | POST | `/awards/staging` | Create staging record |
 | POST | `/awards/staging/:id/curate` | Promote to curated event |
+| POST | `/tenders/collect` | Trigger available tenders collector |
+
+### Available Ministry Tenders
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/tenders` | List available tenders |
+| POST | `/tenders` | Create tender record |
+| PATCH | `/tenders/:id` | Update tender record |
+| DELETE | `/tenders/:id` | Delete tender record |
+| POST | `/tenders/:id/promote` | Promote tender to Opportunity |
 
 ### Curated Events
 
@@ -138,6 +161,11 @@ Deduplication:
 3. **Curation**: Human review via UI → mark as `curated`
 4. **Promotion**: `POST /awards/staging/:id/curate` → creates `AwardEvent`
 5. **Analytics**: Curated events available for dashboards and exports
+6. **Client sync**: Buyer/ministry names are upserted into `Client` on each collector run
+
+## Potential Opportunities Filtering (Future)
+
+Potential opportunities pulled from public tenders should be filtered to ITSQ-relevant projects. Add an AI/smart filtering layer to classify tenders by ITSQ professional activities before storing/showing them (manual override available).
 
 ## Normalization Shape
 
@@ -145,7 +173,7 @@ Deduplication:
 {
   "portal": "qatar-gov",
   "tenderRef": "QG-2024-001",
-  "buyer": "Ministry of Technology",
+  "client": "Ministry of Technology",
   "title": "IT Infrastructure Project",
   "awardDate": "2024-01-15",
   "winners": ["TechCorp Solutions LLC"],
@@ -153,6 +181,24 @@ Deduplication:
   "currency": "QAR",
   "codes": ["IT-001", "INFRA-002"],
   "sourceUrl": "https://portal.gov.qa/award/001"
+}
+```
+
+### Available Tender Shape
+
+```json
+{
+  "portal": "monaqasat",
+  "tenderRef": "7144/2025",
+  "title": "Supply of Drugs (ORLISTAT 120MG) HMC/TCS/8897/2025",
+  "ministry": "Hamad Medical Corporation",
+  "publishDate": "2025-12-22",
+  "closeDate": "2026-01-12",
+  "requestedSectorType": "Suppliers / Service Providers",
+  "tenderBondValue": 65000,
+  "documentsValue": 650,
+  "tenderType": "Public Tender",
+  "purchaseUrl": "https://monaqasat.mof.gov.qa/TendersOnlineServices/TenderDetails/655609"
 }
 ```
 

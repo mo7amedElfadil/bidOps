@@ -22,8 +22,8 @@ if (process.env.AUTH_PROVIDER === 'oidc' && process.env.OIDC_ISSUER) {
 		})
 	],
 	controllers: [AuthController],
-	providers
+	providers,
+	exports: [JwtModule]
 })
 export class AuthModule { }
-
 

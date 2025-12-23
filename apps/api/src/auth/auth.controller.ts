@@ -36,6 +36,7 @@ export class AuthController {
 		if (!this.isLocalAuth()) throw new BadRequestException('Use OIDC login')
 		const user = await this.prisma.user.findUnique({ where: { email: body.email } })
 		if (!user?.passwordHash) throw new BadRequestException('Invalid credentials')
+		if (user.isActive === false) throw new BadRequestException('Account is disabled')
 		const ok = await argon2.verify(user.passwordHash, body.password)
 		if (!ok) throw new BadRequestException('Invalid credentials')
 		const token = await this.jwt.signAsync({
@@ -58,6 +59,8 @@ export class AuthController {
 					tenantId
 				}
 			})
+		} else if (user.isActive === false) {
+			throw new BadRequestException('Account is disabled')
 		}
 		const token = await this.jwt.signAsync({
 			sub: user.id,
@@ -84,6 +87,8 @@ export class AuthController {
 			user = await this.prisma.user.create({
 				data: { email, name, role: role || 'VIEWER', tenantId: tenantId || 'default' }
 			})
+		} else if (user.isActive === false) {
+			throw new BadRequestException('Account is disabled')
 		}
 		const token = await this.jwt.signAsync({
 			sub: user.id, email: user.email, role: user.role, tenantId: user.tenantId
@@ -92,5 +97,3 @@ export class AuthController {
 		res.redirect(`${redirectUrl}#token=${token}`)
 	}
 }
-
-

@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api, Clarification } from '../../api/client'
 import { OpportunityShell } from '../../components/OpportunityShell'
+import { getToken } from '../../utils/auth'
+import { downloadWithAuth } from '../../utils/download'
 
 export default function ClarificationsPage() {
 	const qc = useQueryClient()
@@ -35,26 +37,52 @@ export default function ClarificationsPage() {
 		onSuccess: () => qc.invalidateQueries({ queryKey: ['clarifications', id] })
 	})
 
+	const importCsv = useMutation({
+		mutationFn: async (file: File) => {
+			const fd = new FormData()
+			fd.append('file', file)
+			const token = getToken()
+			const res = await fetch(`${API}/clarifications/${id}/import.csv`, {
+				method: 'POST',
+				headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+				body: fd
+			})
+			if (!res.ok) throw new Error(await res.text())
+			return res.json()
+		},
+		onSuccess: () => qc.invalidateQueries({ queryKey: ['clarifications', id] })
+	})
+
 	return (
 		<OpportunityShell active="clarifications">
 			<div className="p-4">
 				<div className="flex items-center justify-between">
 					<h2 className="text-lg font-semibold">Clarifications</h2>
-					<div className="flex gap-2">
+					<div className="flex flex-wrap items-center gap-2">
+						<input
+							type="file"
+							accept=".csv"
+							onChange={e => {
+								const f = e.target.files?.[0]
+								if (f) importCsv.mutate(f)
+							}}
+						/>
 						<button
 							className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
 							onClick={() => setShowAdd(true)}
 						>
 							+ Add Question
 						</button>
-						<a
+						<button
 							className="rounded bg-slate-700 px-3 py-1.5 text-sm text-white hover:bg-slate-800"
-							href={`${API}/clarifications/${id}/export.csv`}
-							target="_blank"
-							rel="noreferrer"
+							onClick={() => downloadWithAuth(`${API}/clarifications/${id}/export.csv`, `clarifications-${id}.csv`)}
 						>
 							Export CSV
-						</a>
+						</button>
+						{importCsv.isPending && <span className="text-xs text-slate-600">Importing...</span>}
+						{importCsv.error && (
+							<span className="text-xs text-red-600">{(importCsv.error as Error).message}</span>
+						)}
 					</div>
 				</div>
 
@@ -175,4 +203,3 @@ export default function ClarificationsPage() {
 		</OpportunityShell>
 	)
 }
-

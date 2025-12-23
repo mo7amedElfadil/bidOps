@@ -29,28 +29,39 @@ export class MonaqasatAdapter extends BaseAdapter {
 		const page = await context.newPage()
 		const records: AwardRecord[] = []
 		const perRowDelay = Number(process.env.MONAQASAT_DELAY_MS ?? process.env.COLLECTOR_RATE_LIMIT_MS ?? 800)
+		const maxPages = Number(process.env.MONAQASAT_MAX_PAGES ?? 10)
 
 		try {
 			const fromDate = this.parseIsoDate(process.env.MONAQASAT_FROM_DATE || '')
 			const toDate = this.parseIsoDate(process.env.MONAQASAT_TO_DATE || '')
 			const awardedPath = process.env.MONAQASAT_AWARDED_PATH || '/TendersOnlineServices/AwardedTenders/1'
-			const awardedUrl = new URL(awardedPath, this.portalUrl).toString()
-			await page.goto(awardedUrl, { waitUntil: 'networkidle', timeout: 30000 })
-			await page.waitForSelector('.custom-cards, .custom--table', { timeout: 15000 }).catch(() => {
-				console.warn(`[${this.id}] Awarded tenders table not found`)
-			})
-
-			let cards = await page.$$('.custom-cards')
-			if (cards.length === 0) {
-				cards = await page.$$('.custom--table .custom-cards')
-			}
 			const detailPage = await context.newPage()
 
-			for (const card of cards) {
-				const summary = await card.evaluate(el => {
-					const text = (node: Element | null | undefined) => node?.textContent?.trim() || ''
-					const findRowValue = (label: string) => {
-						const rows = Array.from(el.querySelectorAll('.cards-row'))
+			let pageNum = 1
+			while (pageNum <= maxPages) {
+				const awardedUrl = this.buildPagedUrl(awardedPath, pageNum)
+				await page.goto(awardedUrl, { waitUntil: 'networkidle', timeout: 30000 })
+				await page.waitForSelector('.custom-cards, .custom--table', { timeout: 15000 }).catch(() => {
+					console.warn(`[${this.id}] Awarded tenders table not found (page ${pageNum})`)
+				})
+
+				let cards = await page.$$('.custom-cards')
+				if (cards.length === 0) {
+					cards = await page.$$('.custom--table .custom-cards')
+				}
+				if (cards.length === 0) {
+					console.warn(`[${this.id}] No cards found on page ${pageNum}, stopping`)
+					break
+				}
+
+				let pageMinDate: Date | null = null
+				let pageMaxDate: Date | null = null
+
+				for (const card of cards) {
+					const summary = await card.evaluate(el => {
+						const text = (node: Element | null | undefined) => node?.textContent?.trim() || ''
+						const findRowValue = (label: string) => {
+							const rows = Array.from(el.querySelectorAll('.cards-row'))
 						for (const row of rows) {
 							const labelText = text(row.querySelector('.card-label'))
 							if (labelText.includes(label)) {
@@ -69,61 +80,75 @@ export class MonaqasatAdapter extends BaseAdapter {
 						findRowValue('Award date') ||
 						findRowValue('Awarded Date')
 
-					let buyer = ''
+					let client = ''
 					const buyerCol = el.querySelector('.col-md-3.cards-col')
 					const buyerLabel = text(buyerCol?.querySelector('.col-header .card-label'))
 					if (buyerLabel.includes('الجهة') || buyerLabel.includes('Entity') || buyerLabel.includes('Ministry')) {
-						buyer = text(buyerCol?.querySelector('.col-header .card-title'))
+						client = text(buyerCol?.querySelector('.col-header .card-title'))
 					}
 
 					const reportAnchor = el.querySelector('a[href*="TenderCompaniesDetails"]') as HTMLAnchorElement | null
 					const reportHref = reportAnchor?.getAttribute('href') || ''
 
-					return { tenderRef, title, tenderHref, awardDateText, buyer, reportHref }
-				})
+					return { tenderRef, title, tenderHref, awardDateText, client, reportHref }
+					})
 
-				if (!summary.tenderRef && !summary.title) continue
+					if (!summary.tenderRef && !summary.title) continue
 
-				const detailUrl = summary.reportHref ? new URL(summary.reportHref, this.portalUrl).toString() : ''
-				let awardValue: number | undefined
-				let awardDate = this.parseDate(summary.awardDateText)
-				let winners: string[] = []
+					const detailUrl = summary.reportHref ? new URL(summary.reportHref, this.portalUrl).toString() : ''
+					let awardValue: number | undefined
+					let awardDate = this.parseDate(summary.awardDateText)
+					let winners: string[] = []
 
-				if (detailUrl) {
-					const detail = await this.parseTenderDetails(detailPage, detailUrl)
-					if (detail.awardValue) awardValue = detail.awardValue
-					if (detail.awardDate) awardDate = detail.awardDate
-					if (detail.winners.length) winners = detail.winners
-					if (!summary.buyer && detail.buyer) {
-						summary.buyer = detail.buyer
+					if (detailUrl) {
+						const detail = await this.parseTenderDetails(detailPage, detailUrl)
+						if (detail.awardValue) awardValue = detail.awardValue
+						if (detail.awardDate) awardDate = detail.awardDate
+						if (detail.winners.length) winners = detail.winners
+						if (!summary.client && detail.buyer) {
+							summary.client = detail.buyer
+						}
 					}
+
+					if (awardDate) {
+						const awardDay = this.startOfDay(awardDate)
+						pageMinDate =
+							!pageMinDate || awardDay.getTime() < pageMinDate.getTime() ? awardDay : pageMinDate
+						pageMaxDate =
+							!pageMaxDate || awardDay.getTime() > pageMaxDate.getTime() ? awardDay : pageMaxDate
+
+						if (fromDate && awardDay < fromDate) {
+							await this.delay(perRowDelay)
+							continue
+						}
+						if (toDate && awardDay > toDate) {
+							await this.delay(perRowDelay)
+							continue
+						}
+					}
+
+					records.push({
+						portal: this.id,
+						tenderRef: summary.tenderRef || summary.title,
+						client: summary.client || 'Unknown',
+						title: summary.title,
+						awardDate: awardDate ?? undefined,
+						winners,
+						awardValue,
+						currency: 'QAR',
+						sourceUrl:
+							detailUrl || (summary.tenderHref ? new URL(summary.tenderHref, this.portalUrl).toString() : undefined)
+					})
+
+					await this.delay(perRowDelay)
 				}
 
-				if (awardDate) {
-					const awardDay = this.startOfDay(awardDate)
-					if (fromDate && awardDay < fromDate) {
-						await this.delay(perRowDelay)
-						continue
-					}
-					if (toDate && awardDay > toDate) {
-						await this.delay(perRowDelay)
-						continue
-					}
+				if (fromDate && pageMaxDate && pageMaxDate.getTime() < fromDate.getTime()) {
+					console.log(`[${this.id}] Reached awards older than fromDate on page ${pageNum}, stopping`)
+					break
 				}
 
-				records.push({
-					portal: this.id,
-					tenderRef: summary.tenderRef || summary.title,
-					buyer: summary.buyer || 'Unknown',
-					title: summary.title,
-					awardDate: awardDate ?? undefined,
-					winners,
-					awardValue,
-					currency: 'QAR',
-					sourceUrl: detailUrl || (summary.tenderHref ? new URL(summary.tenderHref, this.portalUrl).toString() : undefined)
-				})
-
-				await this.delay(perRowDelay)
+				pageNum += 1
 			}
 
 			await detailPage.close()
@@ -164,6 +189,11 @@ export class MonaqasatAdapter extends BaseAdapter {
 
 	private startOfDay(date: Date): Date {
 		return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+	}
+
+	private buildPagedUrl(path: string, pageNum: number): string {
+		const normalized = path.replace(/\/\d+$/, '')
+		return new URL(`${normalized}/${pageNum}`, this.portalUrl).toString()
 	}
 
 	private async parseTenderDetails(page: Page, detailUrl: string) {

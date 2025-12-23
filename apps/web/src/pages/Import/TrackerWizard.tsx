@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { Page } from '../../components/Page'
+import { ImportIssue } from '../../api/client'
+import { toast } from '../../utils/toast'
+import { getToken } from '../../utils/auth'
 
 type Step = 'upload' | 'map' | 'preview'
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
@@ -10,6 +13,7 @@ export default function TrackerWizard() {
 	const [headers, setHeaders] = useState<string[]>([])
 	const [rows, setRows] = useState<string[][]>([])
 	const [message, setMessage] = useState<string | null>(null)
+	const [issues, setIssues] = useState<ImportIssue[]>([])
 
 	function parseCsv(text: string) {
 		const lines = text.split(/\r?\n/).filter(Boolean)
@@ -33,15 +37,67 @@ export default function TrackerWizard() {
 		if (!file) return
 		const form = new FormData()
 		form.append('file', file)
-		await fetch(`${API_BASE}/import/tracker`, { method: 'POST', body: form })
-		setMessage('Import submitted')
+		try {
+			const token = getToken()
+			const res = await fetch(`${API_BASE}/import/tracker`, {
+				method: 'POST',
+				body: form,
+				headers: token ? { Authorization: `Bearer ${token}` } : undefined
+			})
+			if (!res.ok) throw new Error(await res.text())
+			const payload = await res.json()
+			setIssues(payload?.issues || [])
+			setMessage(
+				payload?.issues?.length
+					? `Import submitted with ${payload.issues.length} issues. Invalid values were left empty.`
+					: 'Import submitted with no issues.'
+			)
+		} catch (err: any) {
+			toast.error(err.message || 'Import failed')
+		}
 	}
+
+	const requiredColumns = [
+		'Sno',
+		'Customer',
+		'Tender Details',
+		'Description',
+		'Target Submission date',
+		'Submission Date',
+		'Notes',
+		'Status',
+		'Business Owner',
+		'Bid Owner',
+		'Tender Bond Readiness',
+		'Tender Value',
+		'Validity',
+		'Mode of Submission',
+		'Days left',
+		'Reformatted Date',
+		'Rank',
+		'N/A'
+	]
 
 	return (
 		<Page title="Tracker Import Wizard" subtitle="Upload CSV, confirm headers, and submit to import opportunities.">
 			{step === 'upload' && (
 				<div className="mt-4">
-					<input type="file" accept=".csv" onChange={onUpload} />
+					<div className="flex items-center gap-3 text-sm text-slate-600">
+						<input type="file" accept=".csv" onChange={onUpload} />
+						<a
+							className="text-blue-600 hover:underline"
+							href={`${API_BASE}/import/templates/tracker.csv`}
+							download
+						>
+							Download template
+						</a>
+						<span
+							className="cursor-help rounded-full border px-2 py-0.5 text-xs text-slate-600"
+							title={`Expected headers (from the example CSV): ${requiredColumns.join(', ')}`}
+						>
+							?
+						</span>
+					</div>
 				</div>
 			)}
 			{step === 'map' && (
@@ -89,6 +145,26 @@ export default function TrackerWizard() {
 							Import
 						</button>
 						{message && <p className="mt-2 text-sm text-green-700">{message}</p>}
+						{issues.length > 0 && (
+							<div className="mt-4 rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+								<p className="font-medium">Fields needing attention</p>
+								<p className="mt-1 text-amber-800">
+									Fix these in the opportunity details. They will disappear once updated.
+								</p>
+								<ul className="mt-2 space-y-2">
+									{issues.map(issue => (
+										<li key={issue.id} className="rounded border border-amber-200 bg-white p-2">
+											<p className="font-medium">
+												Row {issue.rowIndex} • {issue.columnName || issue.fieldName}
+											</p>
+											<p className="text-amber-800">
+												{issue.message} {issue.rawValue ? `(${issue.rawValue})` : ''}
+											</p>
+										</li>
+									))}
+								</ul>
+							</div>
+						)}
 					</div>
 				</div>
 			)}

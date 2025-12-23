@@ -3,17 +3,29 @@
 UI scope and behaviors:
 
 - Opportunity Kanban, timeline, list with filters/SLA indicators
+- Opportunities list shows countdown timer (dd:hh:mm) with circular progress ring and color thresholds
 - Opportunity overview shell with tabbed navigation across all workspaces
+- Opportunity overview allows selecting/add new business & bid owners, opening a modal to add users (name/email/type/role)
+- Opportunity summary fields are editable; stage progression is shown with a dropdown and visual indicator
 - Compliance Matrix editor preserving verbatim requirement text
 - Clarifications module with numbering and exports
 - Pricing workspace (BoQ, vendor quotes, guardrails, approvals)
+- Pricing workspace supports custom columns, formulas, templates, and a pricing pack worksheet
+- CSV import for compliance and clarifications (uses export schema)
 - Submission pack builder and audit trail
 - Outcome recording with reason codes
 - Attachment search across entities
+- Attachment download and AI extraction prompt (uses selected files as context)
 - SLA settings editor (warn/alert/urgent thresholds)
 - Holiday calendar and retention settings (admin configurable)
+- Timezone offset (UTC+3 default, admin configurable)
+- Import date format lock for tracker CSV (MDY/DMY/AUTO)
 - English and Arabic content support
 - Award staging can trigger Monaqasat collector with date range (from/to)
+- Available ministry tenders view with promote-to-opportunity action and purchase links
+- Future: AI/smart filtering for potential opportunities so only ITSQ-relevant tenders are surfaced
+- User management for ADMIN (create/edit/disable)
+- Tracker import issues list (invalid values left empty, resolved on update)
 
 ## Implemented Routes
 
@@ -23,16 +35,18 @@ UI scope and behaviors:
 | `/board` | Opportunities Kanban | Board grouped by stage with SLA badges |
 | `/timeline` | Timeline View | Ordered by submission date; SLA thresholds displayed |
 | `/import/tracker` | Tracker Import Wizard | CSV upload for bulk import |
-| `/opportunity/:id` | Opportunity Overview | Summary plus quick links to all tabs |
-| `/opportunity/:id/attachments` | Attachments Page | Upload/list attachments with hash/size |
+| `/opportunity/:id` | Opportunity Overview | Summary plus quick links to all tabs; shows unresolved import issues |
+| `/opportunity/:id/attachments` | Attachments Page | Upload/list/download attachments, run AI extraction |
 | `/opportunity/:id/compliance` | Compliance Matrix | Clause management with PDF import/CSV export |
 | `/opportunity/:id/clarifications` | Clarifications Q&A | Question numbering and response tracking |
-| `/opportunity/:id/pricing` | Pricing Workspace | BoQ items, vendor quotes, pack calculator |
+| `/opportunity/:id/pricing` | Pricing Workspace | BoQ items, vendor quotes, pack calculator, worksheet |
 | `/opportunity/:id/approvals` | Approvals Workflow | Legal→Finance→Executive approval chain |
 | `/opportunity/:id/submission` | Submission Pack Builder | Generate ZIP with manifest and checksum |
 | `/opportunity/:id/outcome` | Outcome Recording | Won/Lost/Withdrawn status with reason codes |
 | `/awards/staging` | Awards Staging | Review and curate collected awards |
 | `/awards/events` | Curated Awards | View curated award events |
+| `/tenders/available` | Available Tenders | List Monaqasat tenders and promote to opportunities |
+| `/admin/users` | Users | Admin user management |
 | `/search` | Attachment Search | Search attachments via `/search?q=` |
 | `/settings/sla` | SLA Settings | View/edit thresholds, holiday calendar, retention policy |
 | `/auth/callback` | Auth Callback | Handles OAuth redirect |
@@ -47,6 +61,7 @@ UI scope and behaviors:
 - React Router for navigation
 - TanStack Query for data fetching/caching
 - MSAL for Azure AD login (when `AUTH_PROVIDER=aad`)
+- Toast notifications for client-side error feedback
 
 ## Environment / Build
 
@@ -85,6 +100,8 @@ Each page follows a consistent pattern:
 - Grid layouts for form fields
 - Save/Cancel buttons for edit forms
 - Loading states during async operations
+- Client selector supports manual entry with datalist suggestions
+- Opportunity create supports submission date/time and source/method inputs
 
 ### Data Fetching
 - TanStack Query for all reads; mutations invalidate or refetch keys

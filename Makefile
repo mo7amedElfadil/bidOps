@@ -25,16 +25,16 @@ down:
 
 db-migrate:
 	@echo "Running Prisma migrations (API app)..."
-	@cd apps/api && pnpm prisma migrate deploy || true
+	@set -a; . ./.env; set +a; cd apps/api && pnpm prisma migrate deploy || true
 
 db-seed:
 	@echo "Seeding database (API app)..."
-	@cd apps/api && pnpm prisma db seed || true
+	@set -a; . ./.env; set +a; cd apps/api && pnpm prisma db seed || true
 	@echo "Tip: admin user seeded as admin@example.com (local auth); use /auth/dev-login"
 
 db-reset:
 	@echo "Resetting database (drop -> migrate -> seed)..."
-	@cd apps/api && pnpm prisma migrate reset --force || true
+	@set -a; . ./.env; set +a; cd apps/api && pnpm prisma migrate reset --force || true
 
 api-dev:
 	@cd apps/api && pnpm dev

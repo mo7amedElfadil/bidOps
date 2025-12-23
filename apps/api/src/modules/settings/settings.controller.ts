@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Put, Req, UseGuards } from '@nestjs/common'
 import { PrismaService } from '../../prisma/prisma.service'
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard'
 import { Roles } from '../../auth/roles.decorator'
@@ -6,6 +6,8 @@ import { Roles } from '../../auth/roles.decorator'
 const DEFAULTS = { warn: 7, alert: 3, urgent: 1 }
 const HOLIDAY_KEY = 'sla.holidays'
 const RETENTION_KEY = 'retention.years'
+const TIMEZONE_KEY = 'time.offsetHours'
+const IMPORT_DATE_KEY = 'import.dateFormat'
 
 @Controller('settings')
 @UseGuards(JwtAuthGuard)
@@ -93,5 +95,78 @@ export class SettingsController {
 		})
 		return { years }
 	}
-}
 
+	@Get('timezone')
+	async getTimezone() {
+		const row = await this.prisma.appSetting.findUnique({ where: { key: TIMEZONE_KEY } })
+		return { offsetHours: Number(row?.value ?? 3) }
+	}
+
+	@Put('timezone')
+	@Roles('ADMIN')
+	async setTimezone(@Body() body: { offsetHours?: number }) {
+		const offsetHours = Number(body.offsetHours ?? 3)
+		await this.prisma.appSetting.upsert({
+			where: { key: TIMEZONE_KEY },
+			update: { value: String(offsetHours) },
+			create: { key: TIMEZONE_KEY, value: String(offsetHours) }
+		})
+		return { offsetHours }
+	}
+
+	@Get('import-date-format')
+	async getImportDateFormat() {
+		const row = await this.prisma.appSetting.findUnique({ where: { key: IMPORT_DATE_KEY } })
+		const value = (row?.value || 'MDY').toUpperCase()
+		return { format: value === 'DMY' ? 'DMY' : value === 'AUTO' ? 'AUTO' : 'MDY' }
+	}
+
+	@Put('import-date-format')
+	@Roles('ADMIN')
+	async setImportDateFormat(@Body() body: { format?: string }) {
+		const raw = (body.format || 'MDY').toUpperCase()
+		const format = raw === 'DMY' ? 'DMY' : raw === 'AUTO' ? 'AUTO' : 'MDY'
+		await this.prisma.appSetting.upsert({
+			where: { key: IMPORT_DATE_KEY },
+			update: { value: format },
+			create: { key: IMPORT_DATE_KEY, value: format }
+		})
+		return { format }
+	}
+
+	@Get('fx-rates')
+	async listFxRates(@Req() req: any) {
+		const tenantId = req.user?.tenantId || 'default'
+		return this.prisma.fxRate.findMany({ where: { tenantId }, orderBy: [{ currency: 'asc' }] })
+	}
+
+	@Post('fx-rates')
+	@Roles('ADMIN')
+	async upsertFxRate(@Body() body: { currency: string; rateToQar: number }, @Req() req: any) {
+		const tenantId = req.user?.tenantId || 'default'
+		const currency = body.currency?.toUpperCase()
+		if (!currency) throw new BadRequestException('currency is required')
+		const rateToQar = Number(body.rateToQar)
+		return this.prisma.fxRate.upsert({
+			where: { currency_tenantId: { currency, tenantId } },
+			update: { rateToQar },
+			create: { currency, rateToQar, tenantId }
+		})
+	}
+
+	@Patch('fx-rates/:id')
+	@Roles('ADMIN')
+	async updateFxRate(@Param('id') id: string, @Body() body: { rateToQar?: number }) {
+		const rateToQar = Number(body.rateToQar)
+		return this.prisma.fxRate.update({
+			where: { id },
+			data: { rateToQar }
+		})
+	}
+
+	@Delete('fx-rates/:id')
+	@Roles('ADMIN')
+	async deleteFxRate(@Param('id') id: string) {
+		return this.prisma.fxRate.delete({ where: { id } })
+	}
+}

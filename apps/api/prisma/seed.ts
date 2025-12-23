@@ -103,7 +103,7 @@ async function main() {
 		data: {
 			portal: 'sample',
 			tenderRef: 'DEMO-001',
-			buyer: 'Ministry of Technology',
+			client: 'Ministry of Technology',
 			title: 'IT Infrastructure Upgrade Project',
 			awardDate: now,
 			winners: ['TechCorp Solutions LLC'],
@@ -125,4 +125,3 @@ main()
 	.finally(async () => {
 		await prisma.$disconnect()
 	})
-

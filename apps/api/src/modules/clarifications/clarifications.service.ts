@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, BadRequestException } from '@nestjs/common'
 import { PrismaService } from '../../prisma/prisma.service'
+import { parse } from 'csv-parse/sync'
 
 @Injectable()
 export class ClarificationsService {
@@ -48,11 +49,30 @@ export class ClarificationsService {
 		}
 		return lines.join('\\n')
 	}
+
+	async importCsv(opportunityId: string, file: any) {
+		if (!file) throw new BadRequestException('file is required')
+		const text = file.buffer.toString('utf-8')
+		const records = parse(text, { columns: true, skip_empty_lines: true, trim: true })
+		const createData = (records as any[]).map((row, index) => ({
+			opportunityId,
+			questionNo: row['QuestionNo']?.toString()?.trim() || String(index + 1),
+			text: row['Text']?.toString()?.trim() || '',
+			status: row['Status']?.toString()?.trim() || undefined,
+			submittedOn: row['SubmittedOn'] ? new Date(row['SubmittedOn']) : undefined,
+			responseOn: row['ResponseOn'] ? new Date(row['ResponseOn']) : undefined,
+			responseText: row['ResponseText']?.toString()?.trim() || undefined
+		})).filter(row => row.text)
+		if (!createData.length) {
+			throw new BadRequestException('No valid clarification rows found in CSV')
+		}
+		await this.prisma.clarification.createMany({ data: createData })
+		return { created: createData.length }
+	}
 }
 
 function esc(s: string) {
 	if (s.includes(',') || s.includes('"') || s.includes('\\n')) return '"' + s.replace(/"/g, '""') + '"'
 	return s
 }
-
 

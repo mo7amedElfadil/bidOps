@@ -12,6 +12,8 @@ import SubmissionPage from './pages/Submission/Index'
 import OutcomePage from './pages/Outcome/Index'
 import AwardsStagingPage from './pages/Awards/Staging'
 import AwardsEventsPage from './pages/Awards/Events'
+import AvailableTendersPage from './pages/Tenders/Available'
+import UsersPage from './pages/Admin/Users'
 import Callback from './pages/Auth/Callback'
 import DevLogin from './pages/Auth/DevLogin'
 import Layout from './components/Layout'
@@ -49,8 +51,10 @@ const router = createBrowserRouter([
 					{ path: '/opportunity/:id/outcome', element: <OutcomePage /> },
 					{ path: '/awards/staging', element: <AwardsStagingPage /> },
 					{ path: '/awards/events', element: <AwardsEventsPage /> },
+					{ path: '/tenders/available', element: <AvailableTendersPage /> },
 					{ path: '/search', element: <AttachmentSearchPage /> },
-					{ path: '/settings/sla', element: <SlaSettingsPage /> }
+					{ path: '/settings/sla', element: <SlaSettingsPage /> },
+					{ path: '/admin/users', element: <UsersPage /> }
 				]
 			}
 		]

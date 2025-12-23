@@ -49,9 +49,29 @@
   * Collectors: Monaqasat adapter now parses awarded tenders list and tender details for winners/award value
   * Collectors: Monaqasat adapter forces English locale and captures buyer names from details
   * Collectors: Added HTTP server to trigger runs with date range; UI supports manual trigger
-  * Collectors: Deduplication by portal+tenderRef (delete+insert)
+  * Collectors: In-memory dedupe per run; staging cleanup for duplicate `portal+tenderRef`; delete+insert by `portal+tenderRef` (or `portal+sourceUrl` when missing)
+  * Collectors: Available ministry tenders adapter and collector endpoint; records stored in `MinistryTender`
+  * Opportunities: Create supports manual client input (datalist) and clientName upsert
+  * Awards staging list supports date range filtering
+  * Web: Available tenders page with promote-to-opportunity action and purchase link
+  * API: Available tenders module (list/create/update/delete/promote/collect)
+  * Users: Admin user management API + UI (create/edit/disable)
+  * Opportunities: Submission date/time + source/method inputs; countdown ring in list
+  * Opportunities: Overview header uses client name; summary fields editable; stage progression indicator
+  * Compliance & Clarifications: CSV import endpoints and UI actions
+  * Pricing: Pack worksheet rows, custom columns, formulas, and templates (global/opportunity)
+  * Settings: FX rates table (base QAR) with live conversion in pricing
+  * Attachments: Download support and AI extraction flow for compliance/clarifications/proposal drafts
+  * Pagination: Opportunities, awards, tenders, attachments, clients, users
+  * Frontend: Toast notifications for API errors
+  * Settings: Timezone offset (UTC+3 default) configurable by admins
   * Dev ops: Monitoring services moved behind compose profile; added `make up-monitoring`
   * API: Fixed AuditInterceptor bootstrap crash; API now starts in Docker
+  * Tracker import issues: invalid values recorded as ImportIssue rows and shown in import wizard + opportunity overview; cleared on update
+  * Tracker import: date parsing avoids month overflow; bid owners linked to users with missing users flagged
+  * Settings: import date format lock (MDY/DMY/AUTO) and temp user creation for missing owners
+  * Opportunities: bid owner reassignment endpoint and UI selectors for owners
+  * Opportunities: overview now allows creating new users (name/email/type/role) via modal for owner assignment
 * Next:
   * Rate limiting defaults + security headers docs (hardening sweep)
   * Validate Monaqasat adapter against live pages; add edge-case handling

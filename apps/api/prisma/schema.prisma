@@ -14,6 +14,16 @@ enum Role {
   VIEWER
 }
 
+enum PricingWorkspace {
+  BOQ
+  PACK
+}
+
+enum PricingTemplateScope {
+  GLOBAL
+  OPPORTUNITY
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -21,10 +31,13 @@ model User {
   role      Role     @default(VIEWER)
   team      String?
   passwordHash String?
+  isActive  Boolean  @default(true)
+  userType  String   @default("INTERNAL")
   tenantId  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   opportunities Opportunity[] @relation("OwnerOpps")
+  bidOwnerLinks OpportunityBidOwner[]
 }
 
 model Client {
@@ -44,6 +57,8 @@ model Opportunity {
   id             String   @id @default(uuid())
   clientId       String
   ownerId        String?
+  boqTemplateId  String?
+  packTemplateId String?
   tenderRef      String?
   title          String
   description    String?
@@ -65,12 +80,32 @@ model Opportunity {
 
   client Client @relation(fields: [clientId], references: [id])
   owner  User?  @relation("OwnerOpps", fields: [ownerId], references: [id])
+  bidOwners OpportunityBidOwner[]
+  boqTemplate  PricingTemplate? @relation("BoqTemplate", fields: [boqTemplateId], references: [id])
+  packTemplate PricingTemplate? @relation("PackTemplate", fields: [packTemplateId], references: [id])
+  pricingTemplates PricingTemplate[] @relation("TemplateOwner")
   boqItems        BoQItem[]
   vendorQuotes    VendorQuote[]
   pricingPacks    PricingPack[]
+  pricingPackRows PricingPackRow[]
+  proposalSections ProposalSection[]
   outcomes        Outcome[]
   complianceClauses ComplianceClause[]
   clarifications  Clarification[]
+  importIssues    ImportIssue[]
+}
+
+model OpportunityBidOwner {
+  id            String   @id @default(uuid())
+  opportunityId String
+  userId        String
+  createdAt     DateTime @default(now())
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
+
+  @@unique([opportunityId, userId])
+  @@index([userId])
 }
 
 model BoQItem {
@@ -84,8 +119,10 @@ model BoQItem {
   oem           String?
   sku           String?
   unitCost      Float    @default(0)
+  unitCurrency  String   @default("QAR")
   markup        Float    @default(0) // e.g., 0.15 for 15%
   unitPrice     Float    @default(0)
+  customFields  Json?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -125,6 +162,85 @@ model PricingPack {
   opportunity Opportunity @relation(fields: [opportunityId], references: [id])
   approvals   Approval[]
   @@index([opportunityId])
+}
+
+model PricingPackRow {
+  id            String   @id @default(uuid())
+  opportunityId String
+  lineNo        Int
+  description   String
+  qty           Float    @default(1)
+  unit          String?
+  unitCost      Float    @default(0)
+  unitCurrency  String   @default("QAR")
+  customFields  Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+  @@index([opportunityId])
+}
+
+model PricingTemplate {
+  id            String   @id @default(uuid())
+  name          String
+  workspace     PricingWorkspace
+  scope         PricingTemplateScope @default(GLOBAL)
+  columns       Json
+  tenantId      String   @default("default")
+  opportunityId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  opportunity   Opportunity? @relation("TemplateOwner", fields: [opportunityId], references: [id])
+  boqOpportunities  Opportunity[] @relation("BoqTemplate")
+  packOpportunities Opportunity[] @relation("PackTemplate")
+  @@index([tenantId])
+}
+
+model FxRate {
+  id        String   @id @default(uuid())
+  currency  String
+  rateToQar Float
+  tenantId  String   @default("default")
+  updatedAt DateTime @updatedAt
+
+  @@unique([currency, tenantId])
+  @@index([tenantId])
+}
+
+model ProposalSection {
+  id            String   @id @default(uuid())
+  opportunityId String
+  sectionNo     String?
+  title         String
+  content       String
+  sourcePrompt  String?
+  sourceAttachments String[]
+  provider      String?
+  model         String?
+  meta          Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+  @@index([opportunityId])
+}
+
+model ImportIssue {
+  id            String   @id @default(uuid())
+  opportunityId String
+  fieldName     String
+  columnName    String?
+  rowIndex      Int
+  rawValue      String?
+  message       String
+  resolvedAt    DateTime?
+  createdAt     DateTime @default(now())
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+  @@index([opportunityId])
+  @@index([fieldName])
 }
 
 enum ApprovalType {
@@ -182,7 +298,7 @@ model AwardStaging {
   id            String   @id @default(uuid())
   portal        String
   tenderRef     String?
-  buyer         String?
+  client        String?
   title         String?
   closeDate     DateTime?
   awardDate     DateTime?
@@ -200,7 +316,7 @@ model AwardEvent {
   id         String   @id @default(uuid())
   portal     String
   tenderRef  String?
-  buyer      String?
+  client     String?
   title      String?
   awardDate  DateTime?
   winners    String[]
@@ -208,6 +324,31 @@ model AwardEvent {
   codes      String[]
   sourceUrl  String?
   createdAt  DateTime @default(now())
+}
+
+model MinistryTender {
+  id                  String   @id @default(uuid())
+  portal              String
+  tenderRef           String?
+  title               String?
+  ministry            String?
+  publishDate         DateTime?
+  closeDate           DateTime?
+  requestedSectorType String?
+  tenderBondValue     Float?
+  documentsValue      Float?
+  tenderType          String?
+  purchaseUrl         String?
+  sourceUrl           String?
+  status              String?
+  tenantId            String   @default("default")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([portal])
+  @@index([tenderRef])
+  @@unique([portal, tenderRef])
+  @@unique([portal, sourceUrl])
 }
 
 model Attachment {
@@ -287,5 +428,3 @@ model Notification {
   createdAt  DateTime @default(now())
   sentAt     DateTime?
 }
-
-

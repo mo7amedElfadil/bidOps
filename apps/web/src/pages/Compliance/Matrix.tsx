@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import { OpportunityShell } from '../../components/OpportunityShell'
 import { getToken } from '../../utils/auth'
+import { downloadWithAuth } from '../../utils/download'
 
 type Clause = {
 	id: string
@@ -50,6 +51,22 @@ export default function ComplianceMatrix() {
 		onSuccess: () => list.refetch()
 	})
 
+	const importCsvMutation = useMutation({
+		mutationFn: async (file: File) => {
+			const fd = new FormData()
+			fd.append('file', file)
+			const token = getToken()
+			const res = await fetch(`${API}/compliance/${id}/import.csv`, {
+				method: 'POST',
+				headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+				body: fd
+			})
+			if (!res.ok) throw new Error(await res.text())
+			return res.json()
+		},
+		onSuccess: () => list.refetch()
+	})
+
 	const saveRow = useMutation({
 		mutationFn: async (r: Clause) => {
 			const token = getToken()
@@ -84,17 +101,28 @@ export default function ComplianceMatrix() {
 							if (f) importMutation.mutate(f)
 						}}
 					/>
-					<a
+					<input
+						type="file"
+						accept=".csv"
+						onChange={e => {
+							const f = e.target.files?.[0]
+							if (f) importCsvMutation.mutate(f)
+						}}
+					/>
+					<button
 						className="rounded bg-gray-700 px-3 py-1.5 text-white"
-						href={`${API}/compliance/${id}/export.csv`}
-						target="_blank"
-						rel="noreferrer"
+						onClick={() => downloadWithAuth(`${API}/compliance/${id}/export.csv`, `compliance-${id}.csv`)}
 					>
 						Export CSV
-					</a>
-					{importMutation.isPending && <span className="text-sm text-slate-600">Importing...</span>}
+					</button>
+					{(importMutation.isPending || importCsvMutation.isPending) && (
+						<span className="text-sm text-slate-600">Importing...</span>
+					)}
 					{importMutation.error && (
 						<span className="text-sm text-red-600">{(importMutation.error as Error).message}</span>
+					)}
+					{importCsvMutation.error && (
+						<span className="text-sm text-red-600">{(importCsvMutation.error as Error).message}</span>
 					)}
 				</div>
 
@@ -185,5 +213,3 @@ export default function ComplianceMatrix() {
 		</OpportunityShell>
 	)
 }
-
-

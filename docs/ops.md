@@ -279,3 +279,8 @@ Configure alerts in Grafana for:
 
 See `apps/api/example.env` for full list of API environment variables.
 See `apps/collectors/example.env` for collector-specific variables.
+
+AI (proposal extraction):
+- `AI_PROVIDER` = `openai|gemini` (default: openai)
+- `OPENAI_API_KEY`, `OPENAI_MODEL` (e.g., `gpt-4o-mini`)
+- `GEMINI_API_KEY`, `GEMINI_MODEL` (e.g., `gemini-1.5-flash`)

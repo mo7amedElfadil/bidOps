@@ -6,12 +6,12 @@ import { Page } from '../../components/Page'
 
 export default function Timeline() {
 	const opsQuery = useQuery({
-		queryKey: ['opportunities'],
-		queryFn: () => api.listOpportunities()
+		queryKey: ['opportunities', 'timeline'],
+		queryFn: () => api.listOpportunities({ page: 1, pageSize: 200 })
 	})
 	const slaQuery = useQuery({ queryKey: ['sla'], queryFn: api.getSlaSettings })
 
-	const ops = (opsQuery.data || []).slice().sort((a: Opportunity, b: Opportunity) => {
+	const ops = (opsQuery.data?.items || []).slice().sort((a: Opportunity, b: Opportunity) => {
 		const da = a.submissionDate ? new Date(a.submissionDate).getTime() : Infinity
 		const db = b.submissionDate ? new Date(b.submissionDate).getTime() : Infinity
 		return da - db
@@ -69,7 +69,7 @@ export default function Timeline() {
 										<div className="font-medium">{o.title}</div>
 										<div className="text-xs text-slate-600">Priority: {o.priorityRank ?? '—'}</div>
 									</td>
-									<td className="px-3 py-2">{o.clientId}</td>
+									<td className="px-3 py-2">{o.clientName || o.clientId || '-'}</td>
 									<td className="px-3 py-2">{o.stage || '—'}</td>
 									<td className="px-3 py-2">{o.status || '—'}</td>
 									<td className="px-3 py-2">
@@ -91,4 +91,3 @@ export default function Timeline() {
 		</Page>
 	)
 }
-

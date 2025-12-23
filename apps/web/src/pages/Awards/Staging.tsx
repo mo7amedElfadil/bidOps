@@ -4,6 +4,12 @@ import { api, AwardStaging } from '../../api/client'
 
 export default function AwardsStagingPage() {
 	const [rows, setRows] = useState<AwardStaging[]>([])
+	const [pagination, setPagination] = useState<{ page: number; pageSize: number; total: number }>({
+		page: 1,
+		pageSize: 25,
+		total: 0
+	})
+	const [pageInput, setPageInput] = useState('1')
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 	const [curating, setCurating] = useState<string | null>(null)
@@ -12,13 +18,36 @@ export default function AwardsStagingPage() {
 	const [running, setRunning] = useState(false)
 	const [runError, setRunError] = useState<string | null>(null)
 	const [runSummary, setRunSummary] = useState<string | null>(null)
+	const [editing, setEditing] = useState<AwardStaging | null>(null)
+	const [editForm, setEditForm] = useState({
+		tenderRef: '',
+		client: '',
+		title: '',
+		awardDate: '',
+		awardValue: '',
+		winners: '',
+		codes: '',
+		sourceUrl: '',
+		status: 'new'
+	})
+	const [saving, setSaving] = useState(false)
 
-	async function load() {
+	async function load(activeRange?: { from?: string; to?: string }, pageOverride?: number) {
 		setLoading(true)
 		setError(null)
 		try {
-			const data = await api.listAwardStaging()
-			setRows(data)
+			const statusFilter = filter.status !== 'all' ? filter.status : undefined
+			const data = await api.listAwardStaging({
+				fromDate: activeRange?.from || undefined,
+				toDate: activeRange?.to || undefined,
+				q: filter.q || undefined,
+				status: statusFilter,
+				page: pageOverride || pagination.page,
+				pageSize: pagination.pageSize
+			})
+			setRows(data.items)
+			setPagination({ page: data.page, pageSize: data.pageSize, total: data.total })
+			setPageInput(String(data.page))
 		} catch (e: any) {
 			setError(e.message || 'Failed to load staging awards')
 		}
@@ -28,17 +57,6 @@ export default function AwardsStagingPage() {
 	useEffect(() => {
 		load()
 	}, [])
-
-	const filtered = rows.filter(r => {
-		const matchesStatus = filter.status === 'all' || (r.status || 'new') === filter.status
-		const q = filter.q.toLowerCase()
-		const matchesQ =
-			!q ||
-			r.tenderRef?.toLowerCase().includes(q) ||
-			r.buyer?.toLowerCase().includes(q) ||
-			r.title?.toLowerCase().includes(q)
-		return matchesStatus && matchesQ
-	})
 
 	async function curate(id: string) {
 		setCurating(id)
@@ -50,6 +68,56 @@ export default function AwardsStagingPage() {
 			setError(e.message || 'Failed to curate record')
 		}
 		setCurating(null)
+	}
+
+	function openEdit(row: AwardStaging) {
+		setEditing(row)
+		setEditForm({
+			tenderRef: row.tenderRef || '',
+			client: row.client || '',
+			title: row.title || '',
+			awardDate: row.awardDate ? row.awardDate.slice(0, 10) : '',
+			awardValue: row.awardValue ? String(row.awardValue) : '',
+			winners: row.winners?.join(', ') || '',
+			codes: row.codes?.join(', ') || '',
+			sourceUrl: row.sourceUrl || '',
+			status: row.status || 'new'
+		})
+	}
+
+	async function saveEdit() {
+		if (!editing) return
+		setSaving(true)
+		setError(null)
+		try {
+			await api.updateAwardStaging(editing.id, {
+				tenderRef: editForm.tenderRef || undefined,
+				client: editForm.client || undefined,
+				title: editForm.title || undefined,
+				awardDate: editForm.awardDate || undefined,
+				awardValue: editForm.awardValue ? Number(editForm.awardValue) : undefined,
+				winners: editForm.winners.split(',').map(w => w.trim()).filter(Boolean),
+				codes: editForm.codes.split(',').map(c => c.trim()).filter(Boolean),
+				sourceUrl: editForm.sourceUrl || undefined,
+				status: editForm.status || undefined
+			})
+			await load({ from: range.from, to: range.to }, pagination.page)
+			setEditing(null)
+		} catch (e: any) {
+			setError(e.message || 'Failed to update record')
+		}
+		setSaving(false)
+	}
+
+	async function removeRow(id: string) {
+		if (!confirm('Delete this staging record?')) return
+		setError(null)
+		try {
+			await api.deleteAwardStaging(id)
+			await load({ from: range.from, to: range.to }, pagination.page)
+		} catch (e: any) {
+			setError(e.message || 'Failed to delete record')
+		}
 	}
 
 	async function runCollector() {
@@ -66,6 +134,7 @@ export default function AwardsStagingPage() {
 				setRunError((res as any).error)
 			} else {
 				setRunSummary('Collector run completed. Refresh to see new records.')
+				await load({ from: range.from, to: range.to }, 1)
 			}
 		} catch (e: any) {
 			setRunError(e.message || 'Collector run failed')
@@ -93,7 +162,7 @@ export default function AwardsStagingPage() {
 						</Link>
 						<button
 							className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200"
-							onClick={load}
+							onClick={() => load(undefined, pagination.page)}
 							disabled={loading}
 						>
 							Refresh
@@ -104,14 +173,25 @@ export default function AwardsStagingPage() {
 				<div className="mt-3 flex flex-wrap items-center gap-3">
 					<input
 						className="rounded border px-3 py-1.5 text-sm"
-						placeholder="Search buyer, title, tender ref"
+						placeholder="Search client, title, tender ref"
 						value={filter.q}
-						onChange={e => setFilter({ ...filter, q: e.target.value })}
+						onChange={e => {
+							setFilter({ ...filter, q: e.target.value })
+							setPagination(prev => ({ ...prev, page: 1 }))
+						}}
+						onKeyDown={e => {
+							if (e.key === 'Enter') {
+								load({ from: range.from, to: range.to }, 1)
+							}
+						}}
 					/>
 					<select
 						className="rounded border px-3 py-1.5 text-sm"
 						value={filter.status}
-						onChange={e => setFilter({ ...filter, status: e.target.value })}
+						onChange={e => {
+							setFilter({ ...filter, status: e.target.value })
+							setPagination(prev => ({ ...prev, page: 1 }))
+						}}
 					>
 						<option value="all">All</option>
 						<option value="new">new</option>
@@ -148,8 +228,25 @@ export default function AwardsStagingPage() {
 						>
 							{running ? 'Running...' : 'Run Monaqasat Collector'}
 						</button>
+						<button
+							className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
+							onClick={() => load({ from: range.from, to: range.to }, 1)}
+							disabled={loading}
+						>
+							Filter List
+						</button>
+						<button
+							className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200"
+							onClick={() => {
+								setRange({ from: '', to: '' })
+								load(undefined, 1)
+							}}
+							disabled={loading}
+						>
+							Clear Filter
+						</button>
 						<span className="text-xs text-slate-500">
-							Filters apply to award date. Leave empty to fetch recent awards.
+							Filters apply to award date. Use Filter List to apply to staging view.
 						</span>
 					</div>
 					{runError && <p className="mt-3 text-sm text-red-600">{runError}</p>}
@@ -159,7 +256,7 @@ export default function AwardsStagingPage() {
 				{error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 				{loading ? (
 					<p className="mt-4 text-sm text-slate-600">Loading...</p>
-				) : filtered.length === 0 ? (
+				) : rows.length === 0 ? (
 					<p className="mt-4 text-sm text-slate-600">No staging records found.</p>
 				) : (
 					<div className="mt-4 overflow-x-auto rounded border bg-white shadow-sm">
@@ -168,7 +265,7 @@ export default function AwardsStagingPage() {
 								<tr>
 									<th className="px-3 py-2 text-left">Portal</th>
 									<th className="px-3 py-2 text-left">Tender Ref</th>
-									<th className="px-3 py-2 text-left">Buyer</th>
+									<th className="px-3 py-2 text-left">Client</th>
 									<th className="px-3 py-2 text-left">Title</th>
 									<th className="px-3 py-2 text-left">Codes</th>
 									<th className="px-3 py-2 text-left">Award Date</th>
@@ -180,11 +277,11 @@ export default function AwardsStagingPage() {
 								</tr>
 							</thead>
 							<tbody>
-								{filtered.map(r => (
+								{rows.map(r => (
 									<tr key={r.id} className="border-t align-top">
 										<td className="px-3 py-2 font-mono text-xs">{r.portal}</td>
 										<td className="px-3 py-2 font-mono text-xs">{r.tenderRef || '-'}</td>
-										<td className="px-3 py-2">{r.buyer || '-'}</td>
+										<td className="px-3 py-2">{r.client || '-'}</td>
 										<td className="px-3 py-2 max-w-sm whitespace-pre-wrap">{r.title || '-'}</td>
 										<td className="px-3 py-2 text-xs">{r.codes?.join(', ') || '-'}</td>
 										<td className="px-3 py-2">{r.awardDate?.slice(0, 10) || '-'}</td>
@@ -194,7 +291,12 @@ export default function AwardsStagingPage() {
 										</td>
 										<td className="px-3 py-2 text-xs">
 											{r.sourceUrl ? (
-												<a className="text-blue-600 hover:underline" href={r.sourceUrl} target="_blank" rel="noreferrer">
+												<a
+													className="text-blue-600 hover:underline"
+													href={r.sourceUrl}
+													target="_blank"
+													rel="noreferrer"
+												>
 													Link
 												</a>
 											) : (
@@ -205,13 +307,27 @@ export default function AwardsStagingPage() {
 											<span className="rounded bg-slate-100 px-2 py-0.5 text-xs">{r.status || 'new'}</span>
 										</td>
 										<td className="px-3 py-2 text-right">
-											<button
-												className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700 disabled:opacity-50"
-												onClick={() => curate(r.id)}
-												disabled={curating === r.id}
-											>
-												{curating === r.id ? 'Curating...' : 'Curate'}
-											</button>
+											<div className="flex justify-end gap-2">
+												<button
+													className="rounded bg-slate-200 px-2 py-1 text-xs hover:bg-slate-300"
+													onClick={() => openEdit(r)}
+												>
+													Edit
+												</button>
+												<button
+													className="rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-700 disabled:opacity-50"
+													onClick={() => curate(r.id)}
+													disabled={curating === r.id}
+												>
+													{curating === r.id ? 'Curating...' : 'Curate'}
+												</button>
+												<button
+													className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700"
+													onClick={() => removeRow(r.id)}
+												>
+													Delete
+												</button>
+											</div>
 										</td>
 									</tr>
 								))}
@@ -219,7 +335,166 @@ export default function AwardsStagingPage() {
 						</table>
 					</div>
 				)}
+				{pagination.total > 0 && (
+					<div className="mt-4 flex items-center justify-between text-sm text-slate-600">
+						<span>
+							Page {pagination.page} of {Math.max(1, Math.ceil(pagination.total / pagination.pageSize))}
+						</span>
+						<div className="flex flex-wrap items-center gap-2">
+							<div className="flex items-center gap-2">
+								<span className="text-xs text-slate-500">Go to</span>
+								<input
+									type="number"
+									min={1}
+									max={Math.max(1, Math.ceil(pagination.total / pagination.pageSize))}
+									className="w-20 rounded border px-2 py-1 text-sm"
+									value={pageInput}
+									onChange={e => setPageInput(e.target.value)}
+									onKeyDown={e => {
+										if (e.key === 'Enter') {
+											const maxPage = Math.max(1, Math.ceil(pagination.total / pagination.pageSize))
+											const nextPage = Math.min(maxPage, Math.max(1, Number(pageInput || 1)))
+											load({ from: range.from, to: range.to }, nextPage)
+										}
+									}}
+								/>
+								<button
+									className="rounded bg-slate-100 px-2 py-1 text-xs hover:bg-slate-200 disabled:opacity-50"
+									onClick={() => {
+										const maxPage = Math.max(1, Math.ceil(pagination.total / pagination.pageSize))
+										const nextPage = Math.min(maxPage, Math.max(1, Number(pageInput || 1)))
+										load({ from: range.from, to: range.to }, nextPage)
+									}}
+									disabled={loading}
+								>
+									Go
+								</button>
+							</div>
+							<button
+								className="rounded bg-slate-100 px-3 py-1.5 hover:bg-slate-200 disabled:opacity-50"
+								onClick={() => load({ from: range.from, to: range.to }, Math.max(1, pagination.page - 1))}
+								disabled={pagination.page <= 1}
+							>
+								Prev
+							</button>
+							<button
+								className="rounded bg-slate-100 px-3 py-1.5 hover:bg-slate-200 disabled:opacity-50"
+								onClick={() => {
+									const maxPage = Math.ceil(pagination.total / pagination.pageSize)
+									load({ from: range.from, to: range.to }, Math.min(maxPage, pagination.page + 1))
+								}}
+								disabled={pagination.page >= Math.ceil(pagination.total / pagination.pageSize)}
+							>
+								Next
+							</button>
+						</div>
+					</div>
+				)}
 			</div>
+			{editing && (
+				<div className="fixed inset-0 z-10 flex items-center justify-center bg-black/30 p-4">
+					<div className="w-full max-w-xl rounded border bg-white p-5 shadow-lg">
+						<h2 className="text-lg font-semibold">Edit Staging Record</h2>
+						<div className="mt-3 grid gap-3">
+							<label className="text-sm">
+								<span className="font-medium">Tender Ref</span>
+								<input
+									className="mt-1 w-full rounded border px-3 py-2"
+									value={editForm.tenderRef}
+									onChange={e => setEditForm({ ...editForm, tenderRef: e.target.value })}
+								/>
+							</label>
+							<label className="text-sm">
+								<span className="font-medium">Client</span>
+								<input
+									className="mt-1 w-full rounded border px-3 py-2"
+									value={editForm.client}
+									onChange={e => setEditForm({ ...editForm, client: e.target.value })}
+								/>
+							</label>
+							<label className="text-sm">
+								<span className="font-medium">Title</span>
+								<input
+									className="mt-1 w-full rounded border px-3 py-2"
+									value={editForm.title}
+									onChange={e => setEditForm({ ...editForm, title: e.target.value })}
+								/>
+							</label>
+							<div className="grid gap-3 md:grid-cols-2">
+								<label className="text-sm">
+									<span className="font-medium">Award Date</span>
+									<input
+										type="date"
+										className="mt-1 w-full rounded border px-3 py-2"
+										value={editForm.awardDate}
+										onChange={e => setEditForm({ ...editForm, awardDate: e.target.value })}
+									/>
+								</label>
+								<label className="text-sm">
+									<span className="font-medium">Award Value</span>
+									<input
+										className="mt-1 w-full rounded border px-3 py-2"
+										value={editForm.awardValue}
+										onChange={e => setEditForm({ ...editForm, awardValue: e.target.value })}
+									/>
+								</label>
+							</div>
+							<label className="text-sm">
+								<span className="font-medium">Winners (comma separated)</span>
+								<input
+									className="mt-1 w-full rounded border px-3 py-2"
+									value={editForm.winners}
+									onChange={e => setEditForm({ ...editForm, winners: e.target.value })}
+								/>
+							</label>
+							<label className="text-sm">
+								<span className="font-medium">Codes (comma separated)</span>
+								<input
+									className="mt-1 w-full rounded border px-3 py-2"
+									value={editForm.codes}
+									onChange={e => setEditForm({ ...editForm, codes: e.target.value })}
+								/>
+							</label>
+							<label className="text-sm">
+								<span className="font-medium">Source URL</span>
+								<input
+									className="mt-1 w-full rounded border px-3 py-2"
+									value={editForm.sourceUrl}
+									onChange={e => setEditForm({ ...editForm, sourceUrl: e.target.value })}
+								/>
+							</label>
+							<label className="text-sm">
+								<span className="font-medium">Status</span>
+								<select
+									className="mt-1 w-full rounded border px-3 py-2"
+									value={editForm.status}
+									onChange={e => setEditForm({ ...editForm, status: e.target.value })}
+								>
+									<option value="new">new</option>
+									<option value="parsed">parsed</option>
+									<option value="curated">curated</option>
+								</select>
+							</label>
+						</div>
+						<div className="mt-4 flex justify-end gap-2">
+							<button
+								className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
+								onClick={() => setEditing(null)}
+								disabled={saving}
+							>
+								Cancel
+							</button>
+							<button
+								className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+								onClick={saveEdit}
+								disabled={saving}
+							>
+								{saving ? 'Saving...' : 'Save'}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	)
 }

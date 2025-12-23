@@ -41,7 +41,7 @@ export function OpportunityShell({ active, children }: { active: TabKey; childre
 					</Link>
 					<h1 className="mt-1 text-xl font-semibold">{data?.title || 'Opportunity'}</h1>
 					<p className="text-sm text-slate-600">
-						Client: {data?.clientId || '—'} • Stage: {data?.stage || '—'} • Status: {data?.status || '—'}
+						Client: {data?.clientName || '—'}
 					</p>
 				</div>
 				<div className="flex items-center gap-2 text-sm">
@@ -78,4 +78,3 @@ export function OpportunityShell({ active, children }: { active: TabKey; childre
 		</div>
 	)
 }
-

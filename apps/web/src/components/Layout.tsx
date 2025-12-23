@@ -1,12 +1,15 @@
 import React from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { clearToken, getToken } from '../utils/auth'
+import Toasts from './Toasts'
 
 const links = [
 	{ to: '/', label: 'Opportunities' },
 	{ to: '/board', label: 'Kanban' },
 	{ to: '/timeline', label: 'Timeline' },
 	{ to: '/awards/staging', label: 'Awards' },
+	{ to: '/tenders/available', label: 'Tenders' },
+	{ to: '/admin/users', label: 'Users' },
 	{ to: '/search', label: 'Search' },
 	{ to: '/settings/sla', label: 'SLA' }
 ]
@@ -23,6 +26,7 @@ export default function Layout() {
 
 	return (
 		<div className="min-h-screen bg-slate-50 text-slate-900">
+			<Toasts />
 			<header className="border-b bg-white">
 				<div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
 					<div className="flex items-center gap-4">
@@ -72,4 +76,3 @@ export default function Layout() {
 		</div>
 	)
 }
-

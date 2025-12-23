@@ -15,10 +15,10 @@ Parser notes:
 Endpoints
 - GET `/compliance/:opportunityId`
 - POST `/compliance/:opportunityId/import` (multipart pdf)
+- POST `/compliance/:opportunityId/import.csv` (multipart csv)
 - PATCH `/compliance/:id`
 - GET `/compliance/:opportunityId/export.csv`
 
 UI
 - Matrix grid at `/opportunity/:id/compliance` with export
-
 

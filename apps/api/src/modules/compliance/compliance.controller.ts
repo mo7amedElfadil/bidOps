@@ -24,6 +24,14 @@ export class ComplianceController {
 		return this.svc.importPdf(opportunityId, file)
 	}
 
+	@Post(':opportunityId/import.csv')
+	@UseInterceptors(FileInterceptor('file'))
+	@Roles('MANAGER','ADMIN','CONTRIBUTOR')
+	importCsv(@Param('opportunityId') opportunityId: string, @UploadedFile() file: any, @Req() req: any) {
+		this.tenants.ensureOpportunityAccess(opportunityId, req.user?.tenantId || 'default')
+		return this.svc.importCsv(opportunityId, file)
+	}
+
 	@Patch(':id')
 	@Roles('MANAGER','ADMIN','CONTRIBUTOR')
 	update(@Param('id') id: string, @Body() body: any) {
@@ -39,5 +47,4 @@ export class ComplianceController {
 		res.send(csv)
 	}
 }
-
 
