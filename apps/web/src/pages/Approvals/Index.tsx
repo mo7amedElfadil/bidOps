@@ -22,7 +22,7 @@ export default function ApprovalsPage() {
 	})
 
 	const bootstrap = useMutation({
-		mutationFn: () => api.bootstrapApprovals(pack.data?.id || ''),
+		mutationFn: (packId: string) => api.bootstrapApprovals(packId),
 		onSuccess: data => qc.setQueryData(['approvals', id], data)
 	})
 
@@ -83,10 +83,10 @@ export default function ApprovalsPage() {
 						<div className="mt-6">
 							<div className="flex items-center justify-between">
 								<h2 className="font-semibold">Approval Chain</h2>
-								{(approvals.data?.length || 0) === 0 && (
+								{(approvals.data?.length || 0) === 0 && pack.data?.id && (
 									<button
 										className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-										onClick={() => bootstrap.mutate()}
+										onClick={() => bootstrap.mutate(pack.data.id)}
 										disabled={bootstrap.isPending}
 									>
 										{bootstrap.isPending ? 'Creating...' : 'Start Approval Process'}
@@ -184,4 +184,3 @@ export default function ApprovalsPage() {
 		</OpportunityShell>
 	)
 }
-

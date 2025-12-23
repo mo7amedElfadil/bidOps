@@ -122,7 +122,6 @@ export default function Timeline() {
 		link.download = `bidops-timeline-${new Date().toISOString().slice(0, 10)}.png`
 		link.click()
 	}
-	const [columnWidth, setColumnWidth] = useState(60)
 
 	const handleClick = (task: Task) => navigate(`/opportunity/${task.id}`)
 	const wrapStyles = `
