@@ -15,6 +15,11 @@ export class ApprovalsController {
 		return this.svc.list(packId)
 	}
 
+	@Get('review')
+	review(@Req() req: any) {
+		return this.svc.reviewOverview(req.user?.tenantId || 'default')
+	}
+
 	@Post(':packId/bootstrap')
 	@Roles('MANAGER','ADMIN')
 	bootstrap(@Param('packId') packId: string, @Body() body: any, @Req() req: any) {
@@ -28,5 +33,12 @@ export class ApprovalsController {
 	decision(@Param('id') id: string, @Body() body: { status: 'APPROVED'|'REJECTED'; remarks?: string }, @Req() req: any) {
 		const user = req.user
 		return this.svc.decision(id, user.id || 'unknown', user.role || 'VIEWER', body)
+	}
+
+	@Post(':packId/finalize')
+	@Roles('MANAGER','ADMIN')
+	finalize(@Param('packId') packId: string, @Req() req: any) {
+		this.tenants.ensurePackAccess(packId, req.user?.tenantId || 'default')
+		return this.svc.finalize(packId, req.user?.tenantId || 'default')
 	}
 }

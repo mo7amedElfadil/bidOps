@@ -8,6 +8,20 @@ const HOLIDAY_KEY = 'sla.holidays'
 const RETENTION_KEY = 'retention.years'
 const TIMEZONE_KEY = 'time.offsetHours'
 const IMPORT_DATE_KEY = 'import.dateFormat'
+const STAGE_KEY = 'opportunity.stages'
+const STATUS_KEY = 'opportunity.statuses'
+const DEFAULT_STAGES = [
+	'Sourcing',
+	'Qualification',
+	'Purchase',
+	'Elaboration',
+	'Pricing & Approvals',
+	'Submission',
+	'Evaluation',
+	'Outcome',
+	'Closeout'
+]
+const DEFAULT_STATUSES = ['Open', 'Submitted', 'Won', 'Lost', 'Withdrawn', 'Cancelled']
 
 @Controller('settings')
 @UseGuards(JwtAuthGuard)
@@ -112,6 +126,58 @@ export class SettingsController {
 			create: { key: TIMEZONE_KEY, value: String(offsetHours) }
 		})
 		return { offsetHours }
+	}
+
+	@Get('opportunity/stages')
+	async getOpportunityStages() {
+		const stages = await this.getList(STAGE_KEY, DEFAULT_STAGES)
+		return { stages }
+	}
+
+	@Put('opportunity/stages')
+	@Roles('ADMIN','MANAGER')
+	async setOpportunityStages(@Body() body: { stages?: string[] }) {
+		const stages = this.cleanList(body.stages ?? [], DEFAULT_STAGES)
+		await this.prisma.appSetting.upsert({
+			where: { key: STAGE_KEY },
+			update: { value: JSON.stringify(stages) },
+			create: { key: STAGE_KEY, value: JSON.stringify(stages) }
+		})
+		return { stages }
+	}
+
+	@Get('opportunity/statuses')
+	async getOpportunityStatuses() {
+		const statuses = await this.getList(STATUS_KEY, DEFAULT_STATUSES)
+		return { statuses }
+	}
+
+	@Put('opportunity/statuses')
+	@Roles('ADMIN','MANAGER')
+	async setOpportunityStatuses(@Body() body: { statuses?: string[] }) {
+		const statuses = this.cleanList(body.statuses ?? [], DEFAULT_STATUSES)
+		await this.prisma.appSetting.upsert({
+			where: { key: STATUS_KEY },
+			update: { value: JSON.stringify(statuses) },
+			create: { key: STATUS_KEY, value: JSON.stringify(statuses) }
+		})
+		return { statuses }
+	}
+
+	private async getList(key: string, fallback: string[]) {
+		const row = await this.prisma.appSetting.findUnique({ where: { key } })
+		if (!row?.value) return fallback
+		try {
+			const parsed = JSON.parse(row.value)
+			return Array.isArray(parsed) ? parsed : fallback
+		} catch {
+			return fallback
+		}
+	}
+
+	private cleanList(values: string[], fallback: string[]) {
+		const cleaned = Array.from(new Set(values.map(v => (v || '').trim()).filter(Boolean)))
+		return cleaned.length ? cleaned : fallback
 	}
 
 	@Get('import-date-format')

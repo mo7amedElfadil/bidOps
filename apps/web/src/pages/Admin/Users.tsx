@@ -21,6 +21,18 @@ export default function UsersPage() {
 	})
 	const [saving, setSaving] = useState(false)
 	const [showCreate, setShowCreate] = useState(false)
+	const [selected, setSelected] = useState<Record<string, boolean>>({})
+	const [bulkDeleting, setBulkDeleting] = useState(false)
+
+	const toggleAll = (checked: boolean) => {
+		const map: Record<string, boolean> = {}
+		rows.forEach(user => {
+			map[user.id] = checked
+		})
+		setSelected(map)
+	}
+
+	const allSelected = rows.length > 0 && rows.every(user => selected[user.id])
 
 	async function load(pageOverride?: number) {
 		setLoading(true)
@@ -34,6 +46,7 @@ export default function UsersPage() {
 			setRows(data.items)
 			setPagination({ page: data.page, pageSize: data.pageSize, total: data.total })
 			setPageInput(String(data.page))
+			setSelected({})
 		} catch (e: any) {
 			setError(e.message || 'Failed to load users')
 		}
@@ -109,13 +122,31 @@ export default function UsersPage() {
 	}
 
 	async function removeUser(id: string) {
-		if (!confirm('Disable this user?')) return
+		if (!confirm('Delete this user? This cannot be undone.')) return
 		setError(null)
 		try {
 			await api.deleteUser(id)
 			await load(pagination.page)
 		} catch (e: any) {
-			setError(e.message || 'Failed to disable user')
+			setError(e.message || 'Failed to delete user')
+		}
+	}
+
+	async function removeSelectedUsers() {
+		const ids = Object.entries(selected)
+			.filter(([, checked]) => checked)
+			.map(([id]) => id)
+		if (!ids.length) return
+		if (!confirm(`Delete ${ids.length} selected user(s)? This cannot be undone.`)) return
+		setBulkDeleting(true)
+		setError(null)
+		try {
+			await api.deleteUsers(ids)
+			await load(pagination.page)
+		} catch (e: any) {
+			setError(e.message || 'Failed to delete users')
+		} finally {
+			setBulkDeleting(false)
 		}
 	}
 
@@ -127,7 +158,7 @@ export default function UsersPage() {
 						<h1 className="text-xl font-semibold">User Management</h1>
 						<p className="text-sm text-slate-600">Create, edit roles, and disable accounts.</p>
 					</div>
-					<div className="flex gap-2">
+					<div className="flex gap-2 items-center">
 						<button
 							className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200"
 							onClick={() => load(pagination.page)}
@@ -151,6 +182,13 @@ export default function UsersPage() {
 							}}
 						>
 							New User
+						</button>
+						<button
+							className="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700 disabled:opacity-50"
+							onClick={removeSelectedUsers}
+							disabled={bulkDeleting || !Object.values(selected).some(Boolean)}
+						>
+							{bulkDeleting ? 'Deleting…' : `Delete selected (${Object.values(selected).filter(Boolean).length})`}
 						</button>
 					</div>
 				</div>
@@ -183,20 +221,36 @@ export default function UsersPage() {
 					<div className="mt-4 overflow-x-auto rounded border bg-white shadow-sm">
 						<table className="min-w-full text-sm">
 							<thead className="bg-slate-100">
-								<tr>
-									<th className="px-3 py-2 text-left">Name</th>
+							<tr>
+								<th className="px-3 py-2 text-left">
+									<input
+										type="checkbox"
+										checked={allSelected}
+										onChange={e => toggleAll(e.target.checked)}
+									/>
+								</th>
+								<th className="px-3 py-2 text-left">Name</th>
 								<th className="px-3 py-2 text-left">Email</th>
 								<th className="px-3 py-2 text-left">Role</th>
 								<th className="px-3 py-2 text-left">Type</th>
 								<th className="px-3 py-2 text-left">Team</th>
 								<th className="px-3 py-2 text-left">Status</th>
 								<th className="px-3 py-2 text-left"></th>
-								</tr>
+							</tr>
 							</thead>
 							<tbody>
 								{rows.map(user => (
-									<tr key={user.id} className="border-t">
-										<td className="px-3 py-2">{user.name}</td>
+								<tr key={user.id} className="border-t">
+									<td className="px-3 py-2">
+										<input
+											type="checkbox"
+											checked={Boolean(selected[user.id])}
+											onChange={e =>
+												setSelected(prev => ({ ...prev, [user.id]: e.target.checked }))
+											}
+										/>
+									</td>
+									<td className="px-3 py-2">{user.name}</td>
 										<td className="px-3 py-2">{user.email}</td>
 										<td className="px-3 py-2">{user.role}</td>
 										<td className="px-3 py-2">{getUserTypeLabel(user.userType)}</td>
@@ -218,7 +272,7 @@ export default function UsersPage() {
 													className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700"
 													onClick={() => removeUser(user.id)}
 												>
-													Disable
+													Delete
 												</button>
 											</div>
 										</td>

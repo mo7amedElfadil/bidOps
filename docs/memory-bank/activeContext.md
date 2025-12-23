@@ -3,7 +3,7 @@
   - Built all remaining web UI pages (Clarifications, Pricing, Approvals, Submission, Outcomes)
   - Updated Opportunities List with navigation links to all opportunity sections
   - Storage abstraction completed (local/Azure toggle via STORAGE_PROVIDER)
-  - Pricing margin guardrail enforced via `PRICING_MIN_MARGIN`
+  - Pricing workspace uses a default 25% margin; users may override per item or pack
   - Observability: Prometheus + Grafana provisioning with BidOps overview dashboard
   - Collectors: Adapter framework with Sample adapter and Qatar Gov template (template only)
   - Awards UI: Staging and curated awards pages with edit/delete; staging list supports date filtering and pagination
@@ -14,14 +14,18 @@
   - Settings: FX rates table (base QAR) with live conversion used in pricing calculations
   - Attachments: Download endpoint + AI extraction (prompt + selected files) to draft compliance, clarifications, proposal sections
   - Tenders: Available ministry tenders collector + UI list with promote-to-opportunity action
+  - Tenders: Monaqasat available-tender adapter now walks pages until the requested date window (or `MONAQASAT_TENDER_MAX_PAGES`) so date-range filtering works like the award collector
   - Users: Admin user management module and UI
   - All API modules have tenant scoping and RBAC
   - Frontend refreshed with TanStack Query, protected layout/nav, opportunity overview shell, attachment search, SLA settings UI, and consistent opportunity tab headers
+  - Added `/approvals/review` review page that lists pricing packs, highlights approval statuses, and exposes the finalize action once all steps are approved
   - Tracker import issues tracked per opportunity; UI lists invalid cells and clears when corrected
   - Tracker import date parsing hardened (MM/DD vs DD/MM); bid owners parsed into user links with missing users flagged
   - Admin setting added to lock tracker import date format (MDY/DMY/AUTO); missing owners create temp users and issues
   - Opportunity overview now supports reassigning business owner and bid owners via user selectors
   - Opportunity overview now provides a modal to create new users (name/email/type/role) and assign them as owners
+  - Settings now allows editing stage and status picklists that feed opportunity dropdowns
+  - Tender collector endpoint now accepts `fromDate`/`toDate` so available tenders can be limited to a date window
 * Completed iterations:
   - M0: Foundations (monorepo, Docker, CI, schema, auth, storage) ✓
   - M1: Core Opportunities, SLA engine, document vault ✓

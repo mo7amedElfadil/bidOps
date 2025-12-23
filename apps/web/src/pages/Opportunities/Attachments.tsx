@@ -1,10 +1,13 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import UploadButton from '../../components/UploadButton'
 import { OpportunityShell } from '../../components/OpportunityShell'
 import { getToken } from '../../utils/auth'
 import { toast } from '../../utils/toast'
 import { api } from '../../api/client'
+import Button from '../../components/ui/Button'
+import Card from '../../components/ui/Card'
 
 type Row = {
 	id: string
@@ -128,12 +131,12 @@ export default function AttachmentsPage() {
 
 	return (
 		<OpportunityShell active="attachments">
-			<div className="p-4">
+			<div className="space-y-4 p-4">
 				<div className="flex flex-wrap items-center gap-3">
-					<input
-						type="file"
-						onChange={e => {
-							const f = e.target.files?.[0]
+					<UploadButton
+						label="Upload attachment"
+						onFile={files => {
+							const f = files?.[0]
 							if (f) upload.mutate(f)
 						}}
 					/>
@@ -145,16 +148,23 @@ export default function AttachmentsPage() {
 					)}
 				</div>
 
-				<div className="mt-6 rounded border bg-white p-4 shadow-sm">
-					<h3 className="text-sm font-semibold">AI Extraction</h3>
-					<p className="mt-1 text-xs text-slate-600">
-						Select attachments, enter a prompt, and generate compliance, clarifications, or proposal sections.
-					</p>
+				<Card>
+					<div className="flex flex-wrap items-center justify-between gap-3">
+						<div>
+							<h3 className="text-sm font-semibold">AI Extraction</h3>
+							<p className="text-xs text-slate-600">
+								Select attachments, enter a prompt, and generate compliance, clarifications, or proposal sections.
+							</p>
+						</div>
+						<Button size="sm" variant="primary" onClick={() => runAi.mutate()} disabled={runAi.isPending || !prompt.trim()}>
+							{runAi.isPending ? 'Running...' : 'Run Extraction'}
+						</Button>
+					</div>
 					<div className="mt-3 grid gap-3 md:grid-cols-3">
 						<label className="text-xs font-medium">
 							Provider
 							<select
-								className="mt-1 w-full rounded border p-2 text-sm"
+								className="mt-1 w-full rounded border border-slate-200 p-2 text-sm"
 								value={provider}
 								onChange={e => setProvider(e.target.value as 'openai' | 'gemini')}
 							>
@@ -165,7 +175,7 @@ export default function AttachmentsPage() {
 						<label className="text-xs font-medium md:col-span-2">
 							Prompt
 							<textarea
-								className="mt-1 min-h-[120px] w-full rounded border p-2 text-sm"
+								className="mt-1 min-h-[120px] w-full rounded border border-slate-200 p-2 text-sm"
 								value={prompt}
 								onChange={e => setPrompt(e.target.value)}
 								placeholder="Provide detailed guidance for the AI extraction..."
@@ -197,19 +207,12 @@ export default function AttachmentsPage() {
 							/>
 							Proposal Sections
 						</label>
-						<button
-							className="rounded bg-blue-600 px-3 py-1.5 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
-							onClick={() => runAi.mutate()}
-							disabled={runAi.isPending || !prompt.trim()}
-						>
-							{runAi.isPending ? 'Running...' : 'Run Extraction'}
-						</button>
 						{result && <span className="text-xs text-emerald-700">{result}</span>}
 					</div>
 					<p className="mt-2 text-xs text-slate-500">
 						Supported parsing: PDF, TXT, MD, CSV. Other formats are stored but may be skipped.
 					</p>
-				</div>
+				</Card>
 
 				{list.isLoading ? (
 					<p className="mt-4 text-sm text-slate-600">Loading attachments...</p>

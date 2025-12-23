@@ -195,8 +195,9 @@ export default function List() {
 							<th className="px-3 py-2 text-left">Business Owner</th>
 							<th className="px-3 py-2 text-left">Bid Owners</th>
 							<th className="px-3 py-2 text-left">Status</th>
-							<th className="px-3 py-2 text-left">Stage</th>
-							<th className="px-3 py-2 text-left">Due</th>
+    <th className="px-3 py-2 text-left">Stage</th>
+    <th className="px-3 py-2 text-left">Start</th>
+    <th className="px-3 py-2 text-left">Due</th>
 							<th className="px-3 py-2 text-left">SLA</th>
 							<th className="px-3 py-2 text-left">Actions</th>
 						</tr>
@@ -217,8 +218,13 @@ export default function List() {
 										: '-'}
 								</td>
 								<td className="px-3 py-2">{o.status || '-'}</td>
-								<td className="px-3 py-2">{o.stage || '-'}</td>
-								<td className="px-3 py-2">
+							<td className="px-3 py-2">{o.stage || '-'}</td>
+							<td className="px-3 py-2">
+								{o.startDate
+									? formatWithOffset(o.startDate, timezoneQuery.data?.offsetHours ?? 3)
+									: '-'}
+							</td>
+							<td className="px-3 py-2">
 									{o.submissionDate
 										? formatWithOffset(o.submissionDate, timezoneQuery.data?.offsetHours ?? 3)
 										: '-'}

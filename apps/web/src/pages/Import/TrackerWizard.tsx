@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import UploadButton from '../../components/UploadButton'
 import { Page } from '../../components/Page'
 import { ImportIssue } from '../../api/client'
 import { toast } from '../../utils/toast'
@@ -24,13 +25,14 @@ export default function TrackerWizard() {
 		setRows(body)
 	}
 
-	async function onUpload(e: React.ChangeEvent<HTMLInputElement>) {
-		const f = e.target.files?.[0]
+	function handleUpload(files: FileList | null) {
+		const f = files?.[0]
 		if (!f) return
 		setFile(f)
-		const text = await f.text()
-		parseCsv(text)
-		setStep('map')
+		f.text().then(text => {
+			parseCsv(text)
+			setStep('map')
+		})
 	}
 
 	async function submitImport() {
@@ -83,20 +85,7 @@ export default function TrackerWizard() {
 			{step === 'upload' && (
 				<div className="mt-4">
 					<div className="flex items-center gap-3 text-sm text-slate-600">
-						<input type="file" accept=".csv" onChange={onUpload} />
-						<a
-							className="text-blue-600 hover:underline"
-							href={`${API_BASE}/import/templates/tracker.csv`}
-							download
-						>
-							Download template
-						</a>
-						<span
-							className="cursor-help rounded-full border px-2 py-0.5 text-xs text-slate-600"
-							title={`Expected headers (from the example CSV): ${requiredColumns.join(', ')}`}
-						>
-							?
-						</span>
+						<UploadButton accept=".csv" label="Upload tracker CSV" onFile={handleUpload} />
 					</div>
 				</div>
 			)}
@@ -165,6 +154,12 @@ export default function TrackerWizard() {
 								</ul>
 							</div>
 						)}
+						<span
+							className="cursor-help rounded-full border px-2 py-0.5 text-xs text-slate-600"
+							title={`Expected headers (from the example CSV): ${requiredColumns.join(', ')}`}
+						>
+							?
+						</span>
 					</div>
 				</div>
 			)}

@@ -65,6 +65,7 @@ model Opportunity {
   sourcePortal   String?
   discoveryDate  DateTime?
   submissionDate DateTime?
+  startDate      DateTime?
   status         String?
   stage          String?
   priorityRank   Int?

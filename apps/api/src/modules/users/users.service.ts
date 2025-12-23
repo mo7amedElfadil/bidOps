@@ -92,7 +92,29 @@ export class UsersService {
 		return this.prisma.user.update({ where: { id }, data: updateData })
 	}
 
-	async disable(id: string) {
-		return this.prisma.user.update({ where: { id }, data: { isActive: false } })
+	async delete(id: string) {
+		await this.prisma.$transaction([
+			this.prisma.opportunity.updateMany({
+				where: { ownerId: id },
+				data: { ownerId: null }
+			}),
+			this.prisma.opportunityBidOwner.deleteMany({ where: { userId: id } })
+		])
+		return this.prisma.user.delete({ where: { id } })
+	}
+
+	async deleteMany(ids: string[]) {
+		if (!ids.length) {
+			return { deleted: 0 }
+		}
+		const [, , result] = await this.prisma.$transaction([
+			this.prisma.opportunity.updateMany({
+				where: { ownerId: { in: ids } },
+				data: { ownerId: null }
+			}),
+			this.prisma.opportunityBidOwner.deleteMany({ where: { userId: { in: ids } } }),
+			this.prisma.user.deleteMany({ where: { id: { in: ids } } })
+		])
+		return { deleted: result.count }
 	}
 }

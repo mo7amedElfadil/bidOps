@@ -22,6 +22,7 @@
     - Clarifications (Q&A) with add/edit/export
     - Pricing Workspace (BoQ items, vendor quotes, pack calculator)
     - Approvals workflow UI (bootstrap chain, approve/reject)
+    - Bid review page (`/approvals/review`) with pricing pack summaries, approval badges, and finalize action
     - Submission Pack Builder
     - Outcome Recording (Won/Lost/Withdrawn/Cancelled with reason codes)
   * API modules implemented:
@@ -38,7 +39,6 @@
     - Outcomes (record bid results)
     - Awards (staging, curation, events)
     - Analytics (CSV exports for opportunities and awards)
-  * Pricing guardrails: minimum margin enforced via `PRICING_MIN_MARGIN`
   * Observability: Prometheus + Grafana provisioning with BidOps overview dashboard
   * Collectors: Adapter framework with Sample adapter and Qatar Gov template; staging insert and scheduling support
   * Awards UI: Web staging and curated awards pages with curate action
@@ -72,6 +72,9 @@
   * Settings: import date format lock (MDY/DMY/AUTO) and temp user creation for missing owners
   * Opportunities: bid owner reassignment endpoint and UI selectors for owners
   * Opportunities: overview now allows creating new users (name/email/type/role) via modal for owner assignment
+  * Settings: stage and status picklists are now configurable and drive opportunity dropdowns
+  * Collectors: Available tender run accepts date filters so `/tenders/collect` can pull a date window
+  * Collectors: Monaqasat available tender adapter now walks pages until the requested `fromDate` window or `MONAQASAT_TENDER_MAX_PAGES`, mirroring the awards crawler
 * Next:
   * Rate limiting defaults + security headers docs (hardening sweep)
   * Validate Monaqasat adapter against live pages; add edge-case handling
@@ -87,7 +90,7 @@
   * 2025-12-06: Auth = Local database for dev, AAD OIDC for prod (AUTH_PROVIDER toggle)
   * 2025-12-06: Storage = Local filesystem for dev, Azure Blob for prod (STORAGE_PROVIDER toggle)
   * 2025-12-06: All core web UIs implemented (Clarifications, Pricing, Approvals, Submission, Outcomes)
-  * 2025-12-07: Margin guardrail enforced via `PRICING_MIN_MARGIN`; observability dashboards provisioned; collectors adapter framework with Qatar Gov template
+  * 2025-12-07: Default margin set to 25%; observability dashboards provisioned; collectors adapter framework with Qatar Gov template
   * 2025-12-08: First award portal target = Monaqasat (public data only)
   * 2025-12-08: Power BI integration deferred; CSV exports remain current integration point
   * 2025-12-08: Retention default = 5 years with external backups

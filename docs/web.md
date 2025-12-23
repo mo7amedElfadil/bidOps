@@ -1,11 +1,14 @@
 # Web
 
 UI scope and behaviors:
+ - Routes now declare an `errorElement` so any runtime failure renders the shared ErrorPage fallback (reload/home actions + status info).
 
 - Opportunity Kanban, timeline, list with filters/SLA indicators
 - Opportunities list shows countdown timer (dd:hh:mm) with circular progress ring and color thresholds
 - Opportunity overview shell with tabbed navigation across all workspaces
 - Opportunity overview allows selecting/add new business & bid owners, opening a modal to add users (name/email/type/role)
+- Bid review dashboard (`/approvals/review`) summarizes pricing packs, approval chains, and lets the assigned reviewer finalize bids once every signature is captured
+- Settings page now drives the stage and status dropdowns used in opportunity forms
 - Opportunity summary fields are editable; stage progression is shown with a dropdown and visual indicator
 - Compliance Matrix editor preserving verbatim requirement text
 - Clarifications module with numbering and exports
@@ -34,6 +37,7 @@ UI scope and behaviors:
 | `/` | Opportunities List | Table with filters, SLA badges, create modal |
 | `/board` | Opportunities Kanban | Board grouped by stage with SLA badges |
 | `/timeline` | Timeline View | Ordered by submission date; SLA thresholds displayed |
+| | | Timeline now uses `gantt-task-react` with adjustable name/from/to widths, optional text wrap, and export-to-image support. |
 | `/import/tracker` | Tracker Import Wizard | CSV upload for bulk import |
 | `/opportunity/:id` | Opportunity Overview | Summary plus quick links to all tabs; shows unresolved import issues |
 | `/opportunity/:id/attachments` | Attachments Page | Upload/list/download attachments, run AI extraction |
@@ -41,6 +45,7 @@ UI scope and behaviors:
 | `/opportunity/:id/clarifications` | Clarifications Q&A | Question numbering and response tracking |
 | `/opportunity/:id/pricing` | Pricing Workspace | BoQ items, vendor quotes, pack calculator, worksheet |
 | `/opportunity/:id/approvals` | Approvals Workflow | Legal→Finance→Executive approval chain |
+| `/approvals/review` | Bid Review | Dashboard listing pricing packs, approvals status, and finalization action |
 | `/opportunity/:id/submission` | Submission Pack Builder | Generate ZIP with manifest and checksum |
 | `/opportunity/:id/outcome` | Outcome Recording | Won/Lost/Withdrawn status with reason codes |
 | `/awards/staging` | Awards Staging | Review and curate collected awards |

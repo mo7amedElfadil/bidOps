@@ -1,3 +1,4 @@
+import UploadButton from '../../components/UploadButton'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
@@ -59,11 +60,11 @@ export default function ClarificationsPage() {
 				<div className="flex items-center justify-between">
 					<h2 className="text-lg font-semibold">Clarifications</h2>
 					<div className="flex flex-wrap items-center gap-2">
-						<input
-							type="file"
+						<UploadButton
 							accept=".csv"
-							onChange={e => {
-								const f = e.target.files?.[0]
+							label="Import CSV"
+							onFile={files => {
+								const f = files?.[0]
 								if (f) importCsv.mutate(f)
 							}}
 						/>

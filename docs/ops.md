@@ -24,6 +24,8 @@ make up
 # Mailhog: http://localhost:8025
 ```
 
+> **Note:** `make down` now leaves the database volumes intact. Run `make down-volumes` only when you intentionally want to wipe all data and start completely from scratch.
+
 ## Makefile Targets
 
 ### Infrastructure
@@ -87,6 +89,7 @@ make up
 | `api` | 4000 | BidOps API |
 | `web` | 8080 | BidOps Web UI |
 | `collectors` | (internal) | Award collectors server (Playwright) |
+| `workers` | (internal) | BullMQ worker for SLA ticks, notification/email batches, and queued collector jobs |
 
 ### Optional Services
 
@@ -218,10 +221,11 @@ docker compose -f infra/compose.yml restart api
 
 **Rebuild from scratch:**
 ```bash
-make down
-docker volume prune  # Warning: removes all volumes
+make down-volumes
 make up
 ```
+
+Use `make down` when you just want to stop services but keep the volumes intact; `make down-volumes` is the new helper that also cleans those volumes before restarting.
 
 ### Database Issues
 
@@ -279,6 +283,11 @@ Configure alerts in Grafana for:
 
 See `apps/api/example.env` for full list of API environment variables.
 See `apps/collectors/example.env` for collector-specific variables.
+
+### Collector-specific
+- `MONAQASAT_AVAILABLE_PATH` – path to the Monaqasat available tenders list (default: `/TendersOnlineServices/AvailableMinistriesTenders/1`)
+- `MONAQASAT_TENDER_MAX_PAGES` – max pages to scan when running `/tenders/collect` (default: `10`, mirrors `MONAQASAT_MAX_PAGES` used by awards)
+- `MONAQASAT_TENDER_FROM_DATE` / `MONAQASAT_TENDER_TO_DATE` – optional YYYY-MM-DD window passed from the UI; the collector filters results and stops when it reaches the earliest requested date
 
 AI (proposal extraction):
 - `AI_PROVIDER` = `openai|gemini` (default: openai)

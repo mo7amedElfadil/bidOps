@@ -6,6 +6,7 @@ import { OpportunityShell } from '../../components/OpportunityShell'
 import { SlaBadge } from '../../components/SlaBadge'
 import { toast } from '../../utils/toast'
 import { USER_TYPE_OPTIONS } from '../../constants/user-types'
+import { DEFAULT_STAGE_LIST, DEFAULT_STATUS_LIST } from '../../constants/opportunity-lists'
 
 const NEW_USER_FORM = {
 	name: '',
@@ -15,18 +16,6 @@ const NEW_USER_FORM = {
 	team: '',
 	password: ''
 }
-
-const STAGES = [
-	'Sourcing',
-	'Qualification',
-	'Purchase',
-	'Elaboration',
-	'Pricing & Approvals',
-	'Submission',
-	'Evaluation',
-	'Outcome',
-	'Closeout'
-]
 
 function toIsoWithOffset(value: string, offsetHours: number) {
 	const [datePart, timePart = '00:00'] = value.split('T')
@@ -69,6 +58,14 @@ export default function OpportunityOverview() {
 		queryFn: () => api.listUsers({ page: 1, pageSize: 500 })
 	})
 	const timezoneQuery = useQuery({ queryKey: ['timezone'], queryFn: api.getTimezoneSettings })
+	const stageListQuery = useQuery({
+		queryKey: ['opportunity-stages'],
+		queryFn: api.getOpportunityStages
+	})
+	const statusListQuery = useQuery({
+		queryKey: ['opportunity-statuses'],
+		queryFn: api.getOpportunityStatuses
+	})
 
 	const [isEditing, setIsEditing] = useState(false)
 	const [form, setForm] = useState({
@@ -86,6 +83,8 @@ export default function OpportunityOverview() {
 		ownerId: '',
 		bidOwnerIds: [] as string[]
 	})
+	const stageOptions = stageListQuery.data?.stages ?? DEFAULT_STAGE_LIST
+	const statusOptions = statusListQuery.data?.statuses ?? DEFAULT_STATUS_LIST
 	const [showAddUserModal, setShowAddUserModal] = useState(false)
 	const [newUserForm, setNewUserForm] = useState(NEW_USER_FORM)
 	const createUserMutation = useMutation({
@@ -134,7 +133,10 @@ export default function OpportunityOverview() {
 		})
 	}, [data, timezoneQuery.data])
 
-	const stageIndex = useMemo(() => STAGES.findIndex(s => s === (data?.stage || '')), [data?.stage])
+	const stageIndex = useMemo(() => stageOptions.findIndex(s => s === (data?.stage || '')), [
+		stageOptions,
+		data?.stage
+	])
 
 	const updateMutation = useMutation({
 		mutationFn: () => {
@@ -230,7 +232,7 @@ export default function OpportunityOverview() {
 											onChange={e => setForm({ ...form, stage: e.target.value })}
 										>
 											<option value="">—</option>
-											{STAGES.map(stage => (
+											{stageOptions.map(stage => (
 												<option key={stage} value={stage}>
 													{stage}
 												</option>
@@ -239,12 +241,18 @@ export default function OpportunityOverview() {
 									</label>
 									<label className="grid gap-1 text-xs font-medium">
 										Status
-										<input
+										<select
 											className="rounded border px-2 py-1 text-sm"
 											value={form.status}
 											onChange={e => setForm({ ...form, status: e.target.value })}
-											placeholder="Open / Submitted / Won..."
-										/>
+										>
+											<option value="">—</option>
+											{statusOptions.map(status => (
+												<option key={status} value={status}>
+													{status}
+												</option>
+											))}
+										</select>
 									</label>
 									<label className="grid gap-1 text-xs font-medium">
 										Priority
@@ -428,7 +436,7 @@ export default function OpportunityOverview() {
 					<div className="rounded border bg-white p-3 text-xs text-slate-600">
 						<p>Stage progression</p>
 						<div className="mt-2 flex flex-wrap gap-2">
-							{STAGES.map((stage, index) => (
+							{stageOptions.map((stage, index) => (
 								<span
 									key={stage}
 									className={`rounded-full px-2 py-0.5 ${

@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from '@nestjs/common'
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
 
 @Injectable()
@@ -7,7 +7,10 @@ export class TenantService {
 
 	async ensureOpportunityAccess(opportunityId: string, tenantId: string) {
 		const opp = await this.prisma.opportunity.findUnique({ where: { id: opportunityId }, select: { tenantId: true } })
-		if (!opp || opp.tenantId !== tenantId) {
+		if (!opp) {
+			throw new NotFoundException('Opportunity not found')
+		}
+		if (opp.tenantId !== tenantId) {
 			throw new ForbiddenException('Access denied for this opportunity')
 		}
 	}
@@ -23,5 +26,4 @@ export class TenantService {
 		}
 	}
 }
-
 

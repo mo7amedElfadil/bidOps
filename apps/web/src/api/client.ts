@@ -18,6 +18,7 @@ export interface Opportunity {
 	status?: string
 	stage?: string
 	daysLeft?: number
+	startDate?: string
 	priorityRank?: number
 	bidOwners?: Array<{ id: string; name?: string; email?: string }>
 }
@@ -146,6 +147,20 @@ export interface Approval {
 	status: 'PENDING' | 'APPROVED' | 'REJECTED'
 	signedOn?: string
 	remarks?: string
+}
+
+export interface ReviewOpportunity {
+	id: string
+	title: string
+	stage?: string
+	status?: string
+	submissionDate?: string
+	client?: { id: string; name: string }
+}
+
+export interface PricingPackReview extends PricingPack {
+	opportunity: ReviewOpportunity
+	approvals: Approval[]
 }
 
 export interface Outcome {
@@ -390,6 +405,9 @@ export const api = {
 	listApprovals(packId: string) {
 		return request<Approval[]>(`/approvals/${packId}`)
 	},
+	reviewApprovals() {
+		return request<PricingPackReview[]>(`/approvals/review`)
+	},
 	bootstrapApprovals(packId: string, approvers?: { legal?: string; finance?: string; executive?: string }) {
 		return request<Approval[]>(`/approvals/${packId}/bootstrap`, {
 			method: 'POST',
@@ -401,6 +419,9 @@ export const api = {
 			method: 'POST',
 			body: JSON.stringify(data)
 		})
+	},
+	finalizeApproval(packId: string) {
+		return request<{ packId: string }>(`/approvals/${packId}/finalize`, { method: 'POST' })
 	},
 
 	// Submission
@@ -469,6 +490,24 @@ export const api = {
 	},
 	setImportDateFormat(payload: { format: 'MDY' | 'DMY' | 'AUTO' }) {
 		return request<{ format: 'MDY' | 'DMY' | 'AUTO' }>(`/settings/import-date-format`, {
+			method: 'PUT',
+			body: JSON.stringify(payload)
+		})
+	},
+	getOpportunityStages() {
+		return request<{ stages: string[] }>(`/settings/opportunity/stages`)
+	},
+	setOpportunityStages(payload: { stages: string[] }) {
+		return request<{ stages: string[] }>(`/settings/opportunity/stages`, {
+			method: 'PUT',
+			body: JSON.stringify(payload)
+		})
+	},
+	getOpportunityStatuses() {
+		return request<{ statuses: string[] }>(`/settings/opportunity/statuses`)
+	},
+	setOpportunityStatuses(payload: { statuses: string[] }) {
+		return request<{ statuses: string[] }>(`/settings/opportunity/statuses`, {
 			method: 'PUT',
 			body: JSON.stringify(payload)
 		})
@@ -603,7 +642,7 @@ export const api = {
 	promoteMinistryTender(id: string) {
 		return request<Opportunity>(`/tenders/${id}/promote`, { method: 'POST' })
 	},
-	triggerTenderCollector(payload: { adapterId?: string }) {
+	triggerTenderCollector(payload: { adapterId?: string; fromDate?: string; toDate?: string }) {
 		return request<{ results?: unknown; error?: string }>(`/tenders/collect`, {
 			method: 'POST',
 			body: JSON.stringify(payload || {})
@@ -633,6 +672,12 @@ export const api = {
 	},
 	deleteUser(id: string) {
 		return request<void>(`/users/${id}`, { method: 'DELETE' })
+	},
+	deleteUsers(ids: string[]) {
+		return request<{ deleted: number }>(`/users`, {
+			method: 'DELETE',
+			body: JSON.stringify({ ids })
+		})
 	},
 
 	// Search

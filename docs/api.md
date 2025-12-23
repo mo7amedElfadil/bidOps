@@ -151,6 +151,8 @@ GET /auth/callback      # Handles callback → redirects with token fragment
 | GET | `/approvals/:packId` | List approvals for pack | All |
 | POST | `/approvals/:packId/bootstrap` | Create approval chain | MANAGER, ADMIN |
 | POST | `/approvals/decision/:id` | Submit approval decision | All |
+| GET | `/approvals/review` | List pricing packs and approvals pending review | All |
+| POST | `/approvals/:packId/finalize` | Finalize approvals and move opportunity to submission | MANAGER, ADMIN |
 
 ### Submission
 | Method | Path | Description | Roles |
@@ -217,6 +219,10 @@ GET /auth/callback      # Handles callback → redirects with token fragment
 | POST | `/settings/fx-rates` | Upsert FX rate | ADMIN |
 | PATCH | `/settings/fx-rates/:id` | Update FX rate | ADMIN |
 | DELETE | `/settings/fx-rates/:id` | Delete FX rate | ADMIN |
+| GET | `/settings/opportunity/stages` | Get opportunity stage dropdown | All |
+| PUT | `/settings/opportunity/stages` | Update opportunity stage dropdown (array) | ADMIN, MANAGER |
+| GET | `/settings/opportunity/statuses` | Get opportunity status dropdown | All |
+| PUT | `/settings/opportunity/statuses` | Update opportunity status dropdown (array) | ADMIN, MANAGER |
 
 ### AI Extraction
 | Method | Path | Description | Roles |
@@ -227,6 +233,7 @@ GET /auth/callback      # Handles callback → redirects with token fragment
 | Method | Path | Description | Roles |
 |--------|------|-------------|-------|
 | GET | `/proposal/:opportunityId` | List proposal draft sections | All |
+| GET | `/proposal/:opportunityId/export.csv` | Export proposal sections as CSV | All |
 
 ## Security
 

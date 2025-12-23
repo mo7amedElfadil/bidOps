@@ -14,12 +14,14 @@ import AwardsStagingPage from './pages/Awards/Staging'
 import AwardsEventsPage from './pages/Awards/Events'
 import AvailableTendersPage from './pages/Tenders/Available'
 import UsersPage from './pages/Admin/Users'
+import ApprovalReviewPage from './pages/Approvals/Review'
 import Callback from './pages/Auth/Callback'
 import DevLogin from './pages/Auth/DevLogin'
 import Layout from './components/Layout'
 import OpportunityOverview from './pages/Opportunities/Overview'
 import AttachmentSearchPage from './pages/Search/Attachments'
 import SlaSettingsPage from './pages/Settings/Sla'
+import ErrorPage from './components/ErrorPage'
 import { getToken } from './utils/auth'
 
 function RequireAuth() {
@@ -33,9 +35,11 @@ function RequireAuth() {
 const router = createBrowserRouter([
 	{
 		element: <RequireAuth />,
+		errorElement: <ErrorPage />,
 		children: [
 			{
 				element: <Layout />,
+				errorElement: <ErrorPage />,
 				children: [
 					{ path: '/', element: <List /> },
 					{ path: '/board', element: <Board /> },
@@ -49,6 +53,7 @@ const router = createBrowserRouter([
 					{ path: '/opportunity/:id/approvals', element: <ApprovalsPage /> },
 					{ path: '/opportunity/:id/submission', element: <SubmissionPage /> },
 					{ path: '/opportunity/:id/outcome', element: <OutcomePage /> },
+					{ path: '/approvals/review', element: <ApprovalReviewPage /> },
 					{ path: '/awards/staging', element: <AwardsStagingPage /> },
 					{ path: '/awards/events', element: <AwardsEventsPage /> },
 					{ path: '/tenders/available', element: <AvailableTendersPage /> },

@@ -31,7 +31,7 @@ class ListTendersQuery {
 	pageSize?: number
 }
 
-class CreateTenderDto {
+	class CreateTenderDto {
 	@IsString()
 	@MaxLength(50)
 	portal!: string
@@ -117,7 +117,7 @@ export class TendersController {
 
 	@Post('collect')
 	@Roles('MANAGER','ADMIN')
-	collect(@Body() body: { adapterId?: string }) {
+	collect(@Body() body: { adapterId?: string; fromDate?: string; toDate?: string }) {
 		return this.svc.triggerCollector(body)
 	}
 

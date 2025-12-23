@@ -67,7 +67,7 @@ export class OpportunitiesService {
 
 		// Recompute daysLeft for freshness on read
 		const items = rows.map(r => {
-			const { client, bidOwners, ...rest } = r
+			const { client, bidOwners, startDate, ...rest } = r
 			return {
 				...rest,
 				clientName: client?.name,
@@ -76,7 +76,8 @@ export class OpportunitiesService {
 					name: link.user?.name,
 					email: link.user?.email
 				})) || [],
-				daysLeft: this.computeDaysLeft(r.submissionDate)
+				daysLeft: this.computeDaysLeft(r.submissionDate),
+				startDate
 			}
 		})
 		return { items, total, page, pageSize }
@@ -99,16 +100,34 @@ export class OpportunitiesService {
 			clientId = client.id
 		}
 		const submissionDate = input.submissionDate ? new Date(input.submissionDate) : undefined
+		const now = new Date()
+		let startDate = now
+		if (submissionDate && startDate > submissionDate) {
+			startDate = new Date(submissionDate.getTime() - 7 * 24 * 60 * 60 * 1000)
+		}
 		const daysLeft = this.computeDaysLeft(submissionDate ?? undefined)
-		return this.prisma.opportunity.create({
-			data: {
-				...rest,
-				clientId: clientId!,
-				submissionDate,
-				daysLeft,
-				tenantId
-			}
-		})
+		const createData: Prisma.OpportunityCreateInput = {
+			client: { connect: { id: clientId! } },
+			title: input.title,
+			description: input.description ?? null,
+			tenderRef: input.tenderRef ?? null,
+			boqTemplate: input.boqTemplateId ? { connect: { id: input.boqTemplateId } } : undefined,
+			packTemplate: input.packTemplateId ? { connect: { id: input.packTemplateId } } : undefined,
+			owner: input.ownerId ? { connect: { id: input.ownerId } } : undefined,
+			submissionDate,
+			startDate,
+			status: input.status ?? undefined,
+			stage: input.stage ?? undefined,
+			priorityRank: input.priorityRank ?? undefined,
+			daysLeft,
+			modeOfSubmission: input.modeOfSubmission ?? undefined,
+			sourcePortal: input.sourcePortal ?? undefined,
+			bondRequired: input.bondRequired ?? undefined,
+			validityDays: input.validityDays ?? undefined,
+			dataOwner: input.dataOwner ?? undefined,
+			tenantId
+		}
+		return this.prisma.opportunity.create({ data: createData })
 	}
 
 	async update(id: string, input: UpdateOpportunityDto, tenantId: string) {
@@ -126,15 +145,26 @@ export class OpportunitiesService {
 		}
 		const submissionDate = input.submissionDate ? new Date(input.submissionDate) : undefined
 		const daysLeft = this.computeDaysLeft(submissionDate ?? undefined)
-		return this.prisma.opportunity.update({
-			where: { id },
-			data: {
-				...rest,
-				clientId: clientId ?? undefined,
-				submissionDate,
-				daysLeft: daysLeft ?? undefined
-			}
-		}).then(async updated => {
+		const updateData: Prisma.OpportunityUpdateInput = {
+			client: clientId ? { connect: { id: clientId } } : undefined,
+			title: input.title ?? undefined,
+			description: input.description ?? undefined,
+			tenderRef: input.tenderRef ?? undefined,
+			boqTemplate: input.boqTemplateId ? { connect: { id: input.boqTemplateId } } : undefined,
+			packTemplate: input.packTemplateId ? { connect: { id: input.packTemplateId } } : undefined,
+			owner: input.ownerId ? { connect: { id: input.ownerId } } : undefined,
+			submissionDate,
+			status: input.status ?? undefined,
+			stage: input.stage ?? undefined,
+			priorityRank: input.priorityRank ?? undefined,
+			daysLeft: daysLeft ?? undefined,
+			modeOfSubmission: input.modeOfSubmission ?? undefined,
+			sourcePortal: input.sourcePortal ?? undefined,
+			bondRequired: input.bondRequired ?? undefined,
+			validityDays: input.validityDays ?? undefined,
+			dataOwner: input.dataOwner ?? undefined
+		}
+		return this.prisma.opportunity.update({ where: { id }, data: updateData }).then(async updated => {
 			const resolveFields: string[] = []
 			if (input.submissionDate) resolveFields.push('submissionDate')
 			if (input.priorityRank !== undefined) resolveFields.push('priorityRank')

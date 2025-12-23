@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
+import { enqueueTenderCollector } from '../../queues/collector.queue'
 import { parsePagination } from '../../utils/pagination'
 
 @Injectable()
@@ -115,17 +116,8 @@ export class TendersService {
 		return opportunity
 	}
 
-	async triggerCollector(payload: { adapterId?: string }) {
-		const url = process.env.COLLECTORS_URL || 'http://collectors:4100'
-		const res = await fetch(`${url}/run-tenders`, {
-			method: 'POST',
-			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify(payload || {})
-		})
-		if (!res.ok) {
-			const text = await res.text()
-			throw new BadRequestException(text || 'Collector request failed')
-		}
-		return res.json()
+	async triggerCollector(payload: { adapterId?: string; fromDate?: string; toDate?: string }) {
+		const job = await enqueueTenderCollector(payload)
+		return { jobId: job.id, status: 'queued' }
 	}
 }

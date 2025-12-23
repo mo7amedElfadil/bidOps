@@ -91,14 +91,13 @@ export class ComplianceService {
 			].join(',')
 			lines.push(line)
 		}
-		return lines.join('\\n')
+		return lines.join('\n')
 	}
 }
 
 function escapeCsv(s: string) {
-	if (s.includes(',') || s.includes('"') || s.includes('\\n')) {
+	if (s.includes(',') || s.includes('"') || s.includes('\n')) {
 		return '"' + s.replace(/"/g, '""') + '"'
 	}
 	return s
 }
-

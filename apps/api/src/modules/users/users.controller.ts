@@ -1,6 +1,17 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common'
 import { Type } from 'class-transformer'
-import { IsBoolean, IsEmail, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator'
+import {
+	ArrayNotEmpty,
+	IsArray,
+	IsBoolean,
+	IsEmail,
+	IsInt,
+	IsOptional,
+	IsString,
+	IsUUID,
+	MaxLength,
+	Min
+} from 'class-validator'
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard'
 import { Roles } from '../../auth/roles.decorator'
 import { UsersService } from './users.service'
@@ -82,6 +93,13 @@ class UpdateUserDto {
 	userType?: string
 }
 
+class BulkDeleteUsersDto {
+	@IsArray()
+	@ArrayNotEmpty()
+	@IsUUID('4', { each: true })
+	ids!: string[]
+}
+
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
@@ -114,9 +132,15 @@ export class UsersController {
 		return this.svc.update(id, body)
 	}
 
+	@Delete()
+	@Roles('ADMIN')
+	bulkRemove(@Body() body: BulkDeleteUsersDto) {
+		return this.svc.deleteMany(body.ids)
+	}
+
 	@Delete(':id')
 	@Roles('ADMIN')
 	remove(@Param('id') id: string) {
-		return this.svc.disable(id)
+		return this.svc.delete(id)
 	}
 }

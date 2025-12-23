@@ -14,6 +14,25 @@ export class ApprovalsService {
 		})
 	}
 
+	async reviewOverview(tenantId: string) {
+		return this.prisma.pricingPack.findMany({
+			where: {
+				opportunity: {
+					tenantId
+				}
+			},
+			include: {
+				opportunity: {
+					include: {
+						client: true
+					}
+				},
+				approvals: true
+			},
+			orderBy: [{ updatedAt: 'desc' }]
+		})
+	}
+
     /**
      * Bootstrap an approval chain with role-based and/or user-specific assignments.
      * @param packId The ID of the pricing pack
@@ -44,6 +63,34 @@ export class ApprovalsService {
      * Make a decision on an approval step.
      * Validates that the user making the request is allowed to approve (either exact ID match or has the required role).
      */
+	async finalize(packId: string, tenantId: string) {
+		const pack = await this.prisma.pricingPack.findUnique({
+			where: { id: packId },
+			include: { opportunity: true }
+		})
+		if (!pack) throw new BadRequestException('Pricing pack not found')
+		if (pack.opportunity.tenantId !== tenantId) {
+			throw new BadRequestException('Access denied')
+		}
+
+		const allApprovals = await this.prisma.approval.findMany({ where: { packId } })
+		if (!allApprovals.length) {
+			throw new BadRequestException('No approvals configured for this pack')
+		}
+		if (allApprovals.some(a => a.status !== 'APPROVED')) {
+			throw new BadRequestException('All approvals must be approved before finalizing')
+		}
+
+		await this.prisma.opportunity.update({
+			where: { id: pack.opportunityId },
+			data: {
+				stage: 'Submission',
+				status: 'Ready for submission'
+			}
+		})
+		return { packId }
+	}
+
 	async decision(id: string, userId: string, userRole: string, body: { status: 'APPROVED'|'REJECTED'; remarks?: string }) {
         const approval = await this.prisma.approval.findUnique({ where: { id } })
         if (!approval) throw new BadRequestException('Approval not found')

@@ -8,7 +8,7 @@ BoQ and approvals:
 - Global pricing templates and opportunity-specific templates
 - FX rates table (base currency QAR) with live conversion for totals
 - Vendor quotes with validity and lead time
-- Margin guardrails and escalation (minimum margin enforced by `PRICING_MIN_MARGIN`)
+- Pricing pack uses a default margin of **25%** (modifiable per item or pack). Users can override the margin field when creating/updating pack rows so each BoQ line or the entire pack can stay aligned with the desired commercial strategy.
 - Approval chain: Legal → Finance → Executive
 - Simple signer approval captured from assigned PM/Executive
 - Freeze and pack versioning
@@ -20,7 +20,7 @@ Endpoints
 - BoQ: GET `/pricing/:opportunityId/boq`, POST `/pricing/:opportunityId/boq`, PATCH `/pricing/boq/:id`, DELETE `/pricing/boq/:id`
 - Pack rows: GET `/pricing/:opportunityId/pack-rows`, POST `/pricing/:opportunityId/pack-rows`, PATCH `/pricing/pack-rows/:id`, DELETE `/pricing/pack-rows/:id`
 - Quotes: GET `/pricing/:opportunityId/quotes`, POST `/pricing/:opportunityId/quotes`, PATCH `/pricing/quotes/:id`
-- Pack recalc: POST `/pricing/:opportunityId/pack/recalculate` (fails if margin < `PRICING_MIN_MARGIN`)
+- Pack recalc: POST `/pricing/:opportunityId/pack/recalculate` (uses the provided margin value or the default 25%)
 - Approvals: GET `/approvals/:packId`, POST `/approvals/:packId/bootstrap`, POST `/approvals/decision/:id`
 - Templates: GET `/pricing/templates` (workspace, opportunityId), POST `/pricing/templates`, PATCH `/pricing/templates/:id`, DELETE `/pricing/templates/:id`
 - FX rates: GET `/settings/fx-rates`, POST `/settings/fx-rates`

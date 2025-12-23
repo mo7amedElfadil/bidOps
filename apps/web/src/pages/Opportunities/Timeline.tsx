@@ -1,93 +1,253 @@
+import { useMemo, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
-import { api, Opportunity } from '../../api/client'
-import { SlaBadge } from '../../components/SlaBadge'
+import { api } from '../../api/client'
 import { Page } from '../../components/Page'
+import { Gantt, Task, ViewMode } from '../../vendor/gantt-task-react/index.js'
+import '../../vendor/gantt-task-react/index.css'
+import html2canvas from 'html2canvas'
+
+type TimelineEntry = {
+	id: string
+	title: string
+	stage?: string | null
+	clientName?: string | null
+	status?: string | null
+	daysLeft?: number | null
+	start: Date
+	end: Date
+}
+
+type TimelineResult = {
+	entries: TimelineEntry[]
+	min: Date
+	max: Date
+	totalRange: number
+}
+
+function getDate(value?: string) {
+	return value ? new Date(value) : undefined
+}
 
 export default function Timeline() {
+	const navigate = useNavigate()
 	const opsQuery = useQuery({
 		queryKey: ['opportunities', 'timeline'],
 		queryFn: () => api.listOpportunities({ page: 1, pageSize: 200 })
 	})
 	const slaQuery = useQuery({ queryKey: ['sla'], queryFn: api.getSlaSettings })
+	const [viewMode, setViewMode] = useState(ViewMode.Week)
+	const [listCellWidth, setListCellWidth] = useState(220)
+	const [columnWidth, setColumnWidth] = useState(60)
+	const [isWrapped, setIsWrapped] = useState(false)
+	const ganttRef = useRef<HTMLDivElement>(null)
 
-	const ops = (opsQuery.data?.items || []).slice().sort((a: Opportunity, b: Opportunity) => {
-		const da = a.submissionDate ? new Date(a.submissionDate).getTime() : Infinity
-		const db = b.submissionDate ? new Date(b.submissionDate).getTime() : Infinity
-		return da - db
-	})
+	const timeline = useMemo<TimelineResult | null>(() => {
+		const rows = (opsQuery.data?.items || [])
+			.map(item => {
+				const start =
+					getDate(item.startDate) ||
+					getDate(item.discoveryDate) ||
+					getDate(item.submissionDate)
+				const end =
+					getDate(item.submissionDate) ||
+					(start ? new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000) : undefined)
+				return { ...item, start, end }
+			})
+			.filter((row): row is TimelineEntry & { start: Date; end: Date } => Boolean(row.start && row.end))
+
+		if (!rows.length) return null
+
+		const min = new Date(Math.min(...rows.map(o => o.start.getTime())))
+		const max = new Date(Math.max(...rows.map(o => o.end.getTime())))
+		const totalRange = Math.max(1, max.getTime() - min.getTime())
+
+		const entries = rows.map(row => ({
+			id: row.id,
+			title: row.title,
+			start: row.start,
+			end: row.end,
+			stage: row.stage,
+			clientName: row.clientName,
+			status: row.status,
+			daysLeft: row.daysLeft
+		}))
+
+		return { entries, min, max, totalRange }
+	}, [opsQuery.data])
+
+	const slaColor = (daysLeft?: number | null) => {
+		if (daysLeft === undefined || daysLeft === null) return '#94a3b8'
+		if (timesUp(daysLeft, slaQuery.data?.urgentDays ?? 1)) return '#dc2626'
+		if (timesUp(daysLeft, slaQuery.data?.alertDays ?? 3)) return '#fb923c'
+		if (timesUp(daysLeft, slaQuery.data?.warnDays ?? 7)) return '#f59e0b'
+		return '#0ea5e9'
+	}
+
+	const tasks: Task[] = useMemo(() => {
+		if (!timeline) return []
+		return timeline.entries.map(entry => {
+			const color = slaColor(entry.daysLeft)
+			return {
+				id: entry.id,
+				name: entry.title,
+				start: entry.start,
+				end: entry.end,
+				type: 'task',
+				progress: 100,
+				isDisabled: false,
+				styles: {
+					backgroundColor: `${color}20`,
+					backgroundSelectedColor: `${color}40`,
+					progressColor: color,
+					progressSelectedColor: '#fff',
+					borderRadius: '6px',
+					fontSize: '12px'
+				}
+			}
+		})
+	}, [timeline, slaQuery.data])
+
+	const viewModes = [
+		{ label: 'Day', value: ViewMode.Day },
+		{ label: 'Week', value: ViewMode.Week },
+		{ label: 'Month', value: ViewMode.Month },
+		{ label: 'Year', value: ViewMode.Year }
+	]
+	const handleExport = async () => {
+		if (!ganttRef.current) return
+		const canvas = await html2canvas(ganttRef.current)
+		const link = document.createElement('a')
+		link.href = canvas.toDataURL('image/png')
+		link.download = `bidops-timeline-${new Date().toISOString().slice(0, 10)}.png`
+		link.click()
+	}
+	const [columnWidth, setColumnWidth] = useState(60)
+
+	const handleClick = (task: Task) => navigate(`/opportunity/${task.id}`)
+	const wrapStyles = `
+		.gantt-wrap-text .gantt-list-cell-content {
+			white-space: normal !important;
+			word-break: break-word !important;
+			overflow-wrap: break-word !important;
+		}
+		.gantt-wrap-text .gantt-task-list-cell {
+			display: block !important;
+		}
+	`
 
 	return (
 		<Page
 			title="Timeline"
-			subtitle="Ordered by submission date with SLA thresholds."
+			subtitle="Gantt timeline with SLA signals and zoom controls."
 			actions={
-				<div className="flex gap-2">
-					<Link to="/" className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200">
-						List
-					</Link>
-					<Link to="/board" className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200">
-						Kanban
-					</Link>
-				</div>
-			}
-		>
+					<div className="flex gap-2">
+						<LinkButton to="/" label="List" />
+						<LinkButton to="/board" label="Kanban" />
+					</div>
+				}
+			>
+			<style>{wrapStyles}</style>
 			{slaQuery.data && (
 				<div className="rounded border bg-white p-3 text-sm text-slate-700">
-					SLA thresholds: warn ≤ {slaQuery.data.warnDays}d, alert ≤ {slaQuery.data.alertDays}d, urgent ≤{' '}
-					{slaQuery.data.urgentDays}d.
+					SLA warn ≤ {slaQuery.data.warnDays}d, alert ≤ {slaQuery.data.alertDays}d, urgent ≤ {slaQuery.data.urgentDays}d.
 				</div>
 			)}
 
-			{opsQuery.error && (
-				<p className="mt-4 text-sm text-red-600">
-					{(opsQuery.error as Error).message || 'Failed to load timeline'}
-				</p>
-			)}
 			{opsQuery.isLoading ? (
 				<p className="mt-4 text-sm text-slate-600">Loading...</p>
+			) : !timeline ? (
+				<p className="mt-4 text-sm text-slate-600">No timeline data yet.</p>
 			) : (
-				<div className="mt-4 overflow-x-auto rounded border bg-white shadow-sm">
-					<table className="min-w-full text-sm">
-						<thead className="bg-slate-100">
-							<tr>
-								<th className="px-3 py-2 text-left">Submission</th>
-								<th className="px-3 py-2 text-left">Title</th>
-								<th className="px-3 py-2 text-left">Client</th>
-								<th className="px-3 py-2 text-left">Stage</th>
-								<th className="px-3 py-2 text-left">Status</th>
-								<th className="px-3 py-2 text-left">SLA</th>
-							</tr>
-						</thead>
-						<tbody>
-							{ops.map(o => (
-								<tr key={o.id} className="border-t hover:bg-slate-50">
-									<td className="px-3 py-2 font-mono text-xs">
-										{o.submissionDate ? o.submissionDate.slice(0, 10) : '—'}
-									</td>
-									<td className="px-3 py-2">
-										<div className="font-medium">{o.title}</div>
-										<div className="text-xs text-slate-600">Priority: {o.priorityRank ?? '—'}</div>
-									</td>
-									<td className="px-3 py-2">{o.clientName || o.clientId || '-'}</td>
-									<td className="px-3 py-2">{o.stage || '—'}</td>
-									<td className="px-3 py-2">{o.status || '—'}</td>
-									<td className="px-3 py-2">
-										<SlaBadge daysLeft={o.daysLeft} />
-									</td>
-								</tr>
-							))}
-							{ops.length === 0 && (
-								<tr>
-									<td colSpan={6} className="px-3 py-4 text-center text-slate-500">
-										No opportunities yet.
-									</td>
-								</tr>
-							)}
-						</tbody>
-					</table>
+				<div className="mt-4 space-y-3">
+					<div className="rounded border bg-white p-4 shadow-sm">
+						<div className="flex flex-col gap-3 text-xs text-slate-500 md:flex-row md:items-center md:justify-between">
+							<div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+								<div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">View mode</div>
+								<div className="flex items-center gap-2">
+									{viewModes.map(mode => (
+										<button
+											key={mode.value}
+											className={`rounded px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${
+												viewMode === mode.value ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
+											}`}
+											onClick={() => setViewMode(mode.value)}
+										>
+											{mode.label}
+										</button>
+									))}
+								</div>
+							</div>
+							<div className="flex flex-wrap items-center gap-3 text-[11px]">
+								<div className="flex items-center gap-2">
+									<span className="uppercase tracking-wide text-slate-500">Name width</span>
+									<input
+										type="range"
+										min={160}
+										max={320}
+										value={listCellWidth}
+										onChange={event => setListCellWidth(Number(event.target.value))}
+										className="h-1 w-32 accent-blue-600"
+									/>
+									<span className="font-semibold text-slate-600">{listCellWidth}px</span>
+								</div>
+								<div className="flex items-center gap-2">
+									<span className="uppercase tracking-wide text-slate-500">Timeline width</span>
+									<input
+										type="range"
+										min={40}
+										max={140}
+										value={columnWidth}
+										onChange={event => setColumnWidth(Number(event.target.value))}
+										className="h-1 w-32 accent-blue-600"
+									/>
+									<span className="font-semibold text-slate-600">{columnWidth}px</span>
+								</div>
+								<button
+									onClick={() => setIsWrapped(prev => !prev)}
+									className="rounded border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-wide hover:border-slate-300"
+								>
+									{isWrapped ? 'Disable wrap' : 'Enable wrap'}
+								</button>
+								<button
+									onClick={handleExport}
+									className="rounded border border-blue-600 bg-blue-600 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white hover:bg-blue-700"
+								>
+									Export PNG
+								</button>
+							</div>
+						</div>
+						<div className="mt-4">
+							<div ref={ganttRef} className={isWrapped ? 'gantt-wrap-text' : undefined}>
+								<Gantt
+									tasks={tasks}
+									viewMode={viewMode}
+									onClick={handleClick}
+									listCellWidth={listCellWidth}
+									columnWidth={columnWidth}
+									barCornerRadius={6}
+									locale="en-GB"
+								/>
+							</div>
+						</div>
+					</div>
 				</div>
 			)}
 		</Page>
+	)
+}
+
+function timesUp(daysLeft: number, threshold: number) {
+	return daysLeft <= threshold
+}
+
+function LinkButton({ to, label }: { to: string; label: string }) {
+	return (
+		<Link
+			to={to}
+			className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200"
+		>
+			{label}
+		</Link>
 	)
 }

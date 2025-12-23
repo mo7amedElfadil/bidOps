@@ -531,7 +531,6 @@ export class AiService {
 					{ role: 'system', content: 'You are a bid proposal assistant. Return JSON only.' },
 					{ role: 'user', content: prompt }
 				],
-				temperature: 0.2
 			})
 		})
 		if (!res.ok) throw new BadRequestException(`OpenAI error: ${await res.text()}`)
@@ -548,7 +547,6 @@ export class AiService {
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
 				contents: [{ role: 'user', parts: [{ text: prompt }] }],
-				temperature: 0.2
 			})
 		})
 		if (!res.ok) throw new BadRequestException(`Gemini error: ${await res.text()}`)

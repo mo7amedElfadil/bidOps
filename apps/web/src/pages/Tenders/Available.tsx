@@ -14,6 +14,8 @@ export default function AvailableTendersPage() {
 	const [promoting, setPromoting] = useState<string | null>(null)
 	const [pagination, setPagination] = useState({ page: 1, pageSize: 25, total: 0 })
 	const [pageInput, setPageInput] = useState('1')
+	const [fromDate, setFromDate] = useState('')
+	const [toDate, setToDate] = useState('')
 
 	async function load(pageOverride?: number) {
 		setLoading(true)
@@ -43,7 +45,11 @@ export default function AvailableTendersPage() {
 		setRunError(null)
 		setRunSummary(null)
 		try {
-			const res = await api.triggerTenderCollector({ adapterId: 'monaqasat_available' })
+			const res = await api.triggerTenderCollector({
+				adapterId: 'monaqasat_available',
+				fromDate: fromDate || undefined,
+				toDate: toDate || undefined
+			})
 			if (res && (res as any).error) {
 				setRunError((res as any).error)
 			} else {
@@ -82,20 +88,54 @@ export default function AvailableTendersPage() {
 					</div>
 					<div className="flex gap-2">
 						<button
-							className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200"
+							className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
 							onClick={() => load(pagination.page)}
 							disabled={loading}
 						>
 							Refresh
 						</button>
+					</div>
+				</div>
+
+
+				<div className="mt-4 rounded border bg-white p-4 shadow-sm">
+					<div className="flex flex-wrap items-end gap-4">
+						<div>
+							<label className="text-xs font-medium text-slate-600">From date (UTC+3, YYYY-MM-DD)</label>
+							<input
+								type="date"
+								className="mt-1 block h-10 w-[180px] rounded border px-3 py-1.5 text-sm"
+								value={fromDate}
+								onChange={e => setFromDate(e.target.value)}
+							/>
+						</div>
+						<div>
+							<label className="text-xs font-medium text-slate-600">To date (YYYY-MM-DD)</label>
+							<input
+								type="date"
+								className="mt-1 block h-10 w-[180px] rounded border px-3 py-1.5 text-sm"
+								value={toDate}
+								onChange={e => setToDate(e.target.value)}
+							/>
+						</div>
 						<button
-							className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+							className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
 							onClick={runCollector}
 							disabled={running}
 						>
-							{running ? 'Running...' : 'Run Collector'}
+							{running ? 'Running...' : 'Run Monaqasat Collector'}
 						</button>
+						<button
+							className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
+							onClick={() => load(1)}
+							disabled={loading}
+						>
+							Filter List
+						</button>
+						<span className="text-xs text-slate-500">Filters apply to publish/close dates.</span>
 					</div>
+					{runError && <p className="mt-3 text-sm text-red-600">{runError}</p>}
+					{runSummary && <p className="mt-3 text-sm text-green-700">{runSummary}</p>}
 				</div>
 
 				<div className="mt-3 flex flex-wrap items-center gap-3">
@@ -133,9 +173,6 @@ export default function AvailableTendersPage() {
 						Apply Filters
 					</button>
 				</div>
-
-				{runError && <p className="mt-3 text-sm text-red-600">{runError}</p>}
-				{runSummary && <p className="mt-3 text-sm text-green-700">{runSummary}</p>}
 				{error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
 				{loading ? (

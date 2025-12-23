@@ -88,8 +88,10 @@ COLLECTOR_ONLY=sample make collectors-run
 COLLECTOR_MODE=scheduled COLLECTOR_INTERVAL_MINUTES=60 make collectors-run
 ```
 
+Collector runs now enqueue jobs onto the `bidops-default` BullMQ queue. The new `workers` service listens to that queue, calls the collectors' `/run` or `/run-tenders` endpoints (`COLLECTORS_URL`), and also keeps SLA ticks + notification batches running even when the API restarts.
+
 UI-triggered runs can call `POST /awards/collect` with `fromDate` and `toDate` (YYYY-MM-DD).
-Available tenders can be fetched via `POST /tenders/collect` (adapter `monaqasat_available`).
+Available tenders can be fetched via `POST /tenders/collect` (adapter `monaqasat_available`), also supporting `fromDate` / `toDate` filters in the body so you can scrape only the desired window.
 
 Awarded tenders pagination:
 - Collector walks pages in order until it reaches a page whose newest award date is earlier than `fromDate` (or hits `MONAQASAT_MAX_PAGES`).
@@ -119,6 +121,7 @@ Deduplication:
 | `MONAQASAT_AWARDED_PATH` | `/TendersOnlineServices/AwardedTenders/1` | Awarded tenders path |
 | `MONAQASAT_AVAILABLE_PATH` | `/TendersOnlineServices/AvailableMinistriesTenders/1` | Available ministry tenders path |
 | `MONAQASAT_MAX_PAGES` | `10` | Max pages to scan when collecting awards |
+| `MONAQASAT_TENDER_MAX_PAGES` | `10` | Max pages to scan when collecting available tenders |
 | `MONAQASAT_DELAY_MS` | `800` | Per-row delay for Monaqasat |
 
 ## API Endpoints
@@ -141,6 +144,12 @@ Deduplication:
 | PATCH | `/tenders/:id` | Update tender record |
 | DELETE | `/tenders/:id` | Delete tender record |
 | POST | `/tenders/:id/promote` | Promote tender to Opportunity |
+
+### Available tender collection behavior
+
+- The Monaqasat available-tender adapter now scans `AvailableMinistriesTenders/{page}` sequentially, matching the award collector's paging strategy. It increments the page number until it reaches the requested `fromDate` window or the configurable page cap.
+- Date filtering uses `MONAQASAT_TENDER_FROM_DATE`/`MONAQASAT_TENDER_TO_DATE` (YYYY-MM-DD). The collector filters each card as it goes and stops when earlier pages fall entirely before `fromDate`, so runs stay efficient while still honoring the date window passed from the UI.
+- Use `MONAQASAT_TENDER_MAX_PAGES` (default `10`) to bound how many pages are fetched per run, preventing runaway scraping while still covering the window that executives typically request.
 
 ### Curated Events
 

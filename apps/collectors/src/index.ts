@@ -417,19 +417,29 @@ async function runWithRange(adapterId: string | undefined, fromDate?: string, to
 	}
 }
 
-async function runTenderCollection(adapterId?: string) {
+async function runTenderCollection(adapterId?: string, fromDate?: string, toDate?: string) {
 	if (running) {
 		return { error: 'Collector already running' }
 	}
 	running = true
 
+	const prevCollectorOnly = process.env.COLLECTOR_ONLY
+	const prevFrom = process.env.MONAQASAT_TENDER_FROM_DATE
+	const prevTo = process.env.MONAQASAT_TENDER_TO_DATE
+	if (fromDate !== undefined) process.env.MONAQASAT_TENDER_FROM_DATE = fromDate
+	if (toDate !== undefined) process.env.MONAQASAT_TENDER_TO_DATE = toDate
 	if (adapterId) process.env.COLLECTOR_ONLY = adapterId
 
 	try {
 		const results = adapterId ? [await runTenderAdapter(adapterId)] : await runAllTenders()
 		return { results }
 	} finally {
-		if (adapterId) delete process.env.COLLECTOR_ONLY
+		if (adapterId && prevCollectorOnly === undefined) delete process.env.COLLECTOR_ONLY
+		else if (prevCollectorOnly !== undefined) process.env.COLLECTOR_ONLY = prevCollectorOnly
+		if (prevFrom !== undefined) process.env.MONAQASAT_TENDER_FROM_DATE = prevFrom
+		else delete process.env.MONAQASAT_TENDER_FROM_DATE
+		if (prevTo !== undefined) process.env.MONAQASAT_TENDER_TO_DATE = prevTo
+		else delete process.env.MONAQASAT_TENDER_TO_DATE
 		running = false
 	}
 }
@@ -471,7 +481,7 @@ async function main(): Promise<void> {
 				req.on('end', async () => {
 					try {
 						const parsed = body ? JSON.parse(body) : {}
-						const result = await runTenderCollection(parsed.adapterId)
+						const result = await runTenderCollection(parsed.adapterId, parsed.fromDate, parsed.toDate)
 						res.writeHead(200, { 'content-type': 'application/json' })
 						res.end(JSON.stringify(result))
 					} catch (err: any) {

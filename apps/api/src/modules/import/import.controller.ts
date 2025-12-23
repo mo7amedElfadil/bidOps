@@ -308,7 +308,21 @@ function splitOwners(value: string) {
 	return value
 		.split(/[,;/\n]+/g)
 		.map(part => part.trim())
-		.filter(Boolean)
+		.filter(isLikelyPerson)
+}
+
+function isLikelyPerson(value: string) {
+	const normalized = value.toLowerCase().trim()
+	if (!normalized) return false
+	if (normalized.includes('not required') || normalized.includes('not requested')) return false
+	if (normalized.includes('temporary') || normalized.includes('sent our ifp')) return false
+	// skip standalone dates/numbers
+	const digitsOnly = normalized.replace(/[\s\-\/,:]+/g, '')
+	if (/^\d+$/.test(digitsOnly)) return false
+	if (/^\d+(st|nd|rd|th)$/i.test(normalized)) return false
+	if (/^(?:\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/.test(normalized)) return false
+	const hasAlpha = /[a-zA-Z]/.test(normalized)
+	return hasAlpha
 }
 
 function normalizeUserKey(value: string) {

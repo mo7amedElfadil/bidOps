@@ -9,6 +9,7 @@ const links = [
 	{ to: '/timeline', label: 'Timeline' },
 	{ to: '/awards/staging', label: 'Awards' },
 	{ to: '/tenders/available', label: 'Tenders' },
+	{ to: '/approvals/review', label: 'Bid Review' },
 	{ to: '/admin/users', label: 'Users' },
 	{ to: '/search', label: 'Search' },
 	{ to: '/settings/sla', label: 'SLA' }

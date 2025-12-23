@@ -2,6 +2,7 @@ SHELL := /bin/bash
 COMPOSE_BASE := docker compose --env-file .env -f infra/compose.yml
 COMPOSE := $(COMPOSE_BASE)
 COMPOSE_MONITORING := $(COMPOSE_BASE) --profile monitoring
+INCLUDE_MONITORING ?= false
 DB_URL := postgresql://bidops:bidops@localhost:5432/bidops?schema=public
 
 .PHONY: bootstrap up down db-migrate db-seed db-reset api-dev web-dev workers-dev collectors-run lint test build build-packages pack-sample parse-rfp pbi-export
@@ -15,12 +16,19 @@ bootstrap:
 	@echo "Install root dev deps (turbo)"; pnpm i -w --ignore-scripts || true
 
 up:
+ifeq ($(INCLUDE_MONITORING),true)
+	$(COMPOSE_MONITORING) up -d
+else
 	$(COMPOSE) up -d
+endif
 
 up-monitoring:
 	$(COMPOSE_MONITORING) up -d
 
 down:
+	$(COMPOSE) down
+
+down-volumes:
 	$(COMPOSE) down -v
 
 db-migrate:

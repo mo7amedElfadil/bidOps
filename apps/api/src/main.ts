@@ -1,3 +1,4 @@
+import './env-config';
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
@@ -30,10 +31,9 @@ async function bootstrap() {
 	SwaggerModule.setup('/docs', app, document);
 
 	const port = process.env.PORT || 3000;
-	await app.listen(port as number);
+	await app.listen(port as number, '0.0.0.0');
 	// eslint-disable-next-line no-console
 	console.log(`API listening on http://localhost:${port}`);
 }
 
 bootstrap();
-

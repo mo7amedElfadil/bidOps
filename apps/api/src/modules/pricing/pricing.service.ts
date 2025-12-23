@@ -178,12 +178,7 @@ export class PricingService {
 		const overheads = overrides?.overheads ?? 0
 		const contingency = overrides?.contingency ?? 0
 		const fxRate = overrides?.fxRate ?? 1
-		const margin = overrides?.margin ?? 0.15
-		const minMargin = Number(process.env.PRICING_MIN_MARGIN ?? 0.1)
-
-		if (margin < minMargin) {
-			throw new BadRequestException(`Margin below guardrail: minimum ${minMargin * 100}%`)
-		}
+		const margin = overrides?.margin ?? 0.25
 
 		const withOverheads = baseCost * (1 + overheads)
 		const withCont = withOverheads * (1 + contingency)
@@ -210,4 +205,3 @@ export class PricingService {
 		return { pack, baseCost, totalPrice }
 	}
 }
-

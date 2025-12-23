@@ -47,7 +47,7 @@ export class ClarificationsService {
 			].join(',')
 			lines.push(line)
 		}
-		return lines.join('\\n')
+		return lines.join('\n')
 	}
 
 	async importCsv(opportunityId: string, file: any) {
@@ -72,7 +72,6 @@ export class ClarificationsService {
 }
 
 function esc(s: string) {
-	if (s.includes(',') || s.includes('"') || s.includes('\\n')) return '"' + s.replace(/"/g, '""') + '"'
+	if (s.includes(',') || s.includes('"') || s.includes('\n')) return '"' + s.replace(/"/g, '""') + '"'
 	return s
 }
-
