@@ -108,6 +108,8 @@
   * Web: Navigation simplified into a grouped mega menu dropdown to tidy the header
   * Web: Account page now hosts personal profile updates, change-password access, and individual notification preferences
   * Web: Change request submissions now send change-request notifications to bid owners
+  * Web: Standardized tenders/awards filters with shared Button/Input/Card components; tender search placement aligned with awards
+  * Web: Navigation now includes a User group for personal settings; Settings page separates SLA vs general configuration
 * Next:
   * Rate limiting defaults + security headers docs (hardening sweep)
   * Validate Monaqasat adapter against live pages; add edge-case handling

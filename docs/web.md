@@ -35,7 +35,7 @@ UI scope and behaviors:
 - English and Arabic content support
 - Award staging can trigger Monaqasat collector with date range (from/to)
 - Available ministry tenders view with request Go/No-Go approval CTA, promote-to-opportunity action, and purchase links
-- Navigation streamlined into Pipeline/Market/Admin groups with admin-only visibility
+- Navigation streamlined into Pipeline/Market/User/Admin groups with admin-only visibility
 - Future: AI/smart filtering for potential opportunities so only ITSQ-relevant tenders are surfaced
 - User management for ADMIN (create/edit/disable)
 - Tracker import issues list (invalid values left empty, resolved on update)
@@ -67,7 +67,7 @@ UI scope and behaviors:
 | `/admin/business-roles` | Business Roles | Manage business roles for routing and approvals |
 | `/notifications` | Notifications | In-app notifications and preferences |
 | `/search` | Attachment Search | Search attachments via `/search?q=` |
-| `/settings/sla` | SLA Settings | View/edit thresholds, holiday calendar, retention policy |
+| `/settings/sla` | Settings | SLA thresholds + holidays, opportunity lists, retention, timezone, import format, FX rates |
 | `/auth/callback` | Auth Callback | Handles OAuth redirect |
 | `/auth/login` | Login | Email/password login |
 | `/auth/signup` | Signup | Request access (pending approval) |

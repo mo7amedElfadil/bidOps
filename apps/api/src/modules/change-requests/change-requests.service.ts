@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common'
 import { PrismaService } from '../../prisma/prisma.service'
 import { NotificationsService } from '../notifications/notifications.service'
 import { NotificationActivities } from '../notifications/notifications.constants'
+import { buildFrontendUrl } from '../../utils/frontend-url'
 import { CreateChangeRequestDto } from './dto/create-change-request.dto'
 import { UpdateChangeRequestDto } from './dto/update-change-request.dto'
 
@@ -27,40 +28,44 @@ export class ChangeRequestsService {
 		if (!opp || opp.tenantId !== tenantId) {
 			throw new BadRequestException('Opportunity not found')
 		}
-	const changeRequest = await this.prisma.changeRequest.create({
-		data: {
-			opportunityId: dto.opportunityId,
-			changes: dto.changes,
-			impact: dto.impact,
-			requestedById: userId
+		const changeRequest = await this.prisma.changeRequest.create({
+			data: {
+				opportunityId: dto.opportunityId,
+				changes: dto.changes,
+				impact: dto.impact,
+				requestedById: userId
+			}
+		})
+
+		const recipients = new Set<string>()
+		if (opp.ownerId) recipients.add(opp.ownerId)
+		for (const owner of opp.bidOwners || []) {
+			if (owner.userId) recipients.add(owner.userId)
 		}
-	})
 
-	const recipients = new Set<string>()
-	if (opp.ownerId) recipients.add(opp.ownerId)
-	for (const owner of opp.bidOwners || []) {
-		if (owner.userId) recipients.add(owner.userId)
-	}
-
-	if (recipients.size) {
-		try {
-			await this.notifications.dispatch({
-				activity: NotificationActivities.CHANGE_REQUEST_CREATED,
-				stage: 'CHANGE_REQUEST',
-				tenantId,
-				subject: `Change request filed for ${opp.title || 'Opportunity'}`,
-				body: `${opp.title || 'Opportunity'} has a new change request.`,
-				opportunityId: opp.id,
-				userIds: Array.from(recipients),
-				actorId: userId,
-				includeDefaults: false
-			})
-		} catch (err) {
-			console.warn('[notifications] failed to dispatch change request alert', err)
+		if (recipients.size) {
+			try {
+				await this.notifications.dispatch({
+					activity: NotificationActivities.CHANGE_REQUEST_CREATED,
+					stage: 'CHANGE_REQUEST',
+					tenantId,
+					subject: `Change request filed for ${opp.title || 'Opportunity'}`,
+					body: `${opp.title || 'Opportunity'} has a new change request.`,
+					opportunityId: opp.id,
+					userIds: Array.from(recipients),
+					actorId: userId,
+					includeDefaults: false,
+					payload: {
+						actionUrl: buildFrontendUrl(`/opportunity/${opp.id}`),
+						actionLabel: 'Review change request'
+					}
+				})
+			} catch (err) {
+				console.warn('[notifications] failed to dispatch change request alert', err)
+			}
 		}
-	}
 
-	return changeRequest
+		return changeRequest
 }
 
 	update(id: string, dto: UpdateChangeRequestDto) {

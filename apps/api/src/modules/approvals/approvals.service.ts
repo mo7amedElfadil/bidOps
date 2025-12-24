@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 import * as crypto from 'crypto'
 import { ApprovalStatus, ApprovalType } from '@prisma/client'
+import { buildFrontendUrl } from '../../utils/frontend-url'
 import { RequestWorkApprovalDto } from './dto/request-work-approval.dto'
 import { ApprovalDecisionDto } from './dto/approval-decision.dto'
 import { NotificationsService } from '../notifications/notifications.service'
@@ -252,7 +253,11 @@ export class ApprovalsService {
 				userIds: reviewerUserIds,
 				roleIds: reviewerRoleIds,
 				opportunityId: opportunity.id,
-				actorId: user.id
+				actorId: user.id,
+				payload: {
+					actionUrl: buildFrontendUrl(`/opportunity/${opportunity.id}/approvals`),
+					actionLabel: 'Review Go/No-Go'
+				}
 			})
 		} catch (err) {
 			console.warn('[notifications] Failed to dispatch review.requested', err)
@@ -442,6 +447,7 @@ export class ApprovalsService {
 		await this.markPricingApproved(pack.opportunityId, userId)
 		try {
 			const tenantId = pack.opportunity?.tenantId || 'default'
+			const actionUrl = buildFrontendUrl(`/opportunity/${pack.opportunityId}/submission`)
 			await this.notifications.dispatch({
 				activity: NotificationActivities.FINALIZATION_COMPLETED,
 				stage: 'FINAL_SUBMISSION',
@@ -450,7 +456,11 @@ export class ApprovalsService {
 				body: `Approvals finalized for ${pack.opportunity?.title || 'Opportunity'}.`,
 				opportunityId: pack.opportunityId,
 				actorId: userId,
-				includeDefaults: true
+				includeDefaults: true,
+				payload: {
+					actionUrl,
+					actionLabel: 'Review submission readiness'
+				}
 			})
 		} catch (err) {
 			console.warn('[notifications] Failed to dispatch finalization', err)
@@ -574,7 +584,10 @@ export class ApprovalsService {
 		try {
 			const opportunity = approval.pack?.opportunity
 			const tenantId = opportunity?.tenantId || 'default'
-			const subject = `${stageLabelMap[approval.stage || approval.type || ''] ?? getStageLabel(approval.stage, approval.type)} ${body.status}`
+			const stageLabel =
+				stageLabelMap[approval.stage || approval.type || ''] ?? getStageLabel(approval.stage, approval.type)
+			const subject = `${stageLabel} ${body.status}`
+			const actionUrl = opportunity ? buildFrontendUrl(`/opportunity/${opportunity.id}/approvals`) : undefined
 			await this.notifications.dispatch({
 				activity: NotificationActivities.APPROVAL_DECISION,
 				stage: approval.stage ?? undefined,
@@ -587,7 +600,9 @@ export class ApprovalsService {
 				payload: {
 					status: body.status,
 					stage: approval.stage,
-					approvalId: approval.id
+					approvalId: approval.id,
+					actionUrl,
+					actionLabel: `View ${stageLabel.toLowerCase()} approval`
 				}
 			})
 		} catch (err) {

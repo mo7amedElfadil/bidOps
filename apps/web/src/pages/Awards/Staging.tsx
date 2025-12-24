@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, AwardStaging } from '../../api/client'
+import Button from '../../components/ui/Button'
+import Card from '../../components/ui/Card'
+import Input from '../../components/ui/Input'
 import { normalizeDateInput } from '../../utils/date'
 
 export default function AwardsStagingPage() {
@@ -227,19 +230,15 @@ export default function AwardsStagingPage() {
 						>
 							View Curated
 						</Link>
-						<button
-							className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200"
-							onClick={() => load(undefined, pagination.page)}
-							disabled={loading}
-						>
+						<Button variant="secondary" size="sm" onClick={() => load(undefined, pagination.page)} disabled={loading}>
 							Refresh
-						</button>
+						</Button>
 					</div>
 				</div>
 
 				<div className="mt-3 flex flex-wrap items-center gap-3">
-					<input
-						className="rounded border px-3 py-1.5 text-sm"
+					<Input
+						className="w-[280px]"
 						placeholder="Search client, title, tender ref"
 						value={filter.q}
 						onChange={e => {
@@ -268,7 +267,7 @@ export default function AwardsStagingPage() {
 					<span className="text-sm text-slate-600">Curated: {rows.filter(r => r.status === 'curated').length}</span>
 				</div>
 
-				<div className="mt-4 rounded border bg-white p-4 shadow-sm">
+				<Card className="mt-4">
 					<div className="flex flex-wrap items-end gap-3">
 						<div>
 							<label className="text-xs font-medium text-slate-600">From date (YYYY-MM-DD)</label>
@@ -288,22 +287,20 @@ export default function AwardsStagingPage() {
 								onChange={e => setRange({ ...range, to: e.target.value })}
 							/>
 						</div>
-						<button
-							className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-							onClick={runCollector}
-							disabled={running}
-						>
+						<Button variant="primary" size="sm" onClick={runCollector} disabled={running}>
 							{running ? 'Running...' : 'Run Monaqasat Collector'}
-						</button>
-						<button
-							className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
+						</Button>
+						<Button
+							variant="secondary"
+							size="sm"
 							onClick={() => load({ from: range.from, to: range.to }, 1)}
 							disabled={loading}
 						>
 							Filter List
-						</button>
-						<button
-							className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200"
+						</Button>
+						<Button
+							variant="ghost"
+							size="sm"
 							onClick={() => {
 								setRange({ from: '', to: '' })
 								load(undefined, 1)
@@ -311,7 +308,7 @@ export default function AwardsStagingPage() {
 							disabled={loading}
 						>
 							Clear Filter
-						</button>
+						</Button>
 						<span className="text-xs text-slate-500">
 							Filters apply to award date. Use Filter List to apply to staging view.
 						</span>
@@ -320,26 +317,23 @@ export default function AwardsStagingPage() {
 				{runSummary && <p className="mt-3 text-sm text-green-700">{runSummary}</p>}
 				{rows.length > 0 && (
 					<div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-						<button
-							className="rounded bg-emerald-600 px-3 py-1 text-white hover:bg-emerald-700 disabled:opacity-60"
+						<Button
+							size="sm"
+							className="bg-emerald-600 text-white hover:bg-emerald-700"
 							onClick={curateSelected}
 							disabled={curating === 'bulk' || runSummary === 'No staging records yet.'}
 						>
 							Curate selected
-						</button>
-						<button
-							className="rounded bg-red-600 px-3 py-1 text-white hover:bg-red-700 disabled:opacity-60"
-							onClick={deleteSelected}
-							disabled={curating === 'bulk'}
-						>
+						</Button>
+						<Button variant="danger" size="sm" onClick={deleteSelected} disabled={curating === 'bulk'}>
 							Delete selected
-						</button>
+						</Button>
 						<span className="text-slate-500">
 							{getSelectedIds().length} selected
 						</span>
 					</div>
 				)}
-				</div>
+				</Card>
 
 				{error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 				{loading ? (

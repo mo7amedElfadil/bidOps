@@ -160,8 +160,8 @@ export default function SlaSettingsPage() {
 
 	return (
 		<Page
-			title="SLA Settings"
-			subtitle="Warn/alert/urgent thresholds affect SLA badges and timeline coloring."
+			title="Settings"
+			subtitle="Configure SLA thresholds, lifecycle lists, and operational defaults."
 			actions={
 				<button
 					className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
@@ -172,7 +172,12 @@ export default function SlaSettingsPage() {
 				</button>
 			}
 		>
-			<div className="mt-4 rounded border bg-white p-4 shadow-sm">
+			<div className="mt-2">
+				<h2 className="text-sm font-semibold text-slate-700">SLA configuration</h2>
+				<p className="text-xs text-slate-500">Thresholds and holidays that drive SLA badges and reminders.</p>
+			</div>
+
+			<div className="mt-3 rounded border bg-white p-4 shadow-sm">
 				{slaQuery.isLoading ? (
 					<p className="text-sm text-slate-600">Loading current settings...</p>
 				) : (
@@ -222,6 +227,42 @@ export default function SlaSettingsPage() {
 			</div>
 
 			<div className="mt-6 rounded border bg-white p-4 shadow-sm">
+				<div className="flex items-center justify-between">
+					<h3 className="text-sm font-semibold">Holiday Calendar</h3>
+					<button
+						className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300 disabled:opacity-50"
+						onClick={() => holidaysMutation.mutate()}
+						disabled={holidaysMutation.isPending}
+					>
+						{holidaysMutation.isPending ? 'Saving...' : 'Save'}
+					</button>
+				</div>
+				<p className="mt-2 text-xs text-slate-600">
+					Add one date per line in YYYY-MM-DD format. These dates can be used in SLA calculations.
+				</p>
+				<textarea
+					className="mt-3 min-h-[120px] w-full rounded border px-3 py-2 text-sm"
+					value={holidayText}
+					onChange={e => setHolidayText(e.target.value)}
+					placeholder="2026-01-01&#10;2026-02-18"
+				/>
+				{holidaysMutation.error && (
+					<p className="mt-3 text-sm text-red-600">
+						Failed to save: {(holidaysMutation.error as Error).message}
+					</p>
+				)}
+				{holidaysMutation.isSuccess && <p className="mt-3 text-sm text-green-700">Saved.</p>}
+				<p className="mt-3 text-xs text-slate-600">
+					API: GET/PUT /settings/holidays (role: MANAGER/ADMIN to edit).
+				</p>
+			</div>
+
+			<div className="mt-8">
+				<h2 className="text-sm font-semibold text-slate-700">Opportunity lifecycle lists</h2>
+				<p className="text-xs text-slate-500">Stages and statuses used across opportunity records.</p>
+			</div>
+
+			<div className="mt-3 rounded border bg-white p-4 shadow-sm">
 				<h3 className="text-sm font-semibold">Opportunity stages</h3>
 				<p className="mt-2 text-xs text-slate-600">
 					Define the dropdown values you'll use when moving opportunities through the lifecycle.
@@ -341,38 +382,12 @@ export default function SlaSettingsPage() {
 				)}
 			</div>
 
-			<div className="mt-6 rounded border bg-white p-4 shadow-sm">
-				<div className="flex items-center justify-between">
-					<h3 className="text-sm font-semibold">Holiday Calendar</h3>
-					<button
-						className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300 disabled:opacity-50"
-						onClick={() => holidaysMutation.mutate()}
-						disabled={holidaysMutation.isPending}
-					>
-						{holidaysMutation.isPending ? 'Saving...' : 'Save'}
-					</button>
-				</div>
-				<p className="mt-2 text-xs text-slate-600">
-					Add one date per line in YYYY-MM-DD format. These dates can be used in SLA calculations.
-				</p>
-				<textarea
-					className="mt-3 min-h-[120px] w-full rounded border px-3 py-2 text-sm"
-					value={holidayText}
-					onChange={e => setHolidayText(e.target.value)}
-					placeholder="2026-01-01&#10;2026-02-18"
-				/>
-				{holidaysMutation.error && (
-					<p className="mt-3 text-sm text-red-600">
-						Failed to save: {(holidaysMutation.error as Error).message}
-					</p>
-				)}
-				{holidaysMutation.isSuccess && <p className="mt-3 text-sm text-green-700">Saved.</p>}
-				<p className="mt-3 text-xs text-slate-600">
-					API: GET/PUT /settings/holidays (role: MANAGER/ADMIN to edit).
-				</p>
+			<div className="mt-8">
+				<h2 className="text-sm font-semibold text-slate-700">General settings</h2>
+				<p className="text-xs text-slate-500">System defaults used across import, storage, and pricing.</p>
 			</div>
 
-			<div className="mt-6 rounded border bg-white p-4 shadow-sm">
+			<div className="mt-3 rounded border bg-white p-4 shadow-sm">
 				<div className="flex items-center justify-between">
 					<h3 className="text-sm font-semibold">Data Retention</h3>
 					<button

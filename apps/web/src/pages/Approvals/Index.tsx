@@ -32,6 +32,14 @@ export default function ApprovalsPage() {
 		onSuccess: () => approvals.refetch()
 	})
 
+	const pendingStatuses = new Set(['PENDING', 'IN_REVIEW', 'CHANGES_REQUESTED', 'RESUBMITTED'])
+
+	const approvalRows = approvals.data || []
+	const nextApproval = approvalRows.find(approval => pendingStatuses.has(approval.status)) ?? null
+	const approvalsComplete =
+		approvalRows.length > 0 &&
+		approvalRows.every(approval => ['APPROVED', 'APPROVED_WITH_CONDITIONS'].includes(approval.status))
+
 	const getStatusColor = (status: string) => {
 		switch (status) {
 			case 'APPROVED':
@@ -113,6 +121,19 @@ export default function ApprovalsPage() {
 									</button>
 								)}
 							</div>
+
+							{approvalRows.length > 0 && (
+								<div className="mt-4 rounded border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-600">
+									<p className="font-semibold text-slate-900">
+										{approvalsComplete ? 'All approvals complete — ready for submission' : `Awaiting ${getTypeLabel(nextApproval?.type || '')}`}
+									</p>
+									<p className="mt-1 text-xs text-slate-500">
+										{nextApproval
+											? `Next action: ${getActionLabel(nextApproval.type)}${nextApproval.approverRole ? ` (${nextApproval.approverRole})` : ''}`
+											: 'No pending stages. Reviewers may finalize the submission.'}
+									</p>
+								</div>
+							)}
 
 							{approvals.isLoading ? (
 								<p className="mt-3 text-sm text-slate-600">Loading approvals...</p>

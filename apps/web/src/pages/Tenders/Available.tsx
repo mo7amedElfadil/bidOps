@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, BusinessRole, MinistryTender, UserAccount } from '../../api/client'
+import Button from '../../components/ui/Button'
+import Card from '../../components/ui/Card'
+import Input from '../../components/ui/Input'
 import { normalizeDateInput } from '../../utils/date'
 import { getUserRole } from '../../utils/auth'
 import { toast } from '../../utils/toast'
@@ -280,71 +283,15 @@ export default function AvailableTendersPage() {
 						<p className="text-sm text-slate-600">Review tenders from Monaqasat and promote to opportunities.</p>
 					</div>
 					<div className="flex gap-2">
-						<button
-							className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
-							onClick={() => load(pagination.page)}
-							disabled={loading}
-						>
+						<Button variant="secondary" size="sm" onClick={() => load(pagination.page)} disabled={loading}>
 							Refresh
-						</button>
+						</Button>
 					</div>
-				</div>
-
-
-				<div className="mt-4 rounded border bg-white p-4 shadow-sm">
-					<div className="flex flex-wrap items-end gap-4">
-						<div>
-							<label className="text-xs font-medium text-slate-600">From date (UTC+3, YYYY-MM-DD)</label>
-							<input
-								type="date"
-								className="mt-1 block h-10 w-[180px] rounded border px-3 py-1.5 text-sm"
-								value={fromDate}
-								onChange={e => setFromDate(e.target.value)}
-							/>
-						</div>
-						<div>
-							<label className="text-xs font-medium text-slate-600">To date (YYYY-MM-DD)</label>
-							<input
-								type="date"
-								className="mt-1 block h-10 w-[180px] rounded border px-3 py-1.5 text-sm"
-								value={toDate}
-								onChange={e => setToDate(e.target.value)}
-							/>
-						</div>
-						<button
-							className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-							onClick={runCollector}
-							disabled={running}
-						>
-							{running ? 'Running...' : 'Run Monaqasat Collector'}
-						</button>
-						<button
-							className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
-							onClick={() => load(1)}
-							disabled={loading}
-						>
-							Filter List
-						</button>
-						<span className="text-xs text-slate-500">Filters apply to publish/close dates.</span>
-					</div>
-					{runError && <p className="mt-3 text-sm text-red-600">{runError}</p>}
-					{runSummary && <p className="mt-3 text-sm text-green-700">{runSummary}</p>}
-					{selectedRows.length > 0 && (
-						<div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-							<button
-								className="rounded bg-red-600 px-3 py-1 text-white hover:bg-red-700 disabled:opacity-60"
-								onClick={deleteSelectedTenders}
-								disabled={running}
-							>
-								Delete selected ({selectedRows.length})
-							</button>
-						</div>
-					)}
 				</div>
 
 				<div className="mt-3 flex flex-wrap items-center gap-3">
-					<input
-						className="rounded border px-3 py-1.5 text-sm"
+					<Input
+						className="w-[280px]"
 						placeholder="Search tender ref, ministry, title"
 						value={filter.q}
 						onChange={e => {
@@ -369,14 +316,61 @@ export default function AvailableTendersPage() {
 						<option value="new">new</option>
 						<option value="promoted">promoted</option>
 					</select>
-					<button
-						className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
-						onClick={() => load(1)}
-						disabled={loading}
-					>
+					<Button variant="secondary" size="sm" onClick={() => load(1)} disabled={loading}>
 						Apply Filters
-					</button>
+					</Button>
 				</div>
+
+				<Card className="mt-4">
+					<div className="flex flex-wrap items-end gap-4">
+						<div>
+							<label className="text-xs font-medium text-slate-600">From date (UTC+3, YYYY-MM-DD)</label>
+							<input
+								type="date"
+								className="mt-1 block h-10 w-[180px] rounded border px-3 py-1.5 text-sm"
+								value={fromDate}
+								onChange={e => setFromDate(e.target.value)}
+							/>
+						</div>
+						<div>
+							<label className="text-xs font-medium text-slate-600">To date (YYYY-MM-DD)</label>
+							<input
+								type="date"
+								className="mt-1 block h-10 w-[180px] rounded border px-3 py-1.5 text-sm"
+								value={toDate}
+								onChange={e => setToDate(e.target.value)}
+							/>
+							</div>
+						<Button variant="primary" size="sm" onClick={runCollector} disabled={running}>
+							{running ? 'Running...' : 'Run Monaqasat Collector'}
+						</Button>
+						<Button variant="secondary" size="sm" onClick={() => load(1)} disabled={loading}>
+							Filter List
+						</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={() => {
+								setFromDate('')
+								setToDate('')
+								load(1)
+							}}
+							disabled={loading}
+						>
+							Clear Filter
+						</Button>
+						<span className="text-xs text-slate-500">Filters apply to publish/close dates.</span>
+					</div>
+					{runError && <p className="mt-3 text-sm text-red-600">{runError}</p>}
+					{runSummary && <p className="mt-3 text-sm text-green-700">{runSummary}</p>}
+					{selectedRows.length > 0 && (
+						<div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+							<Button variant="danger" size="sm" onClick={deleteSelectedTenders} disabled={running}>
+								Delete selected ({selectedRows.length})
+							</Button>
+						</div>
+					)}
+				</Card>
 				{error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
 				{loading ? (

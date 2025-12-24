@@ -8,6 +8,7 @@ import { parsePagination } from '../../utils/pagination'
 import { UpdateChecklistDto } from './dto/update-checklist.dto'
 import { NotificationsService } from '../notifications/notifications.service'
 import { NotificationActivities } from '../notifications/notifications.constants'
+import { buildFrontendUrl } from '../../utils/frontend-url'
 
 @Injectable()
 export class OpportunitiesService {
@@ -168,6 +169,10 @@ export class OpportunitiesService {
 				mergeRoles: true,
 				includeDefaults: true,
 				opportunityId: created.id
+				payload: {
+					actionUrl: buildFrontendUrl(`/opportunity/${created.id}`),
+					actionLabel: 'View opportunity'
+				}
 			})
 		} catch (err) {
 			// Avoid failing the create flow on notification errors.

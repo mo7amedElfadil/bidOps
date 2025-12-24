@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import clsx from 'clsx'
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost'
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type ButtonSize = 'sm' | 'md' | 'lg'
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -14,7 +14,8 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 const variantClasses: Record<ButtonVariant, string> = {
 	primary: 'bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-500',
 	secondary: 'bg-slate-200 text-slate-900 hover:bg-slate-300 focus-visible:ring-slate-500',
-	ghost: 'bg-transparent text-slate-900 hover:text-slate-900/80 focus-visible:ring-slate-500'
+	ghost: 'bg-transparent text-slate-900 hover:text-slate-900/80 focus-visible:ring-slate-500',
+	danger: 'bg-rose-600 text-white hover:bg-rose-700 focus-visible:ring-rose-500'
 }
 
 const sizeClasses: Record<ButtonSize, string> = {

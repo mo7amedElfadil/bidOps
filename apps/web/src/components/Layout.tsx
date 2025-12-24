@@ -16,10 +16,11 @@ const routeLabels: Record<string, string> = {
 	'/tenders/available': 'Tenders',
 	'/approvals/review': 'Bid Review',
 	'/notifications': 'Notifications',
+	'/account': 'Account',
 	'/admin/users': 'Users',
 	'/admin/business-roles': 'Business Roles',
 	'/search': 'Search',
-	'/settings/sla': 'SLA',
+	'/settings/sla': 'Settings',
 	'/import/tracker': 'Tracker Import'
 }
 
@@ -44,12 +45,18 @@ const navGroups = [
 		]
 	},
 	{
-		label: 'Admin',
+		label: 'User',
 		items: [
 			{ to: '/notifications', label: 'Notifications' },
+			{ to: '/account', label: 'Account' }
+		]
+	},
+	{
+		label: 'Admin',
+		items: [
 			{ to: '/admin/users', label: 'Users' },
 			{ to: '/admin/business-roles', label: 'Business Roles' },
-			{ to: '/settings/sla', label: 'SLA' }
+			{ to: '/settings/sla', label: 'Settings' }
 		]
 	}
 ]

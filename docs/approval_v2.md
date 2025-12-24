@@ -46,3 +46,22 @@
 3. Implement in-app notification dispatch + UI hook so users receive approval-related alerts.
 
 Once these steps are underway, continue with the UI polish, checklist sync, and documentation updates listed above.
+
+## Implementation checklist (current sprint)
+
+| Phase | Outcome | Notes |
+|-------|---------|-------|
+| Backend metadata | `review` payload returns `nextStageLabel`, `nextActionLabel`, `blockedReason`, `readyToFinalize`, and `assignedToMe`; finalize updates opportunity stage + checklist | Ensures the UI can show “blocked by” cues and only enable finalize when every approval is green |
+| Notifications | `finalize`, `decision`, and `request` dispatches include `actionUrl`/`actionLabel`, stage-specific subjects, and the new `NotificationActivities` values so inbox/email links stay actionable | Powers the inbox badge, quick links, and email template button |
+| Bid review UX | `/approvals/review` renders stage chips, next action copy, “Assigned to you”, blocked reasons, and finalization CTA that lights up only when `readyToFinalize` | Provides a focused inbox with a clear path (Start → Approve → Finalize) |
+| Opportunity approvals | Opportunity detail shows the current stage banner, stage gates, approval list sorted by stage, and role-specific CTAs; `Start Approval Process` only appears when no approvals exist | Aligns the in-context workflow with the inbox |
+| Checklist sync | Finalization toggles `pricingApproved`, while compliance/clarifications remain hand-checked and the legacy portal credentials flag is hidden in the UI | Keeps submission readiness signals accurate without losing schema compatibility |
+| Inbox & emails | Actionable email template renders a button with the `actionUrl` (fallback plaintext) and `/notifications` inbox pulls in these entries | Users can go from email/button to the relevant page immediately |
+
+## Outstanding scope (future iterations)
+
+- **Search + pagination**: Tables need manual page selection, cross-page keyword search, and case-insensitive substring matching (optionally vector-backed once the search index is wired).
+- **Timeline & Kanban**: Swap to a dedicated Gantt library, add adjustable columns, enforce column viewport height defaults, auto-scroll when dragging, color bars by SLA thresholds, allow export, and ensure cards link to their detail page.
+- **Collector & job queue**: Queue long-running processes (collectors, pricing recalcs, large exports) via BullMQ; surface job statuses/alarm logs when connectors fail; ensure systems like SLA tick run safely in the queue.
+- **User management**: Allow multi-select delete/curate, handle cascading relations (opportunity owners/approvals), and keep personal notification preferences under `/account` while admin controls tenant-wide defaults.
+- **Ops & docs**: Synchronize `docs/ops.md` with the `make down` change that preserves volumes and document the new queue/notification behaviors so future maintainers can run the stack reliably.
