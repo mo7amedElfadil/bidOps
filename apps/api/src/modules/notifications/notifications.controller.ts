@@ -1,6 +1,6 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common'
 import { Type } from 'class-transformer'
-import { IsArray, IsBoolean, IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator'
+import { IsArray, IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator'
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard'
 import { Roles } from '../../auth/roles.decorator'
 import { NotificationChannel, NotificationDigestMode } from '@prisma/client'
@@ -56,10 +56,12 @@ class DefaultRoutingDto {
 
 	@IsOptional()
 	@IsArray()
+	@IsUUID('4', { each: true })
 	userIds?: string[]
 
 	@IsOptional()
 	@IsArray()
+	@IsUUID('4', { each: true })
 	businessRoleIds?: string[]
 }
 
@@ -115,5 +117,11 @@ export class NotificationsController {
 	@Roles('ADMIN')
 	saveDefaults(@Body() body: SaveDefaultsDto, @Req() req: any) {
 		return this.svc.saveDefaults(req.user?.tenantId || 'default', body.items || [])
+	}
+
+	@Delete('defaults/:id')
+	@Roles('ADMIN')
+	deleteDefault(@Param('id') id: string, @Req() req: any) {
+		return this.svc.deleteDefault(req.user?.tenantId || 'default', id)
 	}
 }

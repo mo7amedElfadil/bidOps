@@ -152,6 +152,7 @@ export class OpportunitiesService {
 				body,
 				userIds: explicitUserIds,
 				mergeRoles: true,
+				includeDefaults: true,
 				opportunityId: created.id
 			})
 		} catch (err) {
@@ -373,7 +374,37 @@ export class OpportunitiesService {
 					attachment: 'portalCredentialsAttachmentId'
 				},
 				input.portalCredentialsVerified
-			)
+			),
+			...applyItem(
+				'complianceCreated',
+				{
+					flag: 'complianceCreated',
+					at: 'complianceCreatedAt',
+					by: 'complianceCreatedById',
+					attachment: 'complianceCreatedAttachmentId'
+				},
+				input.complianceCreated
+			),
+			...applyItem(
+				'clarificationsSent',
+				{
+					flag: 'clarificationsSent',
+					at: 'clarificationsSentAt',
+					by: 'clarificationsSentById',
+					attachment: 'clarificationsSentAttachmentId'
+				},
+				input.clarificationsSent
+			),
+			...applyItem(
+				'pricingApproved',
+				{
+					flag: 'pricingApproved',
+					at: 'pricingApprovedAt',
+					by: 'pricingApprovedById',
+					attachment: 'pricingApprovedAttachmentId'
+				},
+				input.pricingApproved
+			),
 		} as Prisma.OpportunityChecklistUpdateInput
 		if (Object.keys(notes).length) {
 			updateData.notes = notes

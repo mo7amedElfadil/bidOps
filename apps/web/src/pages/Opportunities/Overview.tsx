@@ -242,7 +242,9 @@ export default function OpportunityOverview() {
 			bondPurchased: notes.bondPurchased || '',
 			formsCompleted: notes.formsCompleted || '',
 			finalPdfReady: notes.finalPdfReady || '',
-			portalCredentialsVerified: notes.portalCredentialsVerified || ''
+			complianceCreated: notes.complianceCreated || '',
+			clarificationsSent: notes.clarificationsSent || '',
+			pricingApproved: notes.pricingApproved || ''
 		})
 	}, [checklistQuery.data])
 
@@ -259,10 +261,16 @@ export default function OpportunityOverview() {
 		label: string
 		help: string
 	}> = [
-		{ key: 'bondPurchased', label: 'Tender bond purchased', help: 'Upload receipt or mark complete.' },
+		{ key: 'bondPurchased', label: 'Tender bond submitted', help: 'Upload receipt or mark complete.' },
 		{ key: 'formsCompleted', label: 'Mandatory forms completed', help: 'Confirm all required forms are done.' },
 		{ key: 'finalPdfReady', label: 'Final combined PDF ready', help: 'Technical + commercial merged.' },
-		{ key: 'portalCredentialsVerified', label: 'Submission portal credentials verified', help: 'Confirm access works.' }
+		{ key: 'complianceCreated', label: 'Compliance created', help: 'Ensure the compliance matrix is documented.' },
+		{ key: 'clarificationsSent', label: 'Clarifications sent (or N/A)', help: 'Tick once clarifications have been issued or are not required.' },
+		{
+			key: 'pricingApproved',
+			label: 'Pricing approved',
+			help: 'Auto-checks after pricing approvals finish; you can toggle manually if needed.'
+		}
 	]
 
 	return (

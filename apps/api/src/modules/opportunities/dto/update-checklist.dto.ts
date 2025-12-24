@@ -35,4 +35,19 @@ export class UpdateChecklistDto {
 	@ValidateNested()
 	@Type(() => ChecklistItemDto)
 	portalCredentialsVerified?: ChecklistItemDto
+
+	@IsOptional()
+	@ValidateNested()
+	@Type(() => ChecklistItemDto)
+	complianceCreated?: ChecklistItemDto
+
+	@IsOptional()
+	@ValidateNested()
+	@Type(() => ChecklistItemDto)
+	clarificationsSent?: ChecklistItemDto
+
+	@IsOptional()
+	@ValidateNested()
+	@Type(() => ChecklistItemDto)
+	pricingApproved?: ChecklistItemDto
 }

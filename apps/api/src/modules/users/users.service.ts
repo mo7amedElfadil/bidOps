@@ -35,22 +35,34 @@ export class UsersService {
 			this.prisma.user.count({ where })
 		])
 
-		const mapped = items.map(user => ({
-			...user,
-			businessRoles: user.businessRoleLinks.map(link => ({
-				id: link.businessRole.id,
-				name: link.businessRole.name
-			}))
-		}))
+		const mapped = items.map(user => {
+			const { businessRoleLinks, ...rest } = user
+			return {
+				...rest,
+				businessRoles: businessRoleLinks.map(link => ({
+					id: link.businessRole.id,
+					name: link.businessRole.name
+				}))
+			}
+		})
 
 		return { items: mapped, total, page, pageSize }
 	}
 
-	get(id: string) {
-		return this.prisma.user.findUnique({
+	async get(id: string) {
+		const user = await this.prisma.user.findUnique({
 			where: { id },
 			include: { businessRoleLinks: { include: { businessRole: true } } }
 		})
+		if (!user) return null
+		const { businessRoleLinks, ...rest } = user
+		return {
+			...rest,
+			businessRoles: businessRoleLinks.map(link => ({
+				id: link.businessRole.id,
+				name: link.businessRole.name
+			}))
+		}
 	}
 
 	async create(data: {

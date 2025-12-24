@@ -37,6 +37,8 @@
   - Opportunity overview now provides a modal to create new users (name/email/type/role) and assign them as owners
   - Settings now allows editing stage and status picklists that feed opportunity dropdowns
   - Tender collector endpoint now accepts `fromDate`/`toDate` so available tenders can be limited to a date window
+  - Notifications: Business roles added (admin-managed) and user preferences + routing defaults added
+  - Notifications: Event-driven dispatch for opportunity creation and review requests; SLA alerts de-duped with longer cadence
 * Completed iterations:
   - M0: Foundations (monorepo, Docker, CI, schema, auth, storage) ✓
   - M1: Core Opportunities, SLA engine, document vault ✓

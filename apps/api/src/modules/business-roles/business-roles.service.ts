@@ -6,9 +6,27 @@ export class BusinessRolesService {
 	constructor(private prisma: PrismaService) {}
 
 	list(tenantId: string) {
-		return this.prisma.businessRole.findMany({
-			where: { tenantId },
-			orderBy: { name: 'asc' }
+		return this.ensureDefaults(tenantId).then(() =>
+			this.prisma.businessRole.findMany({
+				where: { tenantId },
+				orderBy: { name: 'asc' }
+			})
+		)
+	}
+
+	private async ensureDefaults(tenantId: string) {
+		const count = await this.prisma.businessRole.count({ where: { tenantId } })
+		if (count > 0) return
+		const defaults = [
+			'Bid Manager',
+			'Team Member',
+			'Project Manager',
+			'Sales Manager',
+			'Executive'
+		]
+		await this.prisma.businessRole.createMany({
+			data: defaults.map(name => ({ name, tenantId })),
+			skipDuplicates: true
 		})
 	}
 
@@ -44,7 +62,7 @@ export class BusinessRolesService {
 			updateData.name = name
 		}
 		if (data.description !== undefined) {
-			updateData.description = data.description?.trim() || null
+			updateData.description = data.description?.trim() || undefined
 		}
 		return this.prisma.businessRole.update({ where: { id }, data: updateData })
 	}

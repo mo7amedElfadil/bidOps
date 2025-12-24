@@ -39,6 +39,8 @@ model User {
   opportunities Opportunity[] @relation("OwnerOpps")
   bidOwnerLinks OpportunityBidOwner[]
   businessRoleLinks UserBusinessRole[]
+  notificationPreferences NotificationPreference[]
+  notifications Notification[]
 }
 
 model Client {
@@ -105,6 +107,7 @@ model Opportunity {
   importIssues    ImportIssue[]
   checklist      OpportunityChecklist?
   changeRequests ChangeRequest[]
+  notifications Notification[]
 }
 
 model OpportunityBidOwner {
@@ -363,6 +366,17 @@ model OpportunityChecklist {
   portalCredentialsVerifiedAt  DateTime?
   portalCredentialsVerifiedById String?
   portalCredentialsAttachmentId String?
+  complianceCreated            Boolean  @default(false)
+  complianceCreatedAt          DateTime?
+  complianceCreatedById        String?
+  complianceCreatedAttachmentId String?
+  clarificationsSent           Boolean  @default(false)
+  clarificationsSentAt         DateTime?
+  clarificationsSentById       String?
+  clarificationsSentAttachmentId String?
+  pricingApproved              Boolean  @default(false)
+  pricingApprovedAt            DateTime?
+  pricingApprovedById          String?
   notes                        Json?
   createdAt                    DateTime @default(now())
   updatedAt                    DateTime @updatedAt

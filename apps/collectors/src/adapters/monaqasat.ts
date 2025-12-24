@@ -104,12 +104,15 @@ export class MonaqasatAdapter extends BaseAdapter {
 					let awardValue: number | undefined
 					let awardDate = this.parseDate(summary.awardDateText)
 					let winners: string[] = []
+					let codes: string[] = []
 
 					if (detailUrl) {
+						await this.ensureEnglish(detailPage)
 						const detail = await this.parseTenderDetails(detailPage, detailUrl)
 						if (detail.awardValue) awardValue = detail.awardValue
 						if (detail.awardDate) awardDate = detail.awardDate
 						if (detail.winners.length) winners = detail.winners
+						if (detail.codes.length) codes = detail.codes
 						if (!summary.client && detail.buyer) {
 							summary.client = detail.buyer
 						}
@@ -140,6 +143,7 @@ export class MonaqasatAdapter extends BaseAdapter {
 						awardDate: awardDate ?? undefined,
 						winners,
 						awardValue,
+						codes,
 						currency: 'QAR',
 						sourceUrl:
 							detailUrl || (summary.tenderHref ? new URL(summary.tenderHref, this.portalUrl).toString() : undefined)
@@ -215,9 +219,28 @@ export class MonaqasatAdapter extends BaseAdapter {
 		await page.goto(detailUrl, { waitUntil: 'domcontentloaded', timeout: 30000 })
 		const result = await page.evaluate(() => {
 			const text = (node: Element | null | undefined) => node?.textContent?.trim() || ''
+			const normalize = (value: string) => value.replace(/\s+/g, ' ').toLowerCase()
+			const matches = (value: string, keywords: string[]) =>
+				keywords.some(keyword => normalize(value).includes(keyword))
+			const findLabelValue = (keywords: string[]) => {
+				const rows = Array.from(document.querySelectorAll('tr, .cards-row, .row'))
+				for (const row of rows) {
+					const label = text(row.querySelector('.card-label, .label, th'))
+					if (!label) continue
+					if (matches(label, keywords)) {
+						const target =
+							row.querySelector('.card-title, td:last-child, .value, .col-md-8') ||
+							row.querySelector('td:nth-child(2)') ||
+							row.querySelector('span')
+						if (target) return text(target)
+					}
+				}
+				return ''
+			}
 			const awardDateText = text(document.querySelector('#lblAwardedDate'))
 			const awardValueText = text(document.querySelector('#lbl_award'))
 			const buyer = text(document.querySelector('#lblRequesterEntity'))
+			const codesText = findLabelValue(['code', 'activity code', 'business activity', 'classification', 'النشاط'])
 
 			const winners: string[] = []
 			const headers = Array.from(document.querySelectorAll('h3'))
@@ -233,14 +256,19 @@ export class MonaqasatAdapter extends BaseAdapter {
 				}
 			}
 
-			return { awardDateText, awardValueText, winners, buyer }
+			return { awardDateText, awardValueText, winners, buyer, codesText }
 		})
 
+		const parsedCodes = (result.codesText || '')
+			.split(/[;,]/)
+			.map(part => part.trim())
+			.filter(Boolean)
 		return {
 			awardDate: this.parseDate(result.awardDateText),
 			awardValue: this.parseValue(this.normalizeDigits(result.awardValueText)),
 			winners: Array.from(new Set(result.winners)),
-			buyer: result.buyer
+			buyer: result.buyer,
+			codes: parsedCodes
 		}
 	}
 }

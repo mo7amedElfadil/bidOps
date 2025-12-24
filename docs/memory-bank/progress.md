@@ -88,6 +88,9 @@
   * Ops: Workers container fixed for collector queue (bullseye image, prisma generate mount, redis maxRetriesPerRequest)
   * API: Tenant pack access now returns NotFound for missing packs and controllers await access checks
   * Date filters: Added backend + UI normalization for tender/award ranges; tender list now supports from/to filters
+  * Notifications: Added business roles, notification routing defaults, preferences, and in-app notification endpoints/UI
+  * Notifications: Event-driven dispatch for opportunity creation and review requests; SLA alerts de-duped with longer cadence
+  * Tenders/Opportunities: Go/No-Go status mapped to tenders list and displayed as status chips with quick access to linked opportunities
 * Next:
   * Rate limiting defaults + security headers docs (hardening sweep)
   * Validate Monaqasat adapter against live pages; add edge-case handling

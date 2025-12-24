@@ -1,4 +1,4 @@
-import { NotificationChannel, NotificationDigestMode } from '@prisma/client'
+import { NotificationChannel, NotificationDigestMode, Prisma } from '@prisma/client'
 import { prisma } from '../prisma'
 
 export interface SlaConfig {
@@ -47,13 +47,14 @@ export async function slaTick() {
 		})
 		const directUserIds = routing?.userIds || []
 		const roleIds = routing?.businessRoleIds || []
-		const roleLinks = roleIds.length
+		type RoleLink = Prisma.UserBusinessRoleGetPayload<{ include: { user: true } }>
+		const roleLinks: RoleLink[] = roleIds.length
 			? await prisma.userBusinessRole.findMany({
 					where: { businessRoleId: { in: roleIds }, user: { tenantId: opp.tenantId || 'default', isActive: true } },
 					include: { user: true }
 				})
 			: []
-		const roleUserIds = roleLinks.map(link => link.userId)
+		const roleUserIds = roleLinks.map((link: RoleLink) => link.userId)
 		const recipientIds = Array.from(new Set([...directUserIds, ...roleUserIds]))
 		const recipients = recipientIds.length
 			? await prisma.user.findMany({
@@ -62,7 +63,7 @@ export async function slaTick() {
 				})
 			: []
 
-		const prefRows = recipientIds.length
+		const prefRows: Prisma.NotificationPreferenceGetPayload<{}>[] = recipientIds.length
 			? await prisma.notificationPreference.findMany({
 					where: { userId: { in: recipientIds }, activity: 'sla' }
 				})
@@ -71,7 +72,7 @@ export async function slaTick() {
 
 		const subject = `[SLA ${level.toUpperCase()}] ${opp.title} due in ${days} day(s)`
 		const body = `Opportunity "${opp.title}" is due on ${opp.submissionDate.toISOString().slice(0, 10)}.`
-		const notifications = []
+		const notifications: Prisma.NotificationCreateManyInput[] = []
 
 		for (const recipient of recipients) {
 			for (const channel of [NotificationChannel.EMAIL, NotificationChannel.IN_APP]) {
@@ -93,10 +94,6 @@ export async function slaTick() {
 		}
 
 		if (!notifications.length) {
-			await prisma.opportunity.update({
-				where: { id: opp.id },
-				data: { slaLastNotifiedLevel: level, slaLastNotifiedAt: now }
-			})
 			continue
 		}
 
@@ -109,4 +106,3 @@ export async function slaTick() {
 		])
 	}
 }
-

@@ -54,6 +54,8 @@ UI scope and behaviors:
 | `/awards/events` | Curated Awards | View curated award events |
 | `/tenders/available` | Available Tenders | List Monaqasat tenders and promote to opportunities |
 | `/admin/users` | Users | Admin user management |
+| `/admin/business-roles` | Business Roles | Manage business roles for routing and approvals |
+| `/notifications` | Notifications | In-app notifications and preferences |
 | `/search` | Attachment Search | Search attachments via `/search?q=` |
 | `/settings/sla` | SLA Settings | View/edit thresholds, holiday calendar, retention policy |
 | `/auth/callback` | Auth Callback | Handles OAuth redirect |

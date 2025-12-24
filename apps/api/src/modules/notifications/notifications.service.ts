@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { NotificationChannel, NotificationDigestMode, Prisma } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 
@@ -11,6 +11,7 @@ type DispatchInput = {
 	userIds?: string[]
 	roleIds?: string[]
 	mergeRoles?: boolean
+	includeDefaults?: boolean
 	opportunityId?: string
 	actorId?: string
 	payload?: Prisma.InputJsonValue
@@ -60,13 +61,13 @@ export class NotificationsService {
 
 	private async getDefaultRouting(tenantId: string, activity: string, stage?: string) {
 		if (stage) {
-			const withStage = await this.prisma.notificationRoutingDefault.findUnique({
-				where: { tenantId_activity_stage: { tenantId, activity, stage } }
+			const withStage = await this.prisma.notificationRoutingDefault.findFirst({
+				where: { tenantId, activity, stage }
 			})
 			if (withStage) return withStage
 		}
-		return this.prisma.notificationRoutingDefault.findUnique({
-			where: { tenantId_activity_stage: { tenantId, activity, stage: null } }
+		return this.prisma.notificationRoutingDefault.findFirst({
+			where: { tenantId, activity, stage: null }
 		})
 	}
 
@@ -77,6 +78,7 @@ export class NotificationsService {
 		userIds?: string[]
 		roleIds?: string[]
 		mergeRoles?: boolean
+		includeDefaults?: boolean
 	}) {
 		const explicitUsers = input.userIds?.filter(Boolean) || []
 		const explicitRoles = input.roleIds?.filter(Boolean) || []
@@ -91,6 +93,18 @@ export class NotificationsService {
 					merged.set(roleUser.id, roleUser)
 				}
 				users = Array.from(merged.values())
+			}
+			if (input.includeDefaults) {
+				const defaults = await this.getDefaultRouting(input.tenantId, input.activity, input.stage)
+				if (defaults) {
+					const defaultUsers = await this.getUsersByIds(defaults.userIds || [], input.tenantId)
+					const defaultRoleUsers = await this.getUsersByBusinessRoles(defaults.businessRoleIds || [], input.tenantId)
+					const merged = new Map(users.map(u => [u.id, u]))
+					for (const extra of [...defaultUsers, ...defaultRoleUsers]) {
+						merged.set(extra.id, extra)
+					}
+					users = Array.from(merged.values())
+				}
 			}
 			return users
 		}
@@ -132,7 +146,8 @@ export class NotificationsService {
 			stage: input.stage,
 			userIds: input.userIds,
 			roleIds: input.roleIds,
-			mergeRoles: input.mergeRoles
+			mergeRoles: input.mergeRoles,
+			includeDefaults: input.includeDefaults
 		})
 		if (!recipients.length) {
 			return { created: 0, skipped: 'no_recipients' }
@@ -270,29 +285,45 @@ export class NotificationsService {
 	) {
 		const results = []
 		for (const entry of entries) {
-			results.push(
-				await this.prisma.notificationRoutingDefault.upsert({
-					where: {
-						tenantId_activity_stage: {
+			const stage = entry.stage ?? null
+			const existing = await this.prisma.notificationRoutingDefault.findFirst({
+				where: { tenantId, activity: entry.activity, stage }
+			})
+			if (existing) {
+				results.push(
+					await this.prisma.notificationRoutingDefault.update({
+						where: { id: existing.id },
+						data: {
+							userIds: entry.userIds || [],
+							businessRoleIds: entry.businessRoleIds || []
+						}
+					})
+				)
+			} else {
+				results.push(
+					await this.prisma.notificationRoutingDefault.create({
+						data: {
 							tenantId,
 							activity: entry.activity,
-							stage: entry.stage ?? null
+							stage,
+							userIds: entry.userIds || [],
+							businessRoleIds: entry.businessRoleIds || []
 						}
-					},
-					update: {
-						userIds: entry.userIds || [],
-						businessRoleIds: entry.businessRoleIds || []
-					},
-					create: {
-						tenantId,
-						activity: entry.activity,
-						stage: entry.stage ?? null,
-						userIds: entry.userIds || [],
-						businessRoleIds: entry.businessRoleIds || []
-					}
-				})
-			)
+					})
+				)
+			}
 		}
 		return results
+	}
+
+	async deleteDefault(tenantId: string, id: string) {
+		const existing = await this.prisma.notificationRoutingDefault.findFirst({
+			where: { id, tenantId }
+		})
+		if (!existing) {
+			throw new NotFoundException('Default routing not found')
+		}
+		await this.prisma.notificationRoutingDefault.delete({ where: { id } })
+		return { deleted: true }
 	}
 }

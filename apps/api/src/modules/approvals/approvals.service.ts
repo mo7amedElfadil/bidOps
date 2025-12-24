@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common'
+import { Prisma } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 import * as crypto from 'crypto'
 import { ApprovalStatus, ApprovalType } from '@prisma/client'
@@ -6,6 +7,7 @@ import { RequestWorkApprovalDto } from './dto/request-work-approval.dto'
 import { ApprovalDecisionDto } from './dto/approval-decision.dto'
 import { NotificationsService } from '../notifications/notifications.service'
 import { NotificationActivities } from '../notifications/notifications.constants'
+import { RejectWorkApprovalDto } from './dto/reject-work-approval.dto'
 
 interface UserContext {
 	id?: string
@@ -162,6 +164,101 @@ export class ApprovalsService {
 		return { opportunity, packId: pack.id, approvalId: approval.id }
 	}
 
+	async rejectWorkApproval(dto: RejectWorkApprovalDto, user: UserContext) {
+		const tender = await this.prisma.ministryTender.findUnique({
+			where: { id: dto.sourceTenderId }
+		})
+		if (!tender) throw new BadRequestException('Tender not found')
+		const tenantId = user.tenantId || 'default'
+
+		const clientName = tender.ministry?.trim() || tender.title
+		if (!clientName) throw new BadRequestException('Tender missing buyer/ministry')
+
+		const client = await this.prisma.client.upsert({
+			where: { name_tenantId: { name: clientName, tenantId } },
+			create: { name: clientName, tenantId },
+			update: {}
+		})
+
+		let opportunity = await this.prisma.opportunity.findFirst({
+			where: {
+				sourceTenderId: tender.id,
+				tenantId
+			}
+		})
+		if (!opportunity) {
+			opportunity = await this.prisma.opportunity.create({
+				data: {
+					clientId: client.id,
+					title: tender.title || tender.tenderRef || 'New Opportunity',
+					tenderRef: tender.tenderRef ?? undefined,
+					sourcePortal: tender.portal,
+					sourceTenderId: tender.id,
+					discoveryDate: tender.publishDate || undefined,
+					tenantId,
+					goNoGoStatus: 'REJECTED',
+					goNoGoUpdatedAt: new Date()
+				}
+			})
+		} else {
+			await this.prisma.opportunity.update({
+				where: { id: opportunity.id },
+				data: { goNoGoStatus: 'REJECTED', goNoGoUpdatedAt: new Date() }
+			})
+		}
+
+		let pack = await this.prisma.pricingPack.findFirst({
+			where: { opportunityId: opportunity.id },
+			orderBy: { version: 'desc' }
+		})
+		if (!pack) {
+			pack = await this.prisma.pricingPack.create({
+				data: { opportunityId: opportunity.id, version: 1 }
+			})
+		}
+
+		const existingApproval = await this.prisma.approval.findFirst({
+			where: { packId: pack.id, stage: 'GO_NO_GO' },
+			orderBy: { createdAt: 'desc' }
+		})
+
+		const timestamp = new Date()
+		const updateData: any = {
+			status: 'REJECTED' as ApprovalStatus,
+			comment: dto.comment || undefined,
+			remarks: dto.comment || undefined,
+			decidedAt: timestamp,
+			signedOn: timestamp,
+			approverId: user.id || undefined
+		}
+
+		if (existingApproval) {
+			await this.prisma.approval.update({
+				where: { id: existingApproval.id },
+				data: updateData
+			})
+			return { opportunity, packId: pack.id, approvalId: existingApproval.id }
+		}
+
+		const approval = await this.prisma.approval.create({
+			data: {
+				packId: pack.id,
+				type: 'LEGAL',
+				stage: 'GO_NO_GO',
+				status: 'REJECTED',
+				requestedAt: timestamp,
+				decidedAt: timestamp,
+				signedOn: timestamp,
+				comment: dto.comment || undefined,
+				remarks: dto.comment || undefined,
+				approverId: user.id || undefined,
+				sourceTenderId: tender.id
+			}
+		})
+
+		return { opportunity, packId: pack.id, approvalId: approval.id }
+	}
+
     /**
      * Bootstrap an approval chain with role-based and/or user-specific assignments.
      * @param packId The ID of the pricing pack
@@ -221,7 +318,7 @@ export class ApprovalsService {
      * Make a decision on an approval step.
      * Validates that the user making the request is allowed to approve (either exact ID match or has the required role).
      */
-	async finalize(packId: string, tenantId: string) {
+	async finalize(packId: string, tenantId: string, userId?: string) {
 		const pack = await this.prisma.pricingPack.findUnique({
 			where: { id: packId },
 			include: { opportunity: true }
@@ -246,7 +343,26 @@ export class ApprovalsService {
 				status: 'Ready for submission'
 			}
 		})
+		await this.markPricingApproved(pack.opportunityId, userId)
 		return { packId }
+	}
+
+	private async markPricingApproved(opportunityId: string, userId?: string) {
+		const payload: Prisma.OpportunityChecklistCreateInput = {
+			opportunityId,
+			pricingApproved: true,
+			pricingApprovedAt: new Date(),
+			pricingApprovedById: userId || undefined
+		}
+		await this.prisma.opportunityChecklist.upsert({
+			where: { opportunityId },
+			update: {
+				pricingApproved: true,
+				pricingApprovedAt: new Date(),
+				pricingApprovedById: userId || undefined
+			},
+			create: payload
+		})
 	}
 
 	async decision(id: string, userId: string, userRole: string, body: ApprovalDecisionDto) {

@@ -24,6 +24,20 @@ async function main() {
 		create: { email: 'admin@example.com', name: 'Admin', role: Role.ADMIN, tenantId }
 	})
 
+	const roleCount = await prisma.businessRole.count({ where: { tenantId } })
+	if (roleCount === 0) {
+		await prisma.businessRole.createMany({
+			data: [
+				{ name: 'Bid Manager', tenantId },
+				{ name: 'Team Member', tenantId },
+				{ name: 'Project Manager', tenantId },
+				{ name: 'Sales Manager', tenantId },
+				{ name: 'Executive', tenantId }
+			],
+			skipDuplicates: true
+		})
+	}
+
 	const now = new Date()
 	const in7 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
 	const in14 = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000)

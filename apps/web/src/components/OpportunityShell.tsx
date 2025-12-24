@@ -31,6 +31,19 @@ export function OpportunityShell({ active, children }: { active: TabKey; childre
 		enabled: Boolean(id),
 		queryFn: () => api.getOpportunity(id || '')
 	})
+	const goNoGoMeta = (status?: string | null) => {
+		switch (status) {
+			case 'APPROVED':
+				return { label: 'Go/No-Go approved', className: 'bg-emerald-100 text-emerald-800' }
+			case 'REJECTED':
+				return { label: 'Go/No-Go rejected', className: 'bg-rose-100 text-rose-800' }
+			case 'PENDING':
+				return { label: 'Awaiting Go/No-Go', className: 'bg-amber-100 text-amber-800' }
+			default:
+				return null
+		}
+	}
+	const goNoGo = goNoGoMeta(data?.goNoGoStatus)
 
 	return (
 		<div className="mx-auto max-w-6xl p-6">
@@ -43,6 +56,11 @@ export function OpportunityShell({ active, children }: { active: TabKey; childre
 					<p className="text-sm text-slate-600">
 						Client: {data?.clientName || '—'}
 					</p>
+					{goNoGo && (
+						<span className={`mt-2 inline-flex rounded px-2 py-0.5 text-xs font-medium ${goNoGo.className}`}>
+							{goNoGo.label}
+						</span>
+					)}
 				</div>
 				<div className="flex items-center gap-2 text-sm">
 					<span className="rounded bg-slate-100 px-2 py-1 font-medium">

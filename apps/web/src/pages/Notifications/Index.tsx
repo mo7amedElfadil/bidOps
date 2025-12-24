@@ -47,10 +47,21 @@ export default function NotificationsPage() {
 	const [savingPrefs, setSavingPrefs] = useState(false)
 
 	const [defaults, setDefaults] = useState<NotificationRoutingDefault[]>([])
-	const [defaultDrafts, setDefaultDrafts] = useState<NotificationRoutingDefault[]>([])
 	const [roles, setRoles] = useState<BusinessRole[]>([])
 	const [users, setUsers] = useState<UserAccount[]>([])
 	const [savingDefaults, setSavingDefaults] = useState(false)
+	const [editingDefault, setEditingDefault] = useState<NotificationRoutingDefault | null>(null)
+	const [defaultDraft, setDefaultDraft] = useState<{
+		activity: string
+		stage: string
+		userIds: string[]
+		businessRoleIds: string[]
+	}>({
+		activity: activityOptions[0].value,
+		stage: '',
+		userIds: [],
+		businessRoleIds: []
+	})
 
 	const prefDefaults = useMemo(() => {
 		const map: PreferenceState = {}
@@ -112,7 +123,6 @@ export default function NotificationsPage() {
 				api.listUsers({ pageSize: 200 })
 			])
 			setDefaults(defaultsRows)
-			setDefaultDrafts(defaultsRows.map(row => ({ ...row })))
 			setRoles(roleRows)
 			setUsers(userRows.items)
 		} catch (e: any) {
@@ -160,36 +170,69 @@ export default function NotificationsPage() {
 		setSavingPrefs(false)
 	}
 
-	async function saveDefaults() {
+	async function saveDefault() {
 		setSavingDefaults(true)
 		setError(null)
 		try {
-			const items = defaultDrafts.map(row => ({
-				activity: row.activity,
-				stage: row.stage || undefined,
-				userIds: row.userIds || [],
-				businessRoleIds: row.businessRoleIds || []
-			}))
-			await api.saveNotificationDefaults(items)
-			setDefaults(defaultDrafts)
+			const stageValue = defaultDraft.stage.trim()
+			if (
+				editingDefault &&
+				(editingDefault.activity !== defaultDraft.activity ||
+					(editingDefault.stage || '') !== stageValue)
+			) {
+				await api.deleteNotificationDefault(editingDefault.id)
+			}
+			await api.saveNotificationDefaults([
+				{
+					activity: defaultDraft.activity,
+					stage: stageValue || undefined,
+					userIds: defaultDraft.userIds,
+					businessRoleIds: defaultDraft.businessRoleIds
+				}
+			])
+			await loadDefaults()
+			setEditingDefault(null)
+			setDefaultDraft({
+				activity: activityOptions[0].value,
+				stage: '',
+				userIds: [],
+				businessRoleIds: []
+			})
 		} catch (e: any) {
 			setError(e.message || 'Failed to save defaults')
 		}
 		setSavingDefaults(false)
 	}
 
-	function addDefaultRow() {
-		setDefaultDrafts(prev => [
-			...prev,
-			{
-				id: `new-${Date.now()}`,
-				tenantId: 'default',
-				activity: activityOptions[0].value,
-				stage: null,
-				userIds: [],
-				businessRoleIds: []
+	function startEditDefault(row: NotificationRoutingDefault) {
+		setEditingDefault(row)
+		setDefaultDraft({
+			activity: row.activity,
+			stage: row.stage || '',
+			userIds: row.userIds || [],
+			businessRoleIds: row.businessRoleIds || []
+		})
+	}
+
+	async function deleteDefault(row: NotificationRoutingDefault) {
+		setSavingDefaults(true)
+		setError(null)
+		try {
+			await api.deleteNotificationDefault(row.id)
+			await loadDefaults()
+			if (editingDefault?.id === row.id) {
+				setEditingDefault(null)
+				setDefaultDraft({
+					activity: activityOptions[0].value,
+					stage: '',
+					userIds: [],
+					businessRoleIds: []
+				})
 			}
-		])
+		} catch (e: any) {
+			setError(e.message || 'Failed to delete default')
+		}
+		setSavingDefaults(false)
 	}
 
 	return (
@@ -347,100 +390,162 @@ export default function NotificationsPage() {
 								<h2 className="text-sm font-semibold">Default Routing</h2>
 								<p className="text-xs text-slate-500">Set fallback recipients per activity and stage.</p>
 							</div>
-							<div className="flex gap-2">
-								<button
-									className="rounded bg-slate-100 px-2 py-1 text-xs hover:bg-slate-200"
-									onClick={addDefaultRow}
-								>
-									Add default
-								</button>
-								<button
-									className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
-									onClick={saveDefaults}
-									disabled={savingDefaults}
-								>
-									{savingDefaults ? 'Saving...' : 'Save defaults'}
-								</button>
-							</div>
+							<button
+								className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
+								onClick={saveDefault}
+								disabled={savingDefaults}
+							>
+								{savingDefaults ? 'Saving...' : editingDefault ? 'Update default' : 'Save default'}
+							</button>
 						</div>
-						<div className="mt-3 space-y-3">
-							{defaultDrafts.map((row, idx) => (
-								<div key={row.id} className="rounded border border-slate-200 p-3 text-xs">
-									<div className="grid gap-3 md:grid-cols-3">
-										<label className="text-xs">
-											<span className="font-medium">Activity</span>
-											<select
-												className="mt-1 w-full rounded border px-2 py-1"
-												value={row.activity}
-												onChange={e => {
-													const next = [...defaultDrafts]
-													next[idx] = { ...row, activity: e.target.value }
-													setDefaultDrafts(next)
-												}}
-											>
-												{activityOptions.map(option => (
-													<option key={option.value} value={option.value}>
-														{option.label}
-													</option>
-												))}
-											</select>
-										</label>
-										<label className="text-xs">
-											<span className="font-medium">Stage (optional)</span>
-											<input
-												className="mt-1 w-full rounded border px-2 py-1"
-												value={row.stage || ''}
-												onChange={e => {
-													const next = [...defaultDrafts]
-													next[idx] = { ...row, stage: e.target.value || null }
-													setDefaultDrafts(next)
-												}}
-											/>
-										</label>
-										<label className="text-xs">
-											<span className="font-medium">Business Roles</span>
-											<select
-												multiple
-												className="mt-1 w-full rounded border px-2 py-1"
-												value={row.businessRoleIds}
-												onChange={e => {
-													const selected = Array.from(e.target.selectedOptions).map(opt => opt.value)
-													const next = [...defaultDrafts]
-													next[idx] = { ...row, businessRoleIds: selected }
-													setDefaultDrafts(next)
-												}}
-											>
-												{roles.map(role => (
-													<option key={role.id} value={role.id}>
-														{role.name}
-													</option>
-												))}
-											</select>
-										</label>
-										<label className="text-xs md:col-span-3">
-											<span className="font-medium">Direct Users</span>
-											<select
-												multiple
-												className="mt-1 w-full rounded border px-2 py-1"
-												value={row.userIds}
-												onChange={e => {
-													const selected = Array.from(e.target.selectedOptions).map(opt => opt.value)
-													const next = [...defaultDrafts]
-													next[idx] = { ...row, userIds: selected }
-													setDefaultDrafts(next)
-												}}
-											>
-												{users.map(user => (
-													<option key={user.id} value={user.id}>
-														{user.name} ({user.email})
-													</option>
-												))}
-											</select>
-											<p className="mt-1 text-[11px] text-slate-500">Hold Ctrl/Cmd to select multiple.</p>
-										</label>
-									</div>
+						<div className="mt-3 rounded border border-slate-200 p-3 text-xs">
+							<div className="grid gap-3 md:grid-cols-3">
+								<label className="text-xs">
+									<span className="font-medium">Activity</span>
+									<select
+										className="mt-1 w-full rounded border px-2 py-1"
+										value={defaultDraft.activity}
+										onChange={e => setDefaultDraft(prev => ({ ...prev, activity: e.target.value }))}
+									>
+										{activityOptions.map(option => (
+											<option key={option.value} value={option.value}>
+												{option.label}
+											</option>
+										))}
+									</select>
+								</label>
+								<label className="text-xs">
+									<span className="font-medium">Stage (optional)</span>
+									<input
+										className="mt-1 w-full rounded border px-2 py-1"
+										value={defaultDraft.stage}
+										onChange={e => setDefaultDraft(prev => ({ ...prev, stage: e.target.value }))}
+									/>
+								</label>
+								<label className="text-xs">
+									<span className="font-medium">Business Roles</span>
+									<select
+										multiple
+										className="mt-1 w-full rounded border px-2 py-1"
+										value={defaultDraft.businessRoleIds}
+										onChange={e => {
+											const selected = Array.from(e.target.selectedOptions).map(opt => opt.value)
+											setDefaultDraft(prev => ({ ...prev, businessRoleIds: selected }))
+										}}
+									>
+										{roles.map(role => (
+											<option key={role.id} value={role.id}>
+												{role.name}
+											</option>
+										))}
+									</select>
+								</label>
+								<label className="text-xs md:col-span-3">
+									<span className="font-medium">Direct Users</span>
+									<select
+										multiple
+										className="mt-1 w-full rounded border px-2 py-1"
+										value={defaultDraft.userIds}
+										onChange={e => {
+											const selected = Array.from(e.target.selectedOptions).map(opt => opt.value)
+											setDefaultDraft(prev => ({ ...prev, userIds: selected }))
+										}}
+									>
+										{users.map(user => (
+											<option key={user.id} value={user.id}>
+												{user.name} ({user.email})
+											</option>
+										))}
+									</select>
+									<p className="mt-1 text-[11px] text-slate-500">Hold Ctrl/Cmd to select multiple.</p>
+								</label>
+							</div>
+							{editingDefault && (
+								<div className="mt-3 flex items-center justify-between text-[11px] text-slate-500">
+									<span>Editing existing default. Save will update or move this row.</span>
+									<button
+										className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-600 hover:bg-slate-200"
+										onClick={() => {
+											setEditingDefault(null)
+											setDefaultDraft({
+												activity: activityOptions[0].value,
+												stage: '',
+												userIds: [],
+												businessRoleIds: []
+											})
+										}}
+									>
+										Cancel edit
+									</button>
 								</div>
-							))}
+							)}
+						</div>
+						<div className="mt-4">
+							<h3 className="text-xs font-semibold text-slate-600">Existing defaults</h3>
+							<div className="mt-2 overflow-x-auto">
+								<table className="min-w-full text-xs">
+									<thead className="bg-slate-100">
+										<tr>
+											<th className="px-2 py-2 text-left">Activity</th>
+											<th className="px-2 py-2 text-left">Stage</th>
+											<th className="px-2 py-2 text-left">Business Roles</th>
+											<th className="px-2 py-2 text-left">Direct Users</th>
+											<th className="px-2 py-2 text-left">Actions</th>
+										</tr>
+									</thead>
+									<tbody>
+										{defaults.length === 0 ? (
+											<tr className="border-t">
+												<td className="px-2 py-3 text-slate-500" colSpan={5}>
+													No defaults saved yet.
+												</td>
+											</tr>
+										) : (
+											defaults.map(row => (
+												<tr key={row.id} className="border-t">
+													<td className="px-2 py-2">
+														{activityOptions.find(option => option.value === row.activity)?.label || row.activity}
+													</td>
+													<td className="px-2 py-2">{row.stage || '—'}</td>
+													<td className="px-2 py-2">
+														{row.businessRoleIds?.length
+															? row.businessRoleIds
+																	.map(id => roles.find(role => role.id === id)?.name)
+																	.filter(Boolean)
+																	.join(', ')
+															: '—'}
+													</td>
+													<td className="px-2 py-2">
+														{row.userIds?.length
+															? row.userIds
+																	.map(id => users.find(user => user.id === id))
+																	.filter(Boolean)
+																	.map(user => `${user?.name} (${user?.email})`)
+																	.join(', ')
+															: '—'}
+													</td>
+													<td className="px-2 py-2">
+														<div className="flex flex-wrap gap-2">
+															<button
+																className="rounded bg-slate-100 px-2 py-1 text-xs hover:bg-slate-200"
+																onClick={() => startEditDefault(row)}
+															>
+																Edit
+															</button>
+															<button
+																className="rounded bg-red-100 px-2 py-1 text-xs text-red-700 hover:bg-red-200"
+																onClick={() => deleteDefault(row)}
+															>
+																Delete
+															</button>
+														</div>
+													</td>
+												</tr>
+											))
+										)}
+									</tbody>
+								</table>
+							</div>
 						</div>
 					</div>
 				)}

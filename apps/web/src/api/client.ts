@@ -20,6 +20,8 @@ export interface Opportunity {
 	daysLeft?: number
 	startDate?: string
 	priorityRank?: number
+	goNoGoStatus?: string
+	goNoGoUpdatedAt?: string
 	bidOwners?: Array<{ id: string; name?: string; email?: string }>
 }
 
@@ -42,6 +44,17 @@ export interface OpportunityChecklist {
 	portalCredentialsVerifiedAt?: string | null
 	portalCredentialsVerifiedById?: string | null
 	portalCredentialsAttachmentId?: string | null
+	complianceCreated: boolean
+	complianceCreatedAt?: string | null
+	complianceCreatedById?: string | null
+	complianceCreatedAttachmentId?: string | null
+	clarificationsSent: boolean
+	clarificationsSentAt?: string | null
+	clarificationsSentById?: string | null
+	clarificationsSentAttachmentId?: string | null
+	pricingApproved: boolean
+	pricingApprovedAt?: string | null
+	pricingApprovedById?: string | null
 	notes?: Record<string, string>
 }
 
@@ -175,7 +188,10 @@ export interface Approval {
 	id: string
 	packId: string
 	type: 'LEGAL' | 'FINANCE' | 'EXECUTIVE'
-	approverId: string
+	approverId?: string
+	approverIds?: string[]
+	approverRole?: string
+	stage?: string
 	status: 'PENDING' | 'IN_REVIEW' | 'CHANGES_REQUESTED' | 'RESUBMITTED' | 'APPROVED' | 'APPROVED_WITH_CONDITIONS' | 'REJECTED'
 	signedOn?: string
 	remarks?: string
@@ -259,6 +275,9 @@ export interface MinistryTender {
 	purchaseUrl?: string
 	sourceUrl?: string
 	status?: string
+	opportunityId?: string | null
+	goNoGoStatus?: string | null
+	goNoGoUpdatedAt?: string | null
 	createdAt?: string
 	updatedAt?: string
 }
@@ -520,6 +539,12 @@ export const api = {
 		reviewerRoleIds?: string[]
 	}) {
 		return request<WorkApprovalRequestResult>(`/approvals/request`, {
+			method: 'POST',
+			body: JSON.stringify(data)
+		})
+	},
+	rejectWorkApproval(data: { sourceTenderId: string; comment?: string }) {
+		return request<WorkApprovalRequestResult>(`/approvals/reject`, {
 			method: 'POST',
 			body: JSON.stringify(data)
 		})
@@ -882,6 +907,9 @@ export const api = {
 			method: 'PATCH',
 			body: JSON.stringify({ items })
 		})
+	},
+	deleteNotificationDefault(id: string) {
+		return request<void>(`/notifications/defaults/${id}`, { method: 'DELETE' })
 	},
 
 	// Search

@@ -1,4 +1,4 @@
-import { IsArray, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator'
+import { IsArray, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator'
 
 export class RequestWorkApprovalDto {
 	@IsString()
@@ -20,9 +20,11 @@ export class RequestWorkApprovalDto {
 
 	@IsOptional()
 	@IsArray()
+	@IsUUID('4', { each: true })
 	reviewerUserIds?: string[]
 
 	@IsOptional()
 	@IsArray()
+	@IsUUID('4', { each: true })
 	reviewerRoleIds?: string[]
 }

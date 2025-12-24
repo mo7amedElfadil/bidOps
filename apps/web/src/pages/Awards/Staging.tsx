@@ -600,4 +600,3 @@ export default function AwardsStagingPage() {
 		</div>
 	)
 }
-	const [selected, setSelected] = useState<Record<string, boolean>>({})

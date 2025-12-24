@@ -30,6 +30,9 @@ Mail:
 - SMTP_HOST
 - SMTP_PORT
 - SMTP_FROM
+- SLA_NOTIFY_TO (optional fallback email recipient for SLA alerts)
+- SLA_TICK_INTERVAL_MS (default 21600000)
+- EMAIL_TICK_INTERVAL_MS (default 60000)
 
 AI extraction:
 - AI_PROVIDER (openai|gemini)
@@ -37,4 +40,3 @@ AI extraction:
 - OPENAI_MODEL
 - GEMINI_API_KEY
 - GEMINI_MODEL
-

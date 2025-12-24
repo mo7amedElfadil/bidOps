@@ -174,7 +174,7 @@ Scraped targets:
 | Metric | Target |
 |--------|--------|
 | API p95 latency | < 300ms |
-| SLA engine tick | ≤ 60s |
+| SLA engine tick | Configurable (default 6h) |
 | Queue lag | < 30s |
 | Parser throughput | ≥ 40 pages/min |
 | Collector parse error | ≤ 2% |

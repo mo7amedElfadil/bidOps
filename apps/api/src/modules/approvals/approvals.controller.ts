@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard'
 import { Roles } from '../../auth/roles.decorator'
 import { RequestWorkApprovalDto } from './dto/request-work-approval.dto'
 import { ApprovalDecisionDto } from './dto/approval-decision.dto'
+import { RejectWorkApprovalDto } from './dto/reject-work-approval.dto'
 
 @Controller('approvals')
 @UseGuards(JwtAuthGuard)
@@ -28,6 +29,12 @@ export class ApprovalsController {
 		return this.svc.requestWorkApproval(body, req.user || {})
 	}
 
+	@Post('reject')
+	@Roles('MANAGER','ADMIN')
+	reject(@Body() body: RejectWorkApprovalDto, @Req() req: any) {
+		return this.svc.rejectWorkApproval(body, req.user || {})
+	}
+
 	@Post(':packId/bootstrap')
 	@Roles('MANAGER','ADMIN')
 	async bootstrap(@Param('packId') packId: string, @Body() body: any, @Req() req: any) {
@@ -46,7 +53,8 @@ export class ApprovalsController {
 	@Post(':packId/finalize')
 	@Roles('MANAGER','ADMIN')
 	async finalize(@Param('packId') packId: string, @Req() req: any) {
-		await this.tenants.ensurePackAccess(packId, req.user?.tenantId || 'default')
-		return this.svc.finalize(packId, req.user?.tenantId || 'default')
+		const tenantId = req.user?.tenantId || 'default'
+		await this.tenants.ensurePackAccess(packId, tenantId)
+		return this.svc.finalize(packId, tenantId, req.user?.id)
 	}
 }

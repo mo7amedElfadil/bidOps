@@ -62,7 +62,40 @@ export class TendersService {
 				take: pageSize
 			}),
 			this.prisma.ministryTender.count({ where })
-		]).then(([items, total]) => ({ items, total, page, pageSize }))
+		]).then(async ([items, total]) => {
+			if (!items.length) {
+				return { items, total, page, pageSize }
+			}
+			const tenderIds = items.map(item => item.id)
+			const opps = await this.prisma.opportunity.findMany({
+				where: {
+					tenantId,
+					sourceTenderId: { in: tenderIds }
+				},
+				select: {
+					id: true,
+					sourceTenderId: true,
+					goNoGoStatus: true,
+					goNoGoUpdatedAt: true
+				}
+			})
+			const map = new Map<string, typeof opps[number]>()
+			for (const opp of opps) {
+				if (opp.sourceTenderId) {
+					map.set(opp.sourceTenderId, opp)
+				}
+			}
+			const enriched = items.map(item => {
+				const match = map.get(item.id)
+				return {
+					...item,
+					opportunityId: match?.id ?? null,
+					goNoGoStatus: match?.goNoGoStatus ?? null,
+					goNoGoUpdatedAt: match?.goNoGoUpdatedAt ?? null
+				}
+			})
+			return { items: enriched, total, page, pageSize }
+		})
 	}
 
 	get(id: string) {

@@ -199,7 +199,27 @@ GET /auth/callback      # Handles callback → redirects with token fragment
 | GET | `/users/:id` | Get user | ADMIN |
 | POST | `/users` | Create user (name, email optional; defaults to `firstName@it-serve.qa`) | ADMIN, MANAGER |
 | PATCH | `/users/:id` | Update user (email, role, team, `userType`) | ADMIN |
+| PATCH | `/users/:id/business-roles` | Replace user business roles | ADMIN |
 | DELETE | `/users/:id` | Disable user | ADMIN |
+
+### Business Roles
+| Method | Path | Description | Roles |
+|--------|------|-------------|-------|
+| GET | `/business-roles` | List business roles | MANAGER, ADMIN |
+| POST | `/business-roles` | Create business role | ADMIN |
+| PATCH | `/business-roles/:id` | Update business role | ADMIN |
+| DELETE | `/business-roles/:id` | Delete business role | ADMIN |
+
+### Notifications
+| Method | Path | Description | Roles |
+|--------|------|-------------|-------|
+| GET | `/notifications` | List in-app notifications (status=unread optional) | All |
+| PATCH | `/notifications/:id/read` | Mark notification read | All |
+| POST | `/notifications/read-all` | Mark all notifications read | All |
+| GET | `/notifications/preferences` | List user notification preferences | All |
+| PATCH | `/notifications/preferences` | Update user notification preferences | All |
+| GET | `/notifications/defaults` | List notification routing defaults | ADMIN |
+| PATCH | `/notifications/defaults` | Update notification routing defaults | ADMIN |
 
 ### Analytics
 | Method | Path | Description | Roles |

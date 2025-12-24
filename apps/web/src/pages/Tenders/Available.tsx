@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { api, MinistryTender } from '../../api/client'
+import { api, BusinessRole, MinistryTender, UserAccount } from '../../api/client'
 import { normalizeDateInput } from '../../utils/date'
 
 export default function AvailableTendersPage() {
@@ -21,9 +21,25 @@ export default function AvailableTendersPage() {
 	const [requestComment, setRequestComment] = useState('')
 	const [requestError, setRequestError] = useState<string | null>(null)
 	const [requestingApproval, setRequestingApproval] = useState(false)
+	const [reviewerRoleIds, setReviewerRoleIds] = useState<string[]>([])
+	const [reviewerUserIds, setReviewerUserIds] = useState<string[]>([])
+	const [businessRoles, setBusinessRoles] = useState<BusinessRole[]>([])
+	const [users, setUsers] = useState<UserAccount[]>([])
 	const [selected, setSelected] = useState<Record<string, boolean>>({})
 	const selectedRows = rows.filter(r => selected[r.id])
 	const allSelected = rows.length > 0 && rows.every(r => selected[r.id])
+	const goNoGoMeta = (status?: string | null) => {
+		switch (status) {
+			case 'APPROVED':
+				return { label: 'Go/No-Go approved', className: 'bg-emerald-100 text-emerald-800' }
+			case 'REJECTED':
+				return { label: 'Go/No-Go rejected', className: 'bg-rose-100 text-rose-800' }
+			case 'PENDING':
+				return { label: 'Awaiting Go/No-Go', className: 'bg-amber-100 text-amber-800' }
+			default:
+				return { label: 'Not requested', className: 'bg-slate-100 text-slate-600' }
+		}
+	}
 
 	function toggleAllRows(checked: boolean) {
 		const map: Record<string, boolean> = {}
@@ -76,6 +92,11 @@ export default function AvailableTendersPage() {
 
 	useEffect(() => {
 		load()
+	}, [])
+
+	useEffect(() => {
+		api.listBusinessRoles().then(setBusinessRoles).catch(() => {})
+		api.listUsers({ pageSize: 200 }).then(data => setUsers(data.items)).catch(() => {})
 	}, [])
 
 	async function runCollector() {
@@ -183,10 +204,14 @@ async function promote(id: string) {
 			}
 			const res = await api.requestWorkApproval({
 				sourceTenderId: requestTender.id,
-				comment: requestComment || undefined
+				comment: requestComment || undefined,
+				reviewerUserIds: reviewerUserIds.length ? reviewerUserIds : undefined,
+				reviewerRoleIds: reviewerRoleIds.length ? reviewerRoleIds : undefined
 			})
 			setRequestTender(null)
 			setRequestComment('')
+			setReviewerRoleIds([])
+			setReviewerUserIds([])
 			await load()
 			nav(`/opportunity/${res.opportunity.id}`)
 		} catch (e: any) {
@@ -347,12 +372,19 @@ async function promote(id: string) {
 									<th className="px-3 py-2 text-left">Type</th>
 									<th className="px-3 py-2 text-left">Purchase</th>
 									<th className="px-3 py-2 text-left">Status</th>
+									<th className="px-3 py-2 text-left">Go/No-Go</th>
 									<th className="px-3 py-2 text-left"></th>
 								</tr>
 							</thead>
 							<tbody>
-								{rows.map(row => (
-									<tr key={row.id} className="border-t align-top">
+								{rows.map(row => {
+									const goNoGo = goNoGoMeta(row.goNoGoStatus)
+									const hasOpportunity = Boolean(row.opportunityId)
+									const approvalPending = row.goNoGoStatus === 'PENDING'
+									const approvalRejected = row.goNoGoStatus === 'REJECTED'
+									const approvalApproved = row.goNoGoStatus === 'APPROVED'
+									return (
+										<tr key={row.id} className="border-t align-top">
 										<td className="px-3 py-2">
 											<input
 												type="checkbox"
@@ -360,7 +392,6 @@ async function promote(id: string) {
 												onChange={e => toggleRowSelect(row.id, e.target.checked)}
 											/>
 										</td>
-										<td className="px-3 py-2 font-mono text-xs">{row.tenderRef || '-'}</td>
 										<td className="px-3 py-2 font-mono text-xs">{row.tenderRef || '-'}</td>
 										<td className="px-3 py-2 max-w-sm whitespace-pre-wrap">{row.title || '-'}</td>
 										<td className="px-3 py-2">{row.ministry || '-'}</td>
@@ -390,6 +421,9 @@ async function promote(id: string) {
 										<td className="px-3 py-2">
 											<span className="rounded bg-slate-100 px-2 py-0.5 text-xs">{row.status || 'new'}</span>
 										</td>
+										<td className="px-3 py-2">
+											<span className={`rounded px-2 py-0.5 text-xs ${goNoGo.className}`}>{goNoGo.label}</span>
+										</td>
 										<td className="px-3 py-2 text-right">
 											<div className="flex flex-col items-end gap-2">
 												<button
@@ -399,14 +433,28 @@ async function promote(id: string) {
 														setRequestComment('')
 														setRequestError(null)
 													}}
-													disabled={requestingApproval}
+													disabled={requestingApproval || approvalPending || approvalApproved}
 												>
-													Request Work Approval
+													{approvalPending
+														? 'Approval pending'
+														: approvalApproved
+															? 'Approval granted'
+															: approvalRejected
+																? 'Request again'
+																: 'Request Work Approval'}
 												</button>
+												{hasOpportunity && (
+													<button
+														className="rounded bg-slate-900 px-3 py-1 text-xs text-white hover:bg-slate-800"
+														onClick={() => nav(`/opportunity/${row.opportunityId}`)}
+													>
+														Open Opportunity
+													</button>
+												)}
 												<button
 													className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700 disabled:opacity-50"
 													onClick={() => promote(row.id)}
-													disabled={promoting === row.id || row.status === 'promoted'}
+													disabled={promoting === row.id || row.status === 'promoted' || hasOpportunity}
 												>
 													{promoting === row.id ? 'Promoting...' : 'Promote'}
 												</button>
@@ -419,7 +467,8 @@ async function promote(id: string) {
 											</div>
 										</td>
 									</tr>
-								))}
+									)
+								})}
 							</tbody>
 						</table>
 					</div>
@@ -499,6 +548,38 @@ async function promote(id: string) {
 							onChange={e => setRequestComment(e.target.value)}
 							placeholder="Why should we pursue this tender?"
 						/>
+						<label className="mt-4 block text-xs font-medium text-slate-600">Reviewers (Users)</label>
+						<select
+							multiple
+							className="mt-1 w-full rounded border p-2 text-sm"
+							value={reviewerUserIds}
+							onChange={e => {
+								const selected = Array.from(e.target.selectedOptions).map(opt => opt.value)
+								setReviewerUserIds(selected)
+							}}
+						>
+							{users.map(user => (
+								<option key={user.id} value={user.id}>
+									{user.name} ({user.email})
+								</option>
+							))}
+						</select>
+						<label className="mt-4 block text-xs font-medium text-slate-600">Reviewers (Business Roles)</label>
+						<select
+							multiple
+							className="mt-1 w-full rounded border p-2 text-sm"
+							value={reviewerRoleIds}
+							onChange={e => {
+								const selected = Array.from(e.target.selectedOptions).map(opt => opt.value)
+								setReviewerRoleIds(selected)
+							}}
+						>
+							{businessRoles.map(role => (
+								<option key={role.id} value={role.id}>
+									{role.name}
+								</option>
+							))}
+						</select>
 						{requestError && <p className="mt-2 text-sm text-red-600">{requestError}</p>}
 						<div className="mt-4 flex items-center justify-end gap-2">
 							<button
@@ -520,7 +601,7 @@ async function promote(id: string) {
 				</div>
 			)}
 			{editingTender && (
-				<div className="fixed inset-0 z-20 flex items-center justify-center bg-black/40 p-4">
+				<div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4">
 					<div className="w-full max-w-lg space-y-3 rounded border bg-white p-5 shadow-lg">
 						<h2 className="text-lg font-semibold">Edit Tender</h2>
 						<div className="grid gap-3">
