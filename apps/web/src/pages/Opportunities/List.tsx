@@ -5,6 +5,8 @@ import { api, type Opportunity } from '../../api/client'
 import { Page } from '../../components/Page'
 import CountdownRing from '../../components/CountdownRing'
 import { downloadWithAuth } from '../../utils/download'
+import { DEFAULT_STAGE_LIST, DEFAULT_STATUS_LIST } from '../../constants/opportunity-lists'
+import { isPostSubmission } from '../../utils/postSubmission'
 
 function toIsoWithOffset(value: string, offsetHours: number) {
 	const [datePart, timePart = '00:00'] = value.split('T')
@@ -43,6 +45,10 @@ export default function List() {
 	const [pageInput, setPageInput] = useState('1')
 	const [now, setNow] = useState(Date.now())
 	const timezoneQuery = useQuery({ queryKey: ['timezone'], queryFn: api.getTimezoneSettings })
+	const stageListQuery = useQuery({ queryKey: ['opportunity-stages'], queryFn: api.getOpportunityStages })
+	const statusListQuery = useQuery({ queryKey: ['opportunity-statuses'], queryFn: api.getOpportunityStatuses })
+	const stageOptions = stageListQuery.data?.stages ?? DEFAULT_STAGE_LIST
+	const statusOptions = statusListQuery.data?.statuses ?? DEFAULT_STATUS_LIST
 
 	const opportunities = useQuery({
 		queryKey: ['opportunities', page, pageSize, filters.stage, filters.client, filters.q],
@@ -101,6 +107,9 @@ export default function List() {
 		}
 	}, [opportunities.data?.page])
 	const rows = opportunities.data?.items || []
+	const [showPostSubmission, setShowPostSubmission] = useState(true)
+	const activeRows = rows.filter(o => !isPostSubmission(o, { stageOptions, statusOptions }))
+	const postRows = rows.filter(o => isPostSubmission(o, { stageOptions, statusOptions }))
 
 	return (
 		<Page
@@ -174,9 +183,20 @@ export default function List() {
 				<Link to="/timeline" className="rounded bg-slate-100 px-3 py-2 hover:bg-slate-200">
 					Timeline
 				</Link>
+				<Link to="/post-submission" className="rounded bg-slate-100 px-3 py-2 hover:bg-slate-200">
+					Post Submission
+				</Link>
 				<Link to="/awards/staging" className="rounded bg-slate-100 px-3 py-2 hover:bg-slate-200">
 					Awards
 				</Link>
+				<label className="flex items-center gap-2 text-xs text-slate-600">
+					<input
+						type="checkbox"
+						checked={showPostSubmission}
+						onChange={e => setShowPostSubmission(e.target.checked)}
+					/>
+					Show post-submission section
+				</label>
 			</div>
 
 			{opportunities.isLoading && <p className="mt-4 text-sm text-slate-600">Loading...</p>}
@@ -203,7 +223,7 @@ export default function List() {
 						</tr>
 					</thead>
 					<tbody>
-						{rows.map(o => (
+						{activeRows.map(o => (
 							<tr key={o.id} className="border-t hover:bg-slate-50">
 								<td className="px-3 py-2 font-medium">
 									<Link to={`/opportunity/${o.id}`} className="hover:underline">
@@ -280,7 +300,7 @@ export default function List() {
 								</td>
 							</tr>
 						))}
-						{rows.length === 0 && !opportunities.isLoading && (
+						{activeRows.length === 0 && !opportunities.isLoading && (
 							<tr>
 								<td colSpan={9} className="px-3 py-4 text-center text-slate-500">
 									No opportunities yet.{' '}
@@ -294,6 +314,78 @@ export default function List() {
 					</tbody>
 				</table>
 			</div>
+			{showPostSubmission && (
+				<div className="mt-6">
+					<div className="flex items-center justify-between">
+						<h3 className="text-sm font-semibold text-slate-700">Post Submission</h3>
+						<Link to="/post-submission" className="text-xs text-blue-600 hover:underline">
+							Open full list
+						</Link>
+					</div>
+					<div className="mt-2 overflow-x-auto rounded border bg-white shadow-sm">
+						<table className="min-w-full text-sm">
+							<thead className="bg-slate-100">
+								<tr>
+									<th className="px-3 py-2 text-left">Title</th>
+									<th className="px-3 py-2 text-left">Client</th>
+									<th className="px-3 py-2 text-left">Status</th>
+									<th className="px-3 py-2 text-left">Stage</th>
+									<th className="px-3 py-2 text-left">Due</th>
+									<th className="px-3 py-2 text-left">Actions</th>
+								</tr>
+							</thead>
+							<tbody>
+								{postRows.map(o => (
+									<tr key={o.id} className="border-t hover:bg-slate-50">
+										<td className="px-3 py-2 font-medium">
+											<Link to={`/opportunity/${o.id}`} className="hover:underline">
+												{o.title}
+											</Link>
+										</td>
+										<td className="px-3 py-2">{o.clientName || o.clientId || '-'}</td>
+										<td className="px-3 py-2">{o.status || '-'}</td>
+										<td className="px-3 py-2">{o.stage || '-'}</td>
+										<td className="px-3 py-2">
+											{o.submissionDate
+												? formatWithOffset(o.submissionDate, timezoneQuery.data?.offsetHours ?? 3)
+												: '-'}
+										</td>
+										<td className="px-3 py-2">
+											<div className="flex flex-wrap gap-1">
+												<Link
+													to={`/opportunity/${o.id}/approvals`}
+													className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+												>
+													Approvals
+												</Link>
+												<Link
+													to={`/opportunity/${o.id}/submission`}
+													className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+												>
+													Submit
+												</Link>
+												<Link
+													to={`/opportunity/${o.id}/outcome`}
+													className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+												>
+													Outcome
+												</Link>
+											</div>
+										</td>
+									</tr>
+								))}
+								{postRows.length === 0 && (
+									<tr>
+										<td colSpan={6} className="px-3 py-4 text-center text-slate-500">
+											No post-submission opportunities in this page.
+										</td>
+									</tr>
+								)}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			)}
 			{opportunities.data && (
 				<div className="mt-4 flex items-center justify-between text-sm text-slate-600">
 					<span>

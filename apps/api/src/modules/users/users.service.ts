@@ -40,7 +40,7 @@ export class UsersService {
 	}
 
 	async create(data: {
-		email: string
+		email?: string
 		name?: string
 		role?: 'ADMIN' | 'MANAGER' | 'CONTRIBUTOR' | 'VIEWER'
 		team?: string
@@ -49,15 +49,20 @@ export class UsersService {
 		userType?: string
 		tenantId: string
 	}) {
-		if (!data.email) throw new BadRequestException('email is required')
-		const exists = await this.prisma.user.findUnique({ where: { email: data.email } })
+		let email = data.email?.trim()
+		const name = data.name?.trim()
+		if (!email) {
+			if (!name) throw new BadRequestException('email or name is required')
+			email = await this.generateDefaultEmail(name)
+		}
+		const exists = await this.prisma.user.findUnique({ where: { email } })
 		if (exists) throw new BadRequestException('User already exists')
 
 		const passwordHash = data.password ? await argon2.hash(data.password) : undefined
 		return this.prisma.user.create({
 			data: {
-				email: data.email,
-				name: data.name || data.email,
+				email,
+				name: name || email,
 				role: (data.role as any) || 'VIEWER',
 				team: data.team,
 				passwordHash,
@@ -71,6 +76,7 @@ export class UsersService {
 	async update(
 		id: string,
 		data: {
+			email?: string
 			name?: string
 			role?: 'ADMIN' | 'MANAGER' | 'CONTRIBUTOR' | 'VIEWER'
 			team?: string
@@ -86,10 +92,34 @@ export class UsersService {
 			isActive: data.isActive,
 			userType: data.userType
 		}
+		if (data.email) {
+			const email = data.email.trim()
+			const exists = await this.prisma.user.findUnique({ where: { email } })
+			if (exists && exists.id !== id) {
+				throw new BadRequestException('Email already in use')
+			}
+			updateData.email = email
+		}
 		if (data.password) {
 			updateData.passwordHash = await argon2.hash(data.password)
 		}
 		return this.prisma.user.update({ where: { id }, data: updateData })
+	}
+
+	private async generateDefaultEmail(fullName: string): Promise<string> {
+		const base = fullName
+			.split(/\s+/)
+			.filter(Boolean)[0]
+			.replace(/[^a-zA-Z]/g, '')
+			.toLowerCase() || 'user'
+		const domain = 'it-serve.qa'
+		let candidate = `${base}@${domain}`
+		let suffix = 2
+		while (await this.prisma.user.findUnique({ where: { email: candidate } })) {
+			candidate = `${base}${suffix}@${domain}`
+			suffix += 1
+		}
+		return candidate
 	}
 
 	async delete(id: string) {

@@ -23,6 +23,28 @@ export interface Opportunity {
 	bidOwners?: Array<{ id: string; name?: string; email?: string }>
 }
 
+export interface OpportunityChecklist {
+	id: string
+	opportunityId: string
+	bondPurchased: boolean
+	bondPurchasedAt?: string | null
+	bondPurchasedById?: string | null
+	bondPurchaseAttachmentId?: string | null
+	formsCompleted: boolean
+	formsCompletedAt?: string | null
+	formsCompletedById?: string | null
+	formsAttachmentId?: string | null
+	finalPdfReady: boolean
+	finalPdfReadyAt?: string | null
+	finalPdfReadyById?: string | null
+	finalPdfAttachmentId?: string | null
+	portalCredentialsVerified: boolean
+	portalCredentialsVerifiedAt?: string | null
+	portalCredentialsVerifiedById?: string | null
+	portalCredentialsAttachmentId?: string | null
+	notes?: Record<string, string>
+}
+
 export interface Paginated<T> {
 	items: T[]
 	total: number
@@ -127,6 +149,16 @@ export interface ProposalSection {
 	updatedAt?: string
 }
 
+export interface ChangeRequest {
+	id: string
+	opportunityId: string
+	requestedById?: string | null
+	status: 'PENDING' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED'
+	changes: string
+	impact?: string | null
+	createdAt?: string
+	updatedAt?: string
+}
 export interface ImportIssue {
 	id: string
 	opportunityId: string
@@ -144,9 +176,16 @@ export interface Approval {
 	packId: string
 	type: 'LEGAL' | 'FINANCE' | 'EXECUTIVE'
 	approverId: string
-	status: 'PENDING' | 'APPROVED' | 'REJECTED'
+	status: 'PENDING' | 'IN_REVIEW' | 'CHANGES_REQUESTED' | 'RESUBMITTED' | 'APPROVED' | 'APPROVED_WITH_CONDITIONS' | 'REJECTED'
 	signedOn?: string
 	remarks?: string
+	comment?: string
+}
+
+export interface WorkApprovalRequestResult {
+	opportunity: Opportunity
+	packId: string
+	approvalId: string
 }
 
 export interface ReviewOpportunity {
@@ -414,9 +453,63 @@ export const api = {
 			body: JSON.stringify({ approvers })
 		})
 	},
-	submitApprovalDecision(id: string, data: { status: 'APPROVED' | 'REJECTED'; remarks?: string }) {
+	submitApprovalDecision(
+		id: string,
+		data: {
+			status: 'PENDING' | 'IN_REVIEW' | 'CHANGES_REQUESTED' | 'RESUBMITTED' | 'APPROVED' | 'APPROVED_WITH_CONDITIONS' | 'REJECTED'
+			comment?: string
+			attachments?: string[]
+			changesRequestedDueDate?: string
+		}
+	) {
 		return request<Approval>(`/approvals/decision/${id}`, {
 			method: 'POST',
+			body: JSON.stringify(data)
+		})
+	},
+	requestWorkApproval(data: { sourceTenderId: string; comment?: string; attachments?: string[]; assignBidOwnerIds?: string[] }) {
+		return request<WorkApprovalRequestResult>(`/approvals/request`, {
+			method: 'POST',
+			body: JSON.stringify(data)
+		})
+	},
+
+	// Checklist
+	getOpportunityChecklist(opportunityId: string) {
+		return request<OpportunityChecklist>(`/opportunities/${opportunityId}/checklist`)
+	},
+	updateOpportunityChecklist(
+		opportunityId: string,
+		data: {
+			bondPurchased?: { done?: boolean; attachmentId?: string; notes?: string }
+			formsCompleted?: { done?: boolean; attachmentId?: string; notes?: string }
+			finalPdfReady?: { done?: boolean; attachmentId?: string; notes?: string }
+			portalCredentialsVerified?: { done?: boolean; attachmentId?: string; notes?: string }
+		}
+	) {
+		return request<OpportunityChecklist>(`/opportunities/${opportunityId}/checklist`, {
+			method: 'PATCH',
+			body: JSON.stringify(data)
+		})
+	},
+
+	// Change Requests
+	listChangeRequests(params: { opportunityId?: string; status?: string } = {}) {
+		const q = new URLSearchParams()
+		if (params.opportunityId) q.set('opportunityId', params.opportunityId)
+		if (params.status) q.set('status', params.status)
+		const suffix = q.toString() ? `?${q.toString()}` : ''
+		return request<ChangeRequest[]>(`/change-requests${suffix}`)
+	},
+	createChangeRequest(data: { opportunityId: string; changes: string; impact?: string }) {
+		return request<ChangeRequest>(`/change-requests`, {
+			method: 'POST',
+			body: JSON.stringify(data)
+		})
+	},
+	updateChangeRequest(id: string, data: { status?: ChangeRequest['status']; impact?: string }) {
+		return request<ChangeRequest>(`/change-requests/${id}`, {
+			method: 'PATCH',
 			body: JSON.stringify(data)
 		})
 	},
@@ -658,7 +751,7 @@ export const api = {
 		const suffix = q.toString() ? `?${q.toString()}` : ''
 		return request<Paginated<UserAccount>>(`/users${suffix}`)
 	},
-	createUser(input: Partial<UserAccount> & { email: string; password?: string }) {
+	createUser(input: Partial<UserAccount> & { email?: string; password?: string }) {
 		return request<UserAccount>(`/users`, {
 			method: 'POST',
 			body: JSON.stringify(input)

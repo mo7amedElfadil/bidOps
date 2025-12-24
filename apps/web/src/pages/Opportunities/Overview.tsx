@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { api } from '../../api/client'
+import { api, OpportunityChecklist, ChangeRequest } from '../../api/client'
 import { OpportunityShell } from '../../components/OpportunityShell'
 import { SlaBadge } from '../../components/SlaBadge'
 import { toast } from '../../utils/toast'
@@ -66,6 +66,11 @@ export default function OpportunityOverview() {
 		queryKey: ['opportunity-statuses'],
 		queryFn: api.getOpportunityStatuses
 	})
+	const checklistQuery = useQuery({
+		queryKey: ['opportunity-checklist', id],
+		enabled: Boolean(id),
+		queryFn: () => api.getOpportunityChecklist(id || '')
+	})
 
 	const [isEditing, setIsEditing] = useState(false)
 	const [form, setForm] = useState({
@@ -87,6 +92,11 @@ export default function OpportunityOverview() {
 	const statusOptions = statusListQuery.data?.statuses ?? DEFAULT_STATUS_LIST
 	const [showAddUserModal, setShowAddUserModal] = useState(false)
 	const [newUserForm, setNewUserForm] = useState(NEW_USER_FORM)
+	const [checklistNotes, setChecklistNotes] = useState<Record<string, string>>({})
+	const [changeRequestForm, setChangeRequestForm] = useState({
+		changes: '',
+		impact: ''
+	})
 	const createUserMutation = useMutation({
 		mutationFn: () =>
 			api.createUser({
@@ -183,6 +193,77 @@ export default function OpportunityOverview() {
 			qc.invalidateQueries({ queryKey: ['import-issues', id] })
 		}
 	})
+	const updateChecklistMutation = useMutation({
+		mutationFn: (payload: Parameters<typeof api.updateOpportunityChecklist>[1]) =>
+			api.updateOpportunityChecklist(id || '', payload),
+		onSuccess: data => {
+			qc.setQueryData(['opportunity-checklist', id], data)
+		},
+		onError: err => {
+			toast.error((err as Error).message || 'Failed to update checklist')
+		}
+	})
+	const changeRequestsQuery = useQuery({
+		queryKey: ['change-requests', id],
+		enabled: Boolean(id),
+		queryFn: () => api.listChangeRequests({ opportunityId: id })
+	})
+	const createChangeRequestMutation = useMutation({
+		mutationFn: () =>
+			api.createChangeRequest({
+				opportunityId: id || '',
+				changes: changeRequestForm.changes.trim(),
+				impact: changeRequestForm.impact.trim() || undefined
+			}),
+		onSuccess: () => {
+			toast.success('Change request submitted')
+			setChangeRequestForm({ changes: '', impact: '' })
+			changeRequestsQuery.refetch()
+		},
+		onError: err => {
+			toast.error((err as Error).message || 'Failed to submit change request')
+		}
+	})
+	const updateChangeRequestMutation = useMutation({
+		mutationFn: (input: { id: string; status: ChangeRequest['status'] }) =>
+			api.updateChangeRequest(input.id, { status: input.status }),
+		onSuccess: () => {
+			changeRequestsQuery.refetch()
+		},
+		onError: err => {
+			toast.error((err as Error).message || 'Failed to update change request')
+		}
+	})
+
+	useEffect(() => {
+		if (!checklistQuery.data) return
+		const notes = checklistQuery.data.notes || {}
+		setChecklistNotes({
+			bondPurchased: notes.bondPurchased || '',
+			formsCompleted: notes.formsCompleted || '',
+			finalPdfReady: notes.finalPdfReady || '',
+			portalCredentialsVerified: notes.portalCredentialsVerified || ''
+		})
+	}, [checklistQuery.data])
+
+	const showBondReminder =
+		!isLoading &&
+		data?.daysLeft !== undefined &&
+		data?.daysLeft !== null &&
+		data?.daysLeft <= 7 &&
+		data?.daysLeft >= 0 &&
+		(checklistQuery.data ? !checklistQuery.data.bondPurchased : true)
+
+	const checklistItems: Array<{
+		key: keyof OpportunityChecklist
+		label: string
+		help: string
+	}> = [
+		{ key: 'bondPurchased', label: 'Tender bond purchased', help: 'Upload receipt or mark complete.' },
+		{ key: 'formsCompleted', label: 'Mandatory forms completed', help: 'Confirm all required forms are done.' },
+		{ key: 'finalPdfReady', label: 'Final combined PDF ready', help: 'Technical + commercial merged.' },
+		{ key: 'portalCredentialsVerified', label: 'Submission portal credentials verified', help: 'Confirm access works.' }
+	]
 
 	return (
 		<OpportunityShell active="overview">
@@ -454,6 +535,136 @@ export default function OpportunityOverview() {
 					</div>
 				</div>
 				<div className="space-y-3">
+					{showBondReminder && (
+						<div className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+							<p className="font-medium">Tender bond reminder</p>
+							<p className="mt-1 text-amber-800">
+								The submission deadline is within 7 days. Please purchase and upload the tender bond receipt.
+							</p>
+						</div>
+					)}
+					<div className="rounded border bg-white p-4 shadow-sm">
+						<div className="flex items-center justify-between">
+							<h2 className="text-lg font-semibold">Submission Checklist</h2>
+							{checklistQuery.isLoading && <span className="text-xs text-slate-500">Loading…</span>}
+						</div>
+						<div className="mt-3 space-y-3 text-sm">
+							{checklistItems.map(item => {
+								const checked = Boolean((checklistQuery.data as any)?.[item.key])
+								return (
+									<div key={item.key} className="rounded border border-slate-200 p-3">
+										<label className="flex items-start justify-between gap-2">
+											<div>
+												<p className="font-medium">{item.label}</p>
+												<p className="text-xs text-slate-500">{item.help}</p>
+											</div>
+											<input
+												type="checkbox"
+												checked={checked}
+												onChange={e =>
+													updateChecklistMutation.mutate({
+														[item.key]: { done: e.target.checked }
+													} as any)
+												}
+											/>
+										</label>
+										<div className="mt-2 flex items-center gap-2">
+											<input
+												className="w-full rounded border px-2 py-1 text-xs"
+												placeholder="Notes (optional)"
+												value={checklistNotes[item.key as string] || ''}
+												onChange={e =>
+													setChecklistNotes(prev => ({
+														...prev,
+														[item.key as string]: e.target.value
+													}))
+												}
+											/>
+											<button
+												className="rounded border px-2 py-1 text-[11px] hover:bg-slate-50"
+												onClick={() =>
+													updateChecklistMutation.mutate({
+														[item.key]: { notes: checklistNotes[item.key as string] }
+													} as any)
+												}
+											>
+												Save
+											</button>
+										</div>
+									</div>
+								)
+							})}
+						</div>
+					</div>
+					<div className="rounded border bg-white p-4 shadow-sm">
+						<div className="flex items-center justify-between">
+							<h2 className="text-lg font-semibold">Change Requests</h2>
+							{changeRequestsQuery.isLoading && <span className="text-xs text-slate-500">Loading…</span>}
+						</div>
+						<div className="mt-3 space-y-3 text-sm">
+							<div className="rounded border border-slate-200 p-3">
+								<label className="block text-xs font-medium text-slate-600">Changes required</label>
+								<textarea
+									className="mt-1 w-full rounded border p-2 text-sm"
+									rows={3}
+									placeholder="Describe the change needed after approvals are locked."
+									value={changeRequestForm.changes}
+									onChange={e => setChangeRequestForm({ ...changeRequestForm, changes: e.target.value })}
+								/>
+								<label className="mt-3 block text-xs font-medium text-slate-600">Impact (optional)</label>
+								<input
+									className="mt-1 w-full rounded border px-2 py-1 text-sm"
+									placeholder="Cost, schedule, compliance impact"
+									value={changeRequestForm.impact}
+									onChange={e => setChangeRequestForm({ ...changeRequestForm, impact: e.target.value })}
+								/>
+								<div className="mt-3 flex justify-end">
+									<button
+										className="rounded bg-indigo-600 px-3 py-1.5 text-xs text-white hover:bg-indigo-700 disabled:opacity-50"
+										onClick={() => createChangeRequestMutation.mutate()}
+										disabled={createChangeRequestMutation.isPending || !changeRequestForm.changes.trim()}
+									>
+										{createChangeRequestMutation.isPending ? 'Submitting...' : 'Submit change request'}
+									</button>
+								</div>
+							</div>
+							{changeRequestsQuery.data?.length ? (
+								<div className="space-y-2">
+									{changeRequestsQuery.data.map(req => (
+										<div key={req.id} className="rounded border border-slate-200 p-3">
+											<div className="flex flex-wrap items-center justify-between gap-2">
+												<div>
+													<p className="font-medium">{req.changes}</p>
+													{req.impact && <p className="text-xs text-slate-500">Impact: {req.impact}</p>}
+												</div>
+												<select
+													className="rounded border px-2 py-1 text-xs"
+													value={req.status}
+													onChange={e =>
+														updateChangeRequestMutation.mutate({
+															id: req.id,
+															status: e.target.value as ChangeRequest['status']
+														})
+													}
+													disabled={updateChangeRequestMutation.isPending}
+												>
+													<option value="PENDING">Pending</option>
+													<option value="IN_REVIEW">In review</option>
+													<option value="APPROVED">Approved</option>
+													<option value="REJECTED">Rejected</option>
+												</select>
+											</div>
+											<p className="mt-2 text-xs text-slate-400">
+												Created {req.createdAt ? new Date(req.createdAt).toLocaleString() : '—'}
+											</p>
+										</div>
+									))}
+								</div>
+							) : (
+								<p className="text-xs text-slate-500">No change requests yet.</p>
+							)}
+						</div>
+					</div>
 					<h2 className="text-lg font-semibold">Quick Links</h2>
 					<div className="grid gap-2 sm:grid-cols-2">
 						{[

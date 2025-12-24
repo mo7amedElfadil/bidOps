@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, MinistryTender } from '../../api/client'
+import { normalizeDateInput } from '../../utils/date'
 
 export default function AvailableTendersPage() {
 	const nav = useNavigate()
@@ -16,14 +17,22 @@ export default function AvailableTendersPage() {
 	const [pageInput, setPageInput] = useState('1')
 	const [fromDate, setFromDate] = useState('')
 	const [toDate, setToDate] = useState('')
+	const [requestTender, setRequestTender] = useState<MinistryTender | null>(null)
+	const [requestComment, setRequestComment] = useState('')
+	const [requestError, setRequestError] = useState<string | null>(null)
+	const [requestingApproval, setRequestingApproval] = useState(false)
 
 	async function load(pageOverride?: number) {
 		setLoading(true)
 		setError(null)
 		try {
+			const normalizedFrom = normalizeDateInput(fromDate)
+			const normalizedTo = normalizeDateInput(toDate)
 			const data = await api.listMinistryTenders({
 				q: filter.q || undefined,
 				status: filter.status !== 'all' ? filter.status : undefined,
+				fromDate: normalizedFrom || undefined,
+				toDate: normalizedTo || undefined,
 				page: pageOverride || pagination.page,
 				pageSize: pagination.pageSize
 			})
@@ -45,10 +54,12 @@ export default function AvailableTendersPage() {
 		setRunError(null)
 		setRunSummary(null)
 		try {
+			const normalizedFrom = normalizeDateInput(fromDate)
+			const normalizedTo = normalizeDateInput(toDate)
 			const res = await api.triggerTenderCollector({
 				adapterId: 'monaqasat_available',
-				fromDate: fromDate || undefined,
-				toDate: toDate || undefined
+				fromDate: normalizedFrom || undefined,
+				toDate: normalizedTo || undefined
 			})
 			if (res && (res as any).error) {
 				setRunError((res as any).error)
@@ -73,6 +84,25 @@ export default function AvailableTendersPage() {
 			setError(e.message || 'Failed to promote tender')
 		}
 		setPromoting(null)
+	}
+
+	async function submitWorkApproval() {
+		if (!requestTender) return
+		setRequestingApproval(true)
+		setRequestError(null)
+		try {
+			const res = await api.requestWorkApproval({
+				sourceTenderId: requestTender.id,
+				comment: requestComment || undefined
+			})
+			setRequestTender(null)
+			setRequestComment('')
+			await load()
+			nav(`/opportunity/${res.opportunity.id}`)
+		} catch (e: any) {
+			setRequestError(e.message || 'Failed to request approval')
+		}
+		setRequestingApproval(false)
 	}
 
 	return (
@@ -230,13 +260,26 @@ export default function AvailableTendersPage() {
 											<span className="rounded bg-slate-100 px-2 py-0.5 text-xs">{row.status || 'new'}</span>
 										</td>
 										<td className="px-3 py-2 text-right">
-											<button
-												className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700 disabled:opacity-50"
-												onClick={() => promote(row.id)}
-												disabled={promoting === row.id || row.status === 'promoted'}
-											>
-												{promoting === row.id ? 'Promoting...' : 'Promote'}
-											</button>
+											<div className="flex flex-col items-end gap-2">
+												<button
+													className="rounded bg-indigo-600 px-3 py-1 text-xs text-white hover:bg-indigo-700 disabled:opacity-50"
+													onClick={() => {
+														setRequestTender(row)
+														setRequestComment('')
+														setRequestError(null)
+													}}
+													disabled={requestingApproval}
+												>
+													Request Work Approval
+												</button>
+												<button
+													className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700 disabled:opacity-50"
+													onClick={() => promote(row.id)}
+													disabled={promoting === row.id || row.status === 'promoted'}
+												>
+													{promoting === row.id ? 'Promoting...' : 'Promote'}
+												</button>
+											</div>
 										</td>
 									</tr>
 								))}
@@ -300,6 +343,45 @@ export default function AvailableTendersPage() {
 					</div>
 				)}
 			</div>
+			{requestTender && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+					<div className="w-full max-w-lg rounded border bg-white p-5 shadow-lg">
+						<h2 className="text-lg font-semibold">Request Go/No-Go Approval</h2>
+						<p className="mt-1 text-sm text-slate-600">
+							Provide a brief rationale before sending this tender for managerial approval.
+						</p>
+						<div className="mt-4 rounded border bg-slate-50 p-3 text-sm">
+							<p className="font-medium">{requestTender.title || requestTender.tenderRef}</p>
+							<p className="text-slate-600">{requestTender.ministry || 'Unknown ministry'}</p>
+						</div>
+						<label className="mt-4 block text-xs font-medium text-slate-600">Rationale (optional)</label>
+						<textarea
+							className="mt-1 w-full rounded border p-2 text-sm"
+							rows={4}
+							value={requestComment}
+							onChange={e => setRequestComment(e.target.value)}
+							placeholder="Why should we pursue this tender?"
+						/>
+						{requestError && <p className="mt-2 text-sm text-red-600">{requestError}</p>}
+						<div className="mt-4 flex items-center justify-end gap-2">
+							<button
+								className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200"
+								onClick={() => setRequestTender(null)}
+								disabled={requestingApproval}
+							>
+								Cancel
+							</button>
+							<button
+								className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700 disabled:opacity-50"
+								onClick={submitWorkApproval}
+								disabled={requestingApproval}
+							>
+								{requestingApproval ? 'Submitting...' : 'Send Request'}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	)
 }

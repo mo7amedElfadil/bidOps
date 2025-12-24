@@ -65,6 +65,8 @@ GET /auth/callback      # Handles callback → redirects with token fragment
 | POST | `/opportunities` | Create opportunity (use `clientId` or `clientName`) | MANAGER, ADMIN |
 | PATCH | `/opportunities/:id` | Update opportunity | MANAGER, ADMIN |
 | PATCH | `/opportunities/:id/bid-owners` | Replace bid owners (userIds[]) | MANAGER, ADMIN |
+| GET | `/opportunities/:id/checklist` | Get submission checklist | All |
+| PATCH | `/opportunities/:id/checklist` | Update submission checklist | MANAGER, ADMIN, CONTRIBUTOR |
 | DELETE | `/opportunities/:id` | Delete opportunity | ADMIN |
 
 ### Clients
@@ -150,7 +152,8 @@ GET /auth/callback      # Handles callback → redirects with token fragment
 |--------|------|-------------|-------|
 | GET | `/approvals/:packId` | List approvals for pack | All |
 | POST | `/approvals/:packId/bootstrap` | Create approval chain | MANAGER, ADMIN |
-| POST | `/approvals/decision/:id` | Submit approval decision | All |
+| POST | `/approvals/request` | Request Go/No-Go approval from tender | MANAGER, ADMIN |
+| POST | `/approvals/decision/:id` | Submit approval decision (supports CHANGES_REQUESTED/RESUBMITTED) | All |
 | GET | `/approvals/review` | List pricing packs and approvals pending review | All |
 | POST | `/approvals/:packId/finalize` | Finalize approvals and move opportunity to submission | MANAGER, ADMIN |
 
@@ -181,7 +184,7 @@ GET /auth/callback      # Handles callback → redirects with token fragment
 ### Available Ministry Tenders
 | Method | Path | Description | Roles |
 |--------|------|-------------|-------|
-| GET | `/tenders` | List available tenders | All |
+| GET | `/tenders` | List available tenders (optional: fromDate, toDate) | All |
 | GET | `/tenders/:id` | Get tender | All |
 | POST | `/tenders` | Create tender | MANAGER, ADMIN |
 | PATCH | `/tenders/:id` | Update tender | MANAGER, ADMIN |
@@ -194,8 +197,8 @@ GET /auth/callback      # Handles callback → redirects with token fragment
 |--------|------|-------------|-------|
 | GET | `/users` | List users (page, pageSize, q) | ADMIN, MANAGER |
 | GET | `/users/:id` | Get user | ADMIN |
-| POST | `/users` | Create user (name, email, role, userType) | ADMIN, MANAGER |
-| PATCH | `/users/:id` | Update user (role, team, `userType`) | ADMIN |
+| POST | `/users` | Create user (name, email optional; defaults to `firstName@it-serve.qa`) | ADMIN, MANAGER |
+| PATCH | `/users/:id` | Update user (email, role, team, `userType`) | ADMIN |
 | DELETE | `/users/:id` | Disable user | ADMIN |
 
 ### Analytics
@@ -268,3 +271,9 @@ Paginated list endpoints return:
 ```json
 { "items": [], "total": 0, "page": 1, "pageSize": 25 }
 ```
+### Change Requests
+| Method | Path | Description | Roles |
+|--------|------|-------------|-------|
+| GET | `/change-requests` | List change requests (query: opportunityId, status) | All |
+| POST | `/change-requests` | Create change request | MANAGER, ADMIN, CONTRIBUTOR |
+| PATCH | `/change-requests/:id` | Update change request status/impact | MANAGER, ADMIN |

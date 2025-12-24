@@ -5,7 +5,8 @@ import { processEmailBatch } from './jobs/sendEmail'
 
 const connection = new Redis({
 	host: process.env.REDIS_HOST || 'localhost',
-	port: Number(process.env.REDIS_PORT || 6379)
+	port: Number(process.env.REDIS_PORT || 6379),
+	maxRetriesPerRequest: null
 })
 
 const queueName = 'bidops-default'
@@ -26,9 +27,10 @@ async function runCollector(endpoint: string, payload: Record<string, any>) {
 	return res.json()
 }
 
-new Worker(
+const worker = new Worker(
 	queueName,
 	async job => {
+		console.log(`[workers] Processing job ${job.id} (${job.name})`, job.data || {})
 		if (job.name === 'collect-awards') {
 			return runCollector('run', job.data)
 		}
@@ -40,6 +42,14 @@ new Worker(
 	{ connection }
 )
 
+worker.on('completed', (job, result) => {
+	console.log(`[workers] Job ${job.id} completed`, result || {})
+})
+
+worker.on('failed', (job, err) => {
+	console.error(`[workers] Job ${job?.id} failed`, err?.message || err)
+})
+
 // eslint-disable-next-line no-console
 console.log('Workers app started. Queue:', queueName)
 
@@ -48,4 +58,3 @@ setInterval(() => {
 	slaTick().catch(err => console.error('slaTick error', err))
 	processEmailBatch().catch(err => console.error('email error', err))
 }, 60_000)
-

@@ -12,7 +12,7 @@ export function Page({
 	children: React.ReactNode
 }) {
 	return (
-		<div className="mx-auto max-w-6xl p-6">
+		<div className="w-full px-8 py-6 lg:px-12">
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-xl font-semibold">{title}</h1>
@@ -24,4 +24,3 @@ export function Page({
 		</div>
 	)
 }
-

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { api, type Opportunity } from '../../api/client'
 import { SlaBadge } from '../../components/SlaBadge'
 import { Page } from '../../components/Page'
+import { isPostSubmission } from '../../utils/postSubmission'
 
 const CHRONOLOGICAL_STAGES = [
 	'Unstaged',
@@ -13,6 +14,7 @@ const CHRONOLOGICAL_STAGES = [
 	'Elaboration',
 	'Pricing & Approvals',
 	'Submission',
+	'Post Submission',
 	'Evaluation',
 	'Outcome',
 	'Closeout'
@@ -30,7 +32,7 @@ export default function Board() {
 	const groupedByStage = useMemo(
 		() =>
 			(data?.items || []).reduce((acc, item) => {
-				const k = item.stage || 'Unstaged'
+				const k = isPostSubmission(item) ? 'Post Submission' : item.stage || 'Unstaged'
 				;(acc[k] ||= []).push(item)
 				return acc
 			}, {} as Record<string, Opportunity[]>),

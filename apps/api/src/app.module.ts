@@ -25,6 +25,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { RolesGuard } from './auth/roles.guard';
 import { AiModule } from './modules/ai/ai.module';
 import { ProposalModule } from './modules/proposal/proposal.module';
+import { ChangeRequestsModule } from './modules/change-requests/change-requests.module';
 
 @Module({
 	imports: [
@@ -33,7 +34,7 @@ import { ProposalModule } from './modules/proposal/proposal.module';
 			limit: Number(process.env.RATE_LIMIT_LIMIT || 120)
 		}]),
 		TenantModule,
-		AuthModule, OpportunitiesModule, ClientsModule, ImportModule, SettingsModule, AttachmentsModule, SearchModule, ComplianceModule, ClarificationsModule, PricingModule, ApprovalsModule, SubmissionModule, OutcomesModule, AwardsModule, TendersModule, UsersModule, AnalyticsModule, AiModule, ProposalModule
+		AuthModule, OpportunitiesModule, ClientsModule, ImportModule, SettingsModule, AttachmentsModule, SearchModule, ComplianceModule, ClarificationsModule, PricingModule, ApprovalsModule, SubmissionModule, OutcomesModule, AwardsModule, TendersModule, UsersModule, AnalyticsModule, AiModule, ProposalModule, ChangeRequestsModule
 	],
 	controllers: [HealthController],
 	providers: [

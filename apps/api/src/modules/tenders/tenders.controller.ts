@@ -19,6 +19,14 @@ class ListTendersQuery {
 	status?: string
 
 	@IsOptional()
+	@IsString()
+	fromDate?: string
+
+	@IsOptional()
+	@IsString()
+	toDate?: string
+
+	@IsOptional()
 	@IsInt()
 	@Min(1)
 	@Type(() => Number)
@@ -97,6 +105,8 @@ export class TendersController {
 				q: query.q,
 				portal: query.portal,
 				status: query.status,
+				fromDate: query.fromDate,
+				toDate: query.toDate,
 				page: query.page,
 				pageSize: query.pageSize
 			},

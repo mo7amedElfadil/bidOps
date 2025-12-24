@@ -20,10 +20,12 @@ export class TenantService {
 			where: { id: packId },
 			select: { opportunity: { select: { tenantId: true } } }
 		} as any)
-		const packTenant = (pack as any)?.opportunity?.tenantId
-		if (!packTenant || packTenant !== tenantId) {
+		if (!pack || !(pack as any).opportunity?.tenantId) {
+			throw new NotFoundException('Pricing pack not found')
+		}
+		const packTenant = (pack as any).opportunity.tenantId
+		if (packTenant !== tenantId) {
 			throw new ForbiddenException('Access denied for this pricing pack')
 		}
 	}
 }
-

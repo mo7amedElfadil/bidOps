@@ -16,6 +16,16 @@
   - Tenders: Available ministry tenders collector + UI list with promote-to-opportunity action
   - Tenders: Monaqasat available-tender adapter now walks pages until the requested date window (or `MONAQASAT_TENDER_MAX_PAGES`) so date-range filtering works like the award collector
   - Collectors: Monaqasat award + available adapters now force English locale via headers, culture cookie, and ChangeLang
+  - Approvals: Added decision DTO (supports changes requested/resubmitted), stage gating, and Go/No-Go request updates
+  - Opportunities: Submission checklist model + endpoints, and change request module (create/list/update)
+  - Web: Available tenders now includes a Go/No-Go request modal that routes to the opportunity on submission
+  - Web: Opportunity overview now includes the submission checklist and bond reminder banner
+  - Web: Change requests panel added to opportunity overview (create + status update)
+  - Web: Approvals page now supports change-request and resubmission statuses with stage-specific CTA labels
+  - Users: Admin can edit email; create defaults to firstName@it-serve.qa when email omitted
+  - Web: Post submission added (new route, list section, and board lane using daysLeft/stage/status)
+  - Ops: Workers container updated (bullseye image, prisma generate mount, redis maxRetriesPerRequest) so collector jobs run
+  - API: Tenant pack access now returns NotFound for missing packs and controllers await access checks
   - Users: Admin user management module and UI
   - All API modules have tenant scoping and RBAC
   - Frontend refreshed with TanStack Query, protected layout/nav, opportunity overview shell, attachment search, SLA settings UI, and consistent opportunity tab headers

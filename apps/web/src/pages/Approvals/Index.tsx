@@ -7,7 +7,7 @@ import { OpportunityShell } from '../../components/OpportunityShell'
 export default function ApprovalsPage() {
 	const { id } = useParams<{ id: string }>()
 	const qc = useQueryClient()
-	const [remarks, setRemarks] = useState<Record<string, string>>({})
+	const [comments, setComments] = useState<Record<string, string>>({})
 
 	const pack = useQuery({
 		queryKey: ['pack', id, 'approvals'],
@@ -27,17 +27,24 @@ export default function ApprovalsPage() {
 	})
 
 	const submitDecision = useMutation({
-		mutationFn: (input: { id: string; status: 'APPROVED' | 'REJECTED' }) =>
-			api.submitApprovalDecision(input.id, { status: input.status, remarks: remarks[input.id] || undefined }),
+		mutationFn: (input: { id: string; status: 'PENDING' | 'IN_REVIEW' | 'CHANGES_REQUESTED' | 'RESUBMITTED' | 'APPROVED' | 'APPROVED_WITH_CONDITIONS' | 'REJECTED' }) =>
+			api.submitApprovalDecision(input.id, { status: input.status, comment: comments[input.id] || undefined }),
 		onSuccess: () => approvals.refetch()
 	})
 
 	const getStatusColor = (status: string) => {
 		switch (status) {
 			case 'APPROVED':
+			case 'APPROVED_WITH_CONDITIONS':
 				return 'bg-green-100 text-green-800'
 			case 'REJECTED':
 				return 'bg-red-100 text-red-800'
+			case 'CHANGES_REQUESTED':
+				return 'bg-orange-100 text-orange-800'
+			case 'RESUBMITTED':
+				return 'bg-sky-100 text-sky-800'
+			case 'IN_REVIEW':
+				return 'bg-blue-100 text-blue-800'
 			default:
 				return 'bg-amber-100 text-amber-800'
 		}
@@ -53,6 +60,19 @@ export default function ApprovalsPage() {
 				return '3. Executive'
 			default:
 				return type
+		}
+	}
+
+	const getActionLabel = (type: string) => {
+		switch (type) {
+			case 'LEGAL':
+				return 'Approve Working Stage'
+			case 'FINANCE':
+				return 'Approve Pricing Stage'
+			case 'EXECUTIVE':
+				return 'Approve Final Submission'
+			default:
+				return 'Approve'
 		}
 	}
 
@@ -123,18 +143,18 @@ export default function ApprovalsPage() {
 													)}
 												</div>
 
-												{a.remarks && (
-													<p className="mt-2 text-sm text-slate-600">Remarks: {a.remarks}</p>
+												{(a.comment || a.remarks) && (
+													<p className="mt-2 text-sm text-slate-600">Remarks: {a.comment || a.remarks}</p>
 												)}
 
-												{a.status === 'PENDING' && (
+												{['PENDING', 'IN_REVIEW', 'RESUBMITTED', 'CHANGES_REQUESTED'].includes(a.status) && (
 													<div className="mt-3 flex flex-col gap-2">
 														<textarea
 															className="w-full rounded border p-2 text-sm"
 															placeholder="Optional remarks"
 															rows={2}
-															value={remarks[a.id] || ''}
-															onChange={e => setRemarks({ ...remarks, [a.id]: e.target.value })}
+															value={comments[a.id] || ''}
+															onChange={e => setComments({ ...comments, [a.id]: e.target.value })}
 														/>
 														<div className="flex gap-2">
 															<button
@@ -142,8 +162,24 @@ export default function ApprovalsPage() {
 																onClick={() => submitDecision.mutate({ id: a.id, status: 'APPROVED' })}
 																disabled={submitDecision.isPending}
 															>
-																Approve
+																{getActionLabel(a.type)}
 															</button>
+															<button
+																className="rounded bg-amber-600 px-3 py-1 text-sm text-white hover:bg-amber-700 disabled:opacity-50"
+																onClick={() => submitDecision.mutate({ id: a.id, status: 'CHANGES_REQUESTED' })}
+																disabled={submitDecision.isPending}
+															>
+																Request changes
+															</button>
+															{a.status === 'CHANGES_REQUESTED' && (
+																<button
+																	className="rounded bg-sky-600 px-3 py-1 text-sm text-white hover:bg-sky-700 disabled:opacity-50"
+																	onClick={() => submitDecision.mutate({ id: a.id, status: 'RESUBMITTED' })}
+																	disabled={submitDecision.isPending}
+																>
+																	Mark resubmitted
+																</button>
+															)}
 															<button
 																className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700 disabled:opacity-50"
 																onClick={() => submitDecision.mutate({ id: a.id, status: 'REJECTED' })}
@@ -165,13 +201,13 @@ export default function ApprovalsPage() {
 							<div className="mt-6 rounded border bg-white p-4 shadow-sm">
 								<h3 className="font-medium">Approval Status Summary</h3>
 								<div className="mt-2 text-sm">
-									{approvals.data?.every(a => a.status === 'APPROVED') ? (
+									{approvals.data?.every(a => ['APPROVED', 'APPROVED_WITH_CONDITIONS'].includes(a.status)) ? (
 										<p className="font-medium text-green-700">✓ All approvals complete - Ready for submission</p>
 									) : approvals.data?.some(a => a.status === 'REJECTED') ? (
 										<p className="font-medium text-red-700">✗ Approval rejected - Review and resubmit</p>
 									) : (
 										<p className="text-amber-700">
-											⏳ Awaiting approvals ({approvals.data?.filter(a => a.status === 'APPROVED').length}/
+											⏳ Awaiting approvals ({approvals.data?.filter(a => ['APPROVED', 'APPROVED_WITH_CONDITIONS'].includes(a.status)).length}/
 											{approvals.data?.length} complete)
 										</p>
 									)}

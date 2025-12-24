@@ -1,10 +1,11 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { clearToken, getToken } from '../utils/auth'
 import Toasts from './Toasts'
 
 const links = [
 	{ to: '/', label: 'Opportunities' },
+	{ to: '/post-submission', label: 'Post Submission' },
 	{ to: '/board', label: 'Kanban' },
 	{ to: '/timeline', label: 'Timeline' },
 	{ to: '/awards/staging', label: 'Awards' },
@@ -15,10 +16,63 @@ const links = [
 	{ to: '/settings/sla', label: 'SLA' }
 ]
 
+const routeLabels: Record<string, string> = {
+	'/': 'Opportunities',
+	'/board': 'Kanban',
+	'/timeline': 'Timeline',
+	'/awards/staging': 'Awards',
+	'/tenders/available': 'Tenders',
+	'/approvals/review': 'Bid Review',
+	'/admin/users': 'Users',
+	'/search': 'Search',
+	'/settings/sla': 'SLA',
+	'/import/tracker': 'Tracker Import'
+}
+
+const navGroups = [
+	{
+		label: 'Pipeline',
+		items: [
+			{ to: '/', label: 'Opportunities' },
+			{ to: '/board', label: 'Kanban' },
+			{ to: '/timeline', label: 'Timeline' }
+		]
+	},
+	{
+		label: 'Intelligence',
+		items: [
+			{ to: '/awards/staging', label: 'Awards' },
+			{ to: '/tenders/available', label: 'Tenders' },
+			{ to: '/search', label: 'Search' }
+		]
+	},
+	{
+		label: 'Admin',
+		items: [
+			{ to: '/approvals/review', label: 'Bid Review' },
+			{ to: '/admin/users', label: 'Users' },
+			{ to: '/settings/sla', label: 'SLA' }
+		]
+	}
+]
+
 export default function Layout() {
 	const loc = useLocation()
 	const nav = useNavigate()
 	const token = getToken()
+	const breadcrumbs = useMemo(() => {
+		const segments = loc.pathname.split('/').filter(Boolean)
+		const crumbs = [{ label: 'Home', to: '/' }]
+		let accumulated = ''
+		for (const segment of segments) {
+			accumulated += `/${segment}`
+			crumbs.push({
+				label: routeLabels[accumulated] || segment.replace(/-/g, ' '),
+				to: accumulated
+			})
+		}
+		return crumbs
+	}, [loc.pathname])
 
 	function signOut() {
 		clearToken()
@@ -32,19 +86,26 @@ export default function Layout() {
 				<div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
 					<div className="flex items-center gap-4">
 						<div className="rounded bg-blue-600 px-2 py-1 text-sm font-semibold text-white">BidOps</div>
-						<nav className="flex flex-wrap gap-1 text-sm">
-							{links.map(link => (
-								<NavLink
-									key={link.to}
-									to={link.to}
-									className={({ isActive }) =>
-										`rounded px-3 py-1.5 hover:bg-slate-100 ${
-											isActive ? 'bg-slate-200 font-medium' : ''
-										}`
-									}
-								>
-									{link.label}
-								</NavLink>
+						<nav className="flex flex-wrap gap-2 text-sm">
+							{navGroups.map(group => (
+								<div key={group.label} className="flex items-center gap-2 rounded border border-slate-200 bg-slate-50 px-3 py-1">
+									<span className="text-xs uppercase tracking-wider text-slate-500">{group.label}</span>
+									<div className="flex items-center gap-1">
+										{group.items.map(item => (
+											<NavLink
+												key={item.to}
+												to={item.to}
+												className={({ isActive }) =>
+													`rounded px-3 py-1.5 text-xs hover:bg-slate-100 ${
+														isActive ? 'bg-slate-200 font-medium' : ''
+													}`
+												}
+											>
+												{item.label}
+											</NavLink>
+										))}
+									</div>
+								</div>
 							))}
 						</nav>
 					</div>
@@ -65,8 +126,23 @@ export default function Layout() {
 					</div>
 				</div>
 				<div className="border-t bg-slate-100">
-					<div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-2 text-xs text-slate-600">
-						<span>Path: {loc.pathname}</span>
+					<div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs text-slate-600">
+						<nav className="flex items-center gap-2">
+							{breadcrumbs.map((crumb, index) => (
+								<React.Fragment key={crumb.to}>
+									<button
+										onClick={() => nav(crumb.to)}
+										className="flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:bg-slate-200"
+									>
+										{index === 0 ? '🏠' : null}
+										{crumb.label}
+									</button>
+									{index < breadcrumbs.length - 1 && (
+										<span className="text-slate-400">/</span>
+									)}
+								</React.Fragment>
+							))}
+						</nav>
 						<span>Tenant scope: default</span>
 					</div>
 				</div>

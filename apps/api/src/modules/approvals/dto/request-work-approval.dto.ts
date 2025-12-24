@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator'
+import { IsArray, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator'
 
 export class RequestWorkApprovalDto {
 	@IsString()
@@ -9,4 +9,12 @@ export class RequestWorkApprovalDto {
 	@IsString()
 	@MaxLength(500)
 	comment?: string
+
+	@IsOptional()
+	@IsArray()
+	attachments?: string[]
+
+	@IsOptional()
+	@IsArray()
+	assignBidOwnerIds?: string[]
 }

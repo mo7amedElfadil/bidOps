@@ -76,6 +76,18 @@
   * Collectors: Available tender run accepts date filters so `/tenders/collect` can pull a date window
   * Collectors: Monaqasat available tender adapter now walks pages until the requested `fromDate` window or `MONAQASAT_TENDER_MAX_PAGES`, mirroring the awards crawler
   * Collectors: Monaqasat award + available adapters now force English locale via headers, culture cookie, and ChangeLang
+  * Approvals: Added decision DTO (supports changes requested/resubmitted), stage gating, and Go/No-Go request enhancements
+  * Opportunities: Submission checklist model + endpoints
+  * Change Requests: New module with create/list/update APIs
+  * Web: Available tenders includes a Go/No-Go request modal wired to `/approvals/request`
+  * Web: Opportunity overview includes submission checklist UI and bond reminder banner
+  * Web: Change requests panel added to opportunity overview (create + status update)
+  * Web: Approvals page supports change-request/resubmission statuses and stage-specific CTA labels
+  * Users: Admin can edit email; create defaults to firstName@it-serve.qa when email omitted
+  * Web: Post submission route, list section, and board lane added (daysLeft/stage/status rules)
+  * Ops: Workers container fixed for collector queue (bullseye image, prisma generate mount, redis maxRetriesPerRequest)
+  * API: Tenant pack access now returns NotFound for missing packs and controllers await access checks
+  * Date filters: Added backend + UI normalization for tender/award ranges; tender list now supports from/to filters
 * Next:
   * Rate limiting defaults + security headers docs (hardening sweep)
   * Validate Monaqasat adapter against live pages; add edge-case handling

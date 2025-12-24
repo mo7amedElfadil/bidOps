@@ -3,16 +3,43 @@ import { Prisma } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 import { enqueueTenderCollector } from '../../queues/collector.queue'
 import { parsePagination } from '../../utils/pagination'
+import { normalizeDateInput, parseDateInput } from '../../utils/date'
 
 @Injectable()
 export class TendersService {
 	constructor(private prisma: PrismaService) {}
 
 	list(
-		filters: { q?: string; portal?: string; status?: string; page?: number; pageSize?: number },
+		filters: {
+			q?: string
+			portal?: string
+			status?: string
+			fromDate?: string
+			toDate?: string
+			page?: number
+			pageSize?: number
+		},
 		tenantId: string
 	) {
 		const where: Prisma.MinistryTenderWhereInput = { tenantId }
+		const andFilters: Prisma.MinistryTenderWhereInput[] = []
+		const from = parseDateInput(filters.fromDate)
+		const to = parseDateInput(filters.toDate, true)
+		if (from || to) {
+			const publishRange: Prisma.DateTimeFilter = {}
+			const closeRange: Prisma.DateTimeFilter = {}
+			if (from) {
+				publishRange.gte = from
+				closeRange.gte = from
+			}
+			if (to) {
+				publishRange.lte = to
+				closeRange.lte = to
+			}
+			andFilters.push({
+				OR: [{ publishDate: publishRange }, { closeDate: closeRange }]
+			})
+		}
 		if (filters.portal) where.portal = filters.portal
 		if (filters.status) where.status = filters.status
 		if (filters.q) {
@@ -22,6 +49,9 @@ export class TendersService {
 				{ title: like },
 				{ ministry: like }
 			]
+		}
+		if (andFilters.length) {
+			where.AND = andFilters
 		}
 		const { page, pageSize, skip } = parsePagination(filters, 25, 200)
 		return this.prisma.$transaction([
@@ -117,7 +147,11 @@ export class TendersService {
 	}
 
 	async triggerCollector(payload: { adapterId?: string; fromDate?: string; toDate?: string }) {
-		const job = await enqueueTenderCollector(payload)
+		const job = await enqueueTenderCollector({
+			adapterId: payload.adapterId,
+			fromDate: normalizeDateInput(payload.fromDate),
+			toDate: normalizeDateInput(payload.toDate)
+		})
 		return { jobId: job.id, status: 'queued' }
 	}
 }

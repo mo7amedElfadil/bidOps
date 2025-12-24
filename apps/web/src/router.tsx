@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-rou
 import List from './pages/Opportunities/List'
 import Board from './pages/Opportunities/Board'
 import Timeline from './pages/Opportunities/Timeline'
+import PostSubmission from './pages/Opportunities/PostSubmission'
 import TrackerWizard from './pages/Import/TrackerWizard'
 import AttachmentsPage from './pages/Opportunities/Attachments'
 import ComplianceMatrix from './pages/Compliance/Matrix'
@@ -42,6 +43,7 @@ const router = createBrowserRouter([
 				errorElement: <ErrorPage />,
 				children: [
 					{ path: '/', element: <List /> },
+					{ path: '/post-submission', element: <PostSubmission /> },
 					{ path: '/board', element: <Board /> },
 					{ path: '/timeline', element: <Timeline /> },
 					{ path: '/import/tracker', element: <TrackerWizard /> },

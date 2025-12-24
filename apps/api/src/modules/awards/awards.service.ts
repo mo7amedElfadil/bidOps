@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client'
 import { PrismaService } from '../../prisma/prisma.service'
 import { enqueueAwardCollector, enqueueTenderCollector } from '../../queues/collector.queue'
 import { parsePagination } from '../../utils/pagination'
+import { normalizeDateInput, parseDateInput } from '../../utils/date'
 
 type StagingFilters = {
 	fromDate?: string
@@ -23,9 +24,11 @@ export class AwardsService {
 			where.status = filters.status
 		}
 		if (filters.fromDate || filters.toDate) {
+			const from = parseDateInput(filters.fromDate)
+			const to = parseDateInput(filters.toDate, true)
 			where.awardDate = {}
-			if (filters.fromDate) where.awardDate.gte = new Date(filters.fromDate)
-			if (filters.toDate) where.awardDate.lte = new Date(filters.toDate)
+			if (from) where.awardDate.gte = from
+			if (to) where.awardDate.lte = to
 		}
 		if (filters.q?.trim()) {
 			const term = filters.q.trim()
@@ -179,7 +182,11 @@ export class AwardsService {
 	}
 
 	async triggerCollector(payload: { adapterId?: string; fromDate?: string; toDate?: string }) {
-		const job = await enqueueAwardCollector(payload)
+		const job = await enqueueAwardCollector({
+			adapterId: payload.adapterId,
+			fromDate: normalizeDateInput(payload.fromDate),
+			toDate: normalizeDateInput(payload.toDate)
+		})
 		return { jobId: job.id, status: 'queued' }
 	}
 

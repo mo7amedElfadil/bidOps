@@ -81,6 +81,7 @@ make up
 | `postgres` | 5432 | PostgreSQL database |
 | `redis` | 6379 | Redis for queues and cache |
 | `opensearch` | 9200 | OpenSearch for full-text search |
+|  |  | Set `OPENSEARCH_INITIAL_ADMIN_PASSWORD` (e.g., `BidOps!2025`) so the container starts |
 | `dashboards` | 5601 | OpenSearch Dashboards |
 | `mailhog` | 1025, 8025 | Dev email server (SMTP: 1025, UI: 8025) |
 | `prometheus` | 9090 | Metrics collection |
@@ -90,6 +91,10 @@ make up
 | `web` | 8080 | BidOps Web UI |
 | `collectors` | (internal) | Award collectors server (Playwright) |
 | `workers` | (internal) | BullMQ worker for SLA ticks, notification/email batches, and queued collector jobs |
+
+### Job queue
+
+The `workers` service listens on the Redis-backed BullMQ queue called `bidops-default`. API endpoints such as `POST /awards/collect` and `/tenders/collect` enqueue `collect-awards` or `collect-tenders` jobs via `enqueueAwardCollector`/`enqueueTenderCollector`, and the worker delegates them to the collectors service through `COLLECTORS_URL`. The same queue can host other heavy/async workloads you may add later (SLA/notification bursts, tracker imports, parser/OCR jobs, AI extraction slices, etc.) so that the API stays responsive while background work is serialized through Redis.
 
 ### Optional Services
 

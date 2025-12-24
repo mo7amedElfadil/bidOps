@@ -8,6 +8,7 @@ import { toast } from '../../utils/toast'
 
 const statusClasses: Record<string, string> = {
 	APPROVED: 'bg-green-100 text-green-800',
+	APPROVED_WITH_CONDITIONS: 'bg-green-100 text-green-800',
 	REJECTED: 'bg-red-100 text-red-800',
 	PENDING: 'bg-amber-100 text-amber-800'
 }
@@ -65,7 +66,9 @@ export default function ApprovalReviewPage() {
 				<div className="mt-6 space-y-4">
 					{packs.map(pack => {
 						const approvals = pack.approvals || []
-						const allApproved = approvals.length > 0 && approvals.every(a => a.status === 'APPROVED')
+						const allApproved =
+							approvals.length > 0 &&
+							approvals.every(a => ['APPROVED', 'APPROVED_WITH_CONDITIONS'].includes(a.status))
 						const hasRejected = approvals.some(a => a.status === 'REJECTED')
 						const isFinalizing = finalizingPack === pack.id
 						const readyToFinalize = allApproved && !hasRejected
@@ -119,7 +122,7 @@ export default function ApprovalReviewPage() {
 											? 'One or more approvers rejected this pack. Review comments and rerun approvals.'
 											: allApproved
 												? 'All approvals completed.'
-												: `${approvals.filter(a => a.status === 'APPROVED').length}/${approvals.length} approvals done.`}
+												: `${approvals.filter(a => ['APPROVED', 'APPROVED_WITH_CONDITIONS'].includes(a.status)).length}/${approvals.length} approvals done.`}
 									</div>
 									<Button
 										size="sm"

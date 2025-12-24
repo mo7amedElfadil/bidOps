@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, AwardEvent } from '../../api/client'
 import { downloadWithAuth } from '../../utils/download'
+import { normalizeDateInput } from '../../utils/date'
 
 export default function AwardsEventsPage() {
 	const [rows, setRows] = useState<AwardEvent[]>([])
@@ -65,11 +66,12 @@ export default function AwardsEventsPage() {
 		setSaving(true)
 		setError(null)
 		try {
+			const normalizedAwardDate = normalizeDateInput(editForm.awardDate)
 			await api.updateAwardEvent(editing.id, {
 				tenderRef: editForm.tenderRef || undefined,
 				client: editForm.client || undefined,
 				title: editForm.title || undefined,
-				awardDate: editForm.awardDate || undefined,
+				awardDate: normalizedAwardDate || undefined,
 				awardValue: editForm.awardValue ? Number(editForm.awardValue) : undefined,
 				winners: editForm.winners.split(',').map(w => w.trim()).filter(Boolean),
 				codes: editForm.codes.split(',').map(c => c.trim()).filter(Boolean),

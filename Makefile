@@ -4,6 +4,7 @@ COMPOSE := $(COMPOSE_BASE)
 COMPOSE_MONITORING := $(COMPOSE_BASE) --profile monitoring
 INCLUDE_MONITORING ?= false
 DB_URL := postgresql://bidops:bidops@localhost:5432/bidops?schema=public
+LOG_SERVICES ?=
 
 .PHONY: bootstrap up down db-migrate db-seed db-reset api-dev web-dev workers-dev collectors-run lint test build build-packages pack-sample parse-rfp pbi-export
 .PHONY: logs logs-monitoring logs-backend logs-frontend api-start-4000 api-smoke
@@ -112,13 +113,13 @@ seed-admin:
 
 # Logs
 logs:
-	$(COMPOSE) logs -f --tail=200
+	$(COMPOSE) logs -f --tail=200 $(LOG_SERVICES)
 
 logs-monitoring:
 	$(COMPOSE_MONITORING) logs -f --tail=200 grafana prometheus otel-collector dashboards
 
 logs-backend:
-	$(COMPOSE) logs -f --tail=200 api
+	$(COMPOSE) logs -f --tail=200 api workers
 
 logs-frontend:
 	$(COMPOSE) logs -f --tail=200 web

@@ -5,6 +5,7 @@ import { CreateOpportunityDto } from './dto/create-opportunity.dto'
 import { UpdateOpportunityDto } from './dto/update-opportunity.dto'
 import { QueryOpportunityDto } from './dto/query-opportunity.dto'
 import { parsePagination } from '../../utils/pagination'
+import { UpdateChecklistDto } from './dto/update-checklist.dto'
 
 @Injectable()
 export class OpportunitiesService {
@@ -226,5 +227,114 @@ export class OpportunitiesService {
 
 	async delete(id: string) {
 		return this.prisma.opportunity.delete({ where: { id } })
+	}
+
+	async getChecklist(opportunityId: string) {
+		const checklist = await this.prisma.opportunityChecklist.findUnique({
+			where: { opportunityId }
+		})
+		if (checklist) return checklist
+		return this.prisma.opportunityChecklist.create({
+			data: { opportunityId }
+		})
+	}
+
+	async updateChecklist(opportunityId: string, input: UpdateChecklistDto, userId: string) {
+		const current = await this.prisma.opportunityChecklist.findUnique({
+			where: { opportunityId }
+		})
+		const notes: Record<string, any> = { ...(current?.notes as any || {}) }
+
+		const applyItem = (
+			key: string,
+			fieldBase: {
+				flag: keyof Prisma.OpportunityChecklistUpdateInput
+				at: keyof Prisma.OpportunityChecklistUpdateInput
+				by: keyof Prisma.OpportunityChecklistUpdateInput
+				attachment: keyof Prisma.OpportunityChecklistUpdateInput
+			},
+			item?: { done?: boolean; attachmentId?: string; notes?: string }
+		) => {
+			const data: Record<string, any> = {}
+			if (!item) return data
+			if (item.done !== undefined) {
+				if (item.done) {
+					data[fieldBase.flag] = true
+					data[fieldBase.at] = new Date()
+					data[fieldBase.by] = userId
+				} else {
+					data[fieldBase.flag] = false
+					data[fieldBase.at] = null
+					data[fieldBase.by] = null
+				}
+			}
+			if (item.attachmentId !== undefined) {
+				data[fieldBase.attachment] = item.attachmentId || null
+			}
+			if (item.notes !== undefined) {
+				notes[key] = item.notes
+			}
+			return data
+		}
+
+		const updateData = {
+			...applyItem(
+				'bondPurchased',
+				{
+					flag: 'bondPurchased',
+					at: 'bondPurchasedAt',
+					by: 'bondPurchasedById',
+					attachment: 'bondPurchaseAttachmentId'
+				},
+				input.bondPurchased
+			),
+			...applyItem(
+				'formsCompleted',
+				{
+					flag: 'formsCompleted',
+					at: 'formsCompletedAt',
+					by: 'formsCompletedById',
+					attachment: 'formsAttachmentId'
+				},
+				input.formsCompleted
+			),
+			...applyItem(
+				'finalPdfReady',
+				{
+					flag: 'finalPdfReady',
+					at: 'finalPdfReadyAt',
+					by: 'finalPdfReadyById',
+					attachment: 'finalPdfAttachmentId'
+				},
+				input.finalPdfReady
+			),
+			...applyItem(
+				'portalCredentialsVerified',
+				{
+					flag: 'portalCredentialsVerified',
+					at: 'portalCredentialsVerifiedAt',
+					by: 'portalCredentialsVerifiedById',
+					attachment: 'portalCredentialsAttachmentId'
+				},
+				input.portalCredentialsVerified
+			)
+		} as Prisma.OpportunityChecklistUpdateInput
+		if (Object.keys(notes).length) {
+			updateData.notes = notes
+		}
+
+		if (current) {
+			return this.prisma.opportunityChecklist.update({
+				where: { opportunityId },
+				data: updateData
+			})
+		}
+		const createData: Prisma.OpportunityChecklistUncheckedCreateInput = {
+			opportunityId,
+			...(updateData as Record<string, any>)
+		}
+		return this.prisma.opportunityChecklist.create({
+			data: createData
+		})
 	}
 }

@@ -83,7 +83,7 @@ model Opportunity {
   goNoGoUpdatedAt DateTime?
 
   client Client @relation(fields: [clientId], references: [id])
-  owner  User?  @relation("OwnerOpps", fields: [ownerId], references: [id])
+  owner  User?  @relation("OwnerOpps", fields: [ownerId], references: [id], onDelete: SetNull)
   bidOwners OpportunityBidOwner[]
   boqTemplate  PricingTemplate? @relation("BoqTemplate", fields: [boqTemplateId], references: [id])
   packTemplate PricingTemplate? @relation("PackTemplate", fields: [packTemplateId], references: [id])
@@ -106,7 +106,7 @@ model OpportunityBidOwner {
   createdAt     DateTime @default(now())
 
   opportunity Opportunity @relation(fields: [opportunityId], references: [id])
-  user        User        @relation(fields: [userId], references: [id])
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([opportunityId, userId])
   @@index([userId])

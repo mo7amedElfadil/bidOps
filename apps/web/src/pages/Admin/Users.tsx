@@ -76,6 +76,7 @@ export default function UsersPage() {
 		setError(null)
 		try {
 			await api.updateUser(editing.id, {
+				email: editForm.email || undefined,
 				name: editForm.name || undefined,
 				role: editForm.role as any,
 				team: editForm.team || undefined,
@@ -96,7 +97,7 @@ export default function UsersPage() {
 		setError(null)
 		try {
 			await api.createUser({
-				email: editForm.email,
+				email: editForm.email || undefined,
 				name: editForm.name || undefined,
 				role: editForm.role as any,
 				team: editForm.team || undefined,
@@ -351,8 +352,11 @@ export default function UsersPage() {
 									className="mt-1 w-full rounded border px-3 py-2"
 									value={editForm.email}
 									onChange={e => setEditForm({ ...editForm, email: e.target.value })}
-									disabled={!showCreate}
+									placeholder={editForm.name ? `${editForm.name.split(' ')[0]?.toLowerCase() || 'user'}@it-serve.qa` : 'firstName@it-serve.qa'}
 								/>
+								<p className="mt-1 text-[11px] text-slate-500">
+									Leave blank to use the default: firstName@it-serve.qa
+								</p>
 							</label>
 							<label className="text-sm">
 								<span className="font-medium">Name</span>
@@ -436,7 +440,7 @@ export default function UsersPage() {
 							<button
 								className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
 								onClick={showCreate ? createUser : saveEdit}
-								disabled={saving || !editForm.email}
+								disabled={saving || (!editForm.email && !editForm.name)}
 							>
 								{saving ? 'Saving...' : showCreate ? 'Create' : 'Save'}
 							</button>

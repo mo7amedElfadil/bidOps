@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, AwardStaging } from '../../api/client'
+import { normalizeDateInput } from '../../utils/date'
 
 export default function AwardsStagingPage() {
 	const [rows, setRows] = useState<AwardStaging[]>([])
@@ -37,9 +38,11 @@ export default function AwardsStagingPage() {
 		setError(null)
 		try {
 			const statusFilter = filter.status !== 'all' ? filter.status : undefined
+			const normalizedFrom = normalizeDateInput(activeRange?.from || range.from)
+			const normalizedTo = normalizeDateInput(activeRange?.to || range.to)
 			const data = await api.listAwardStaging({
-				fromDate: activeRange?.from || undefined,
-				toDate: activeRange?.to || undefined,
+				fromDate: normalizedFrom || undefined,
+				toDate: normalizedTo || undefined,
 				q: filter.q || undefined,
 				status: statusFilter,
 				page: pageOverride || pagination.page,
@@ -125,16 +128,18 @@ export default function AwardsStagingPage() {
 		setRunError(null)
 		setRunSummary(null)
 		try {
+			const normalizedFrom = normalizeDateInput(range.from)
+			const normalizedTo = normalizeDateInput(range.to)
 			const res = await api.triggerCollector({
 				adapterId: 'monaqasat',
-				fromDate: range.from || undefined,
-				toDate: range.to || undefined
+				fromDate: normalizedFrom || undefined,
+				toDate: normalizedTo || undefined
 			})
 			if (res && (res as any).error) {
 				setRunError((res as any).error)
 			} else {
 				setRunSummary('Collector run completed. Refresh to see new records.')
-				await load({ from: range.from, to: range.to }, 1)
+				await load({ from: normalizedFrom, to: normalizedTo }, 1)
 			}
 		} catch (e: any) {
 			setRunError(e.message || 'Collector run failed')

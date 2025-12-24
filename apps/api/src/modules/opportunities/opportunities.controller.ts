@@ -4,6 +4,7 @@ import { CreateOpportunityDto } from './dto/create-opportunity.dto'
 import { SetBidOwnersDto } from './dto/set-bid-owners.dto'
 import { UpdateOpportunityDto } from './dto/update-opportunity.dto'
 import { QueryOpportunityDto } from './dto/query-opportunity.dto'
+import { UpdateChecklistDto } from './dto/update-checklist.dto'
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard'
 import { Roles } from '../../auth/roles.decorator'
 import { TenantService } from '../../tenant/tenant.service'
@@ -43,6 +44,19 @@ export class OpportunitiesController {
 	remove(@Param('id') id: string, @Req() req: any) {
 		this.tenants.ensureOpportunityAccess(id, req.user?.tenantId || 'default')
 		return this.service.delete(id)
+	}
+
+	@Get(':id/checklist')
+	getChecklist(@Param('id') id: string, @Req() req: any) {
+		this.tenants.ensureOpportunityAccess(id, req.user?.tenantId || 'default')
+		return this.service.getChecklist(id)
+	}
+
+	@Patch(':id/checklist')
+	@Roles('MANAGER','ADMIN','CONTRIBUTOR')
+	updateChecklist(@Param('id') id: string, @Body() body: UpdateChecklistDto, @Req() req: any) {
+		this.tenants.ensureOpportunityAccess(id, req.user?.tenantId || 'default')
+		return this.service.updateChecklist(id, body, req.user?.id || 'unknown')
 	}
 
 	@Get(':id')

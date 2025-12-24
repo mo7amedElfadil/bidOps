@@ -8,6 +8,8 @@ UI scope and behaviors:
 - Opportunity overview shell with tabbed navigation across all workspaces
 - Opportunity overview allows selecting/add new business & bid owners, opening a modal to add users (name/email/type/role)
 - Bid review dashboard (`/approvals/review`) summarizes pricing packs, approval chains, and lets the assigned reviewer finalize bids once every signature is captured
+- Opportunity pages include a submission checklist (bond purchased, forms completed, final PDF ready, portal credentials verified) with per-item notes and attachments
+- Post submission view (`/post-submission`) groups completed proposals or passed deadlines away from the active pipeline; board adds a “Post Submission” lane
 - Settings page now drives the stage and status dropdowns used in opportunity forms
 - Opportunity summary fields are editable; stage progression is shown with a dropdown and visual indicator
 - Compliance Matrix editor preserving verbatim requirement text
@@ -25,7 +27,7 @@ UI scope and behaviors:
 - Import date format lock for tracker CSV (MDY/DMY/AUTO)
 - English and Arabic content support
 - Award staging can trigger Monaqasat collector with date range (from/to)
-- Available ministry tenders view with promote-to-opportunity action and purchase links
+- Available ministry tenders view with request Go/No-Go approval CTA, promote-to-opportunity action, and purchase links
 - Future: AI/smart filtering for potential opportunities so only ITSQ-relevant tenders are surfaced
 - User management for ADMIN (create/edit/disable)
 - Tracker import issues list (invalid values left empty, resolved on update)

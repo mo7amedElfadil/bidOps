@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
 import { Type } from 'class-transformer'
-import { IsDateString, IsInt, IsOptional, IsString, Min } from 'class-validator'
+import { IsInt, IsOptional, IsString, Min } from 'class-validator'
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard'
 import { Roles } from '../../auth/roles.decorator'
 import { AwardsService } from './awards.service'
@@ -15,11 +15,11 @@ class ListStagingQuery {
 	status?: string
 
 	@IsOptional()
-	@IsDateString()
+	@IsString()
 	fromDate?: string
 
 	@IsOptional()
-	@IsDateString()
+	@IsString()
 	toDate?: string
 
 	@IsOptional()

@@ -35,8 +35,9 @@ class ListUsersQuery {
 }
 
 class CreateUserDto {
+	@IsOptional()
 	@IsEmail()
-	email!: string
+	email?: string
 
 	@IsOptional()
 	@IsString()
@@ -66,6 +67,10 @@ class CreateUserDto {
 }
 
 class UpdateUserDto {
+	@IsOptional()
+	@IsEmail()
+	email?: string
+
 	@IsOptional()
 	@IsString()
 	@MaxLength(200)
