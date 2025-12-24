@@ -21,6 +21,16 @@
   - User management: local auth lifecycle endpoints (invite/accept/reset/change), user status flags, default admin bootstrap
   - Ops: SMTP env now supports external providers (Office 365) for outbound email delivery
   - Docs: Added a comprehensive end-to-end testing guide
+  - Web: Added role-based onboarding guide and decluttered navigation/view switching
+  - Web: Added role-based dashboard with approvals + deadlines and introduced `/opportunities` route
+  - API/Web: Added `/users/me` to hydrate dashboard role context
+  - Web: Added admin setup checklist on dashboard for first-run configuration
+  - Analytics: Added onboarding + approval turnaround telemetry and surfaced in admin dashboard
+  - Opportunities: Added "My queue" filter with URL param support
+  - Web: Header nav now surfaces an inbox dropdown + badge so approvals/notifications are visible at a glance
+  - Web: Navigation simplified into a grouped mega menu dropdown to reduce top-bar clutter
+  - Web: Account page now centralizes personal profile updates, password links, and individual notification preferences
+  - Web: Change requests now alert the bid owner via in-app notifications when submitted
   - Tenders: Monaqasat available-tender adapter now walks pages until the requested date window (or `MONAQASAT_TENDER_MAX_PAGES`) so date-range filtering works like the award collector
   - Collectors: Monaqasat award + available adapters now force English locale via headers, culture cookie, and ChangeLang
   - Approvals: Added decision DTO (supports changes requested/resubmitted), stage gating, and Go/No-Go request updates

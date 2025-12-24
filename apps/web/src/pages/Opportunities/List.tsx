@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { api, type Opportunity } from '../../api/client'
 import { Page } from '../../components/Page'
 import CountdownRing from '../../components/CountdownRing'
@@ -31,7 +31,9 @@ function formatWithOffset(value: string, offsetHours: number) {
 export default function List() {
 	const qc = useQueryClient()
 	const nav = useNavigate()
+	const loc = useLocation()
 	const [filters, setFilters] = useState({ q: '', stage: '', client: '' })
+	const [mineOnly, setMineOnly] = useState(false)
 	const [showCreate, setShowCreate] = useState(false)
 	const [form, setForm] = useState({
 		title: '',
@@ -51,14 +53,15 @@ export default function List() {
 	const statusOptions = statusListQuery.data?.statuses ?? DEFAULT_STATUS_LIST
 
 	const opportunities = useQuery({
-		queryKey: ['opportunities', page, pageSize, filters.stage, filters.client, filters.q],
+		queryKey: ['opportunities', page, pageSize, filters.stage, filters.client, filters.q, mineOnly],
 		queryFn: () =>
 			api.listOpportunities({
 				page,
 				pageSize,
 				stage: filters.stage || undefined,
 				clientId: filters.client || undefined,
-				q: filters.q || undefined
+				q: filters.q || undefined,
+				mine: mineOnly ? 'true' : undefined
 			})
 	})
 	const clients = useQuery({
@@ -102,6 +105,23 @@ export default function List() {
 		return () => clearInterval(timer)
 	}, [])
 	useEffect(() => {
+		const params = new URLSearchParams(loc.search)
+		const mineParam = params.get('mine')
+		setMineOnly(mineParam === 'true' || mineParam === '1')
+	}, [loc.search])
+	useEffect(() => {
+		const params = new URLSearchParams(loc.search)
+		const mineParam = params.get('mine')
+		const mineActive = mineParam === 'true' || mineParam === '1'
+		if (mineActive === mineOnly) return
+		if (mineOnly) {
+			params.set('mine', 'true')
+		} else {
+			params.delete('mine')
+		}
+		nav({ pathname: loc.pathname, search: params.toString() }, { replace: true })
+	}, [mineOnly, loc.pathname, loc.search, nav])
+	useEffect(() => {
 		if (opportunities.data?.page) {
 			setPageInput(String(opportunities.data.page))
 		}
@@ -116,7 +136,7 @@ export default function List() {
 			title="Opportunities"
 			subtitle="List, filter, and drill into opportunities. SLA badges reflect submission proximity."
 			actions={
-				<div className="flex gap-2">
+				<div className="flex flex-wrap gap-2">
 					<button
 						className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200 flex items-center"
 						onClick={() =>
@@ -143,7 +163,7 @@ export default function List() {
 				</div>
 			}
 		>
-			<div className="mt-4 flex flex-wrap gap-3 text-sm">
+			<div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
 				<input
 					className="rounded border px-3 py-2"
 					placeholder="Search title or client"
@@ -177,18 +197,33 @@ export default function List() {
 						</option>
 					))}
 				</select>
-				<Link to="/board" className="rounded bg-slate-100 px-3 py-2 hover:bg-slate-200">
-					Kanban
-				</Link>
-				<Link to="/timeline" className="rounded bg-slate-100 px-3 py-2 hover:bg-slate-200">
-					Timeline
-				</Link>
-				<Link to="/post-submission" className="rounded bg-slate-100 px-3 py-2 hover:bg-slate-200">
-					Post Submission
-				</Link>
-				<Link to="/awards/staging" className="rounded bg-slate-100 px-3 py-2 hover:bg-slate-200">
-					Awards
-				</Link>
+				<div className="flex items-center gap-1 rounded border border-slate-200 bg-white p-1 text-xs">
+					<span className="px-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">View</span>
+					<Link
+						to="/opportunities"
+						className="rounded px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+					>
+						Table
+					</Link>
+					<Link
+						to="/board"
+						className="rounded px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+					>
+						Kanban
+					</Link>
+					<Link
+						to="/timeline"
+						className="rounded px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+					>
+						Timeline
+					</Link>
+					<Link
+						to="/post-submission"
+						className="rounded px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+					>
+						Post Submission
+					</Link>
+				</div>
 				<label className="flex items-center gap-2 text-xs text-slate-600">
 					<input
 						type="checkbox"
@@ -196,6 +231,17 @@ export default function List() {
 						onChange={e => setShowPostSubmission(e.target.checked)}
 					/>
 					Show post-submission section
+				</label>
+				<label className="flex items-center gap-2 text-xs text-slate-600">
+					<input
+						type="checkbox"
+						checked={mineOnly}
+						onChange={e => {
+							setMineOnly(e.target.checked)
+							setPage(1)
+						}}
+					/>
+					My queue only
 				</label>
 			</div>
 

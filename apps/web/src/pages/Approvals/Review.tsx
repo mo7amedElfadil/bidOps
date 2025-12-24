@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { api } from '../../api/client'
 import { Page } from '../../components/Page'
@@ -35,6 +35,7 @@ export default function ApprovalReviewPage() {
 		queryFn: () => api.reviewApprovals({ scope }),
 		refetchOnWindowFocus: false
 	})
+	const queryClient = useQueryClient()
 	const [finalizingPack, setFinalizingPack] = useState<string | null>(null)
 	const canFinalize = canViewAll
 
@@ -43,9 +44,10 @@ export default function ApprovalReviewPage() {
 		onMutate: packId => {
 			setFinalizingPack(packId)
 		},
-		onSuccess: () => {
+		onSuccess: async () => {
 			toast.success('Bid marked ready for submission')
 			review.refetch()
+			await queryClient.invalidateQueries({ queryKey: ['notifications-count'] })
 		},
 		onError: (err: any) => {
 			toast.error(err?.message || 'Failed to finalize the bid')
@@ -101,7 +103,6 @@ const packs = review.data || []
 						const hasRejected = approvals.some(a => a.status === 'REJECTED')
 						const isFinalizing = finalizingPack === pack.id
 						const nextApproval = pack.nextApproval
-						const nextLabel = pack.nextStageLabel || (nextApproval ? getStageLabel(nextApproval.stage, nextApproval.type) : null)
 						const readyToFinalize = pack.readyToFinalize || (allApproved && !hasRejected)
 						const myPending = nextApproval ? isAssignedToUser(nextApproval) : false
 

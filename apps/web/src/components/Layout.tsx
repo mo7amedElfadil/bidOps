@@ -1,27 +1,17 @@
-import React, { useMemo } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { clearToken, getToken } from '../utils/auth'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { api } from '../api/client'
+import { clearToken, getToken, getUserRole } from '../utils/auth'
 import Toasts from './Toasts'
 
-const links = [
-	{ to: '/', label: 'Opportunities' },
-	{ to: '/post-submission', label: 'Post Submission' },
-	{ to: '/board', label: 'Kanban' },
-	{ to: '/timeline', label: 'Timeline' },
-	{ to: '/awards/staging', label: 'Awards' },
-	{ to: '/tenders/available', label: 'Tenders' },
-	{ to: '/approvals/review', label: 'Bid Review' },
-	{ to: '/notifications', label: 'Notifications' },
-	{ to: '/admin/users', label: 'Users' },
-	{ to: '/admin/business-roles', label: 'Business Roles' },
-	{ to: '/search', label: 'Search' },
-	{ to: '/settings/sla', label: 'SLA' }
-]
-
 const routeLabels: Record<string, string> = {
-	'/': 'Opportunities',
+	'/': 'Dashboard',
+	'/dashboard': 'Dashboard',
+	'/opportunities': 'Opportunities',
 	'/board': 'Kanban',
 	'/timeline': 'Timeline',
+	'/post-submission': 'Post Submission',
 	'/awards/staging': 'Awards',
 	'/tenders/available': 'Tenders',
 	'/approvals/review': 'Bid Review',
@@ -37,23 +27,25 @@ const navGroups = [
 	{
 		label: 'Pipeline',
 		items: [
-			{ to: '/', label: 'Opportunities' },
+			{ to: '/dashboard', label: 'Home' },
+			{ to: '/opportunities', label: 'Opportunities' },
 			{ to: '/board', label: 'Kanban' },
-			{ to: '/timeline', label: 'Timeline' }
+			{ to: '/timeline', label: 'Timeline' },
+			{ to: '/post-submission', label: 'Post Submission' },
+			{ to: '/approvals/review', label: 'Bid Review' }
 		]
 	},
 	{
-		label: 'Intelligence',
+		label: 'Market',
 		items: [
-			{ to: '/awards/staging', label: 'Awards' },
 			{ to: '/tenders/available', label: 'Tenders' },
+			{ to: '/awards/staging', label: 'Awards' },
 			{ to: '/search', label: 'Search' }
 		]
 	},
 	{
 		label: 'Admin',
 		items: [
-			{ to: '/approvals/review', label: 'Bid Review' },
 			{ to: '/notifications', label: 'Notifications' },
 			{ to: '/admin/users', label: 'Users' },
 			{ to: '/admin/business-roles', label: 'Business Roles' },
@@ -66,6 +58,41 @@ export default function Layout() {
 	const loc = useLocation()
 	const nav = useNavigate()
 	const token = getToken()
+	const role = getUserRole()
+	const canSeeAdmin = role === 'ADMIN' || role === 'MANAGER'
+	const notificationCount = useQuery({
+		queryKey: ['notifications-count'],
+		queryFn: () => api.getNotificationCount(),
+		refetchOnWindowFocus: false,
+		staleTime: 30_000,
+		enabled: Boolean(token)
+	})
+	const unreadCount = notificationCount.data?.unread ?? 0
+	const queryClient = useQueryClient()
+	const [menuOpen, setMenuOpen] = useState(false)
+	const menuRef = useRef<HTMLDivElement>(null)
+	const [inboxOpen, setInboxOpen] = useState(false)
+	const dropdownRef = useRef<HTMLDivElement>(null)
+	const inbox = useQuery({
+		queryKey: ['notifications', 'preview'],
+		queryFn: () => api.listNotifications({ page: 1, pageSize: 5 }),
+		refetchOnWindowFocus: false,
+		staleTime: 30_000,
+		enabled: Boolean(token)
+	})
+
+	useEffect(() => {
+		function handleClick(event: MouseEvent) {
+			if (!dropdownRef.current?.contains(event.target as Node)) {
+				setInboxOpen(false)
+			}
+			if (!menuRef.current?.contains(event.target as Node)) {
+				setMenuOpen(false)
+			}
+		}
+		document.addEventListener('mousedown', handleClick)
+		return () => document.removeEventListener('mousedown', handleClick)
+	}, [])
 	const breadcrumbs = useMemo(() => {
 		const segments = loc.pathname.split('/').filter(Boolean)
 		const crumbs = [{ label: 'Home', to: '/' }]
@@ -80,6 +107,23 @@ export default function Layout() {
 		return crumbs
 	}, [loc.pathname])
 
+	const previewItems = inbox.data?.items ?? []
+
+	async function handleToggleNotification(id: string, markRead: boolean) {
+		try {
+			if (markRead) {
+				await api.markNotificationRead(id)
+			} else {
+				await api.markNotificationUnread(id)
+			}
+			inbox.refetch()
+			queryClient.invalidateQueries({ queryKey: ['notifications-count'] })
+			queryClient.invalidateQueries({ queryKey: ['notifications', 'preview'] })
+		} catch (err) {
+			console.warn('Failed to update notification status', err)
+		}
+	}
+
 	function signOut() {
 		clearToken()
 		nav('/auth/login', { replace: true })
@@ -92,42 +136,124 @@ export default function Layout() {
 				<div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
 					<div className="flex flex-wrap items-center gap-4">
 						<div className="rounded bg-blue-600 px-2 py-1 text-sm font-semibold text-white">BidOps</div>
-						<nav className="flex flex-wrap gap-3 text-[11px]">
-							{navGroups.map(group => (
-								<div
-									key={group.label}
-									className="flex flex-wrap items-center gap-2 rounded border border-slate-200 bg-slate-50 px-3 py-1"
-								>
-									<span className="text-[10px] uppercase tracking-wider text-slate-500">{group.label}</span>
-									<div className="flex items-center gap-1">
-										{group.items.map(item => (
-											<NavLink
-												key={item.to}
-												to={item.to}
-												className={({ isActive }) =>
-													`rounded px-3 py-1.5 text-xs hover:bg-slate-100 ${
-														isActive ? 'bg-slate-200 font-medium' : ''
-													}`
-												}
-											>
-												{item.label}
-											</NavLink>
-										))}
+						<div className="relative" ref={menuRef}>
+							<button
+								type="button"
+								onClick={() => setMenuOpen(prev => !prev)}
+								className="flex items-center gap-1 rounded border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+								aria-haspopup="true"
+								aria-expanded={menuOpen}
+							>
+								Menu
+								{unreadCount > 0 && (
+									<span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+										{unreadCount}
+									</span>
+								)}
+							</button>
+							{menuOpen && (
+								<div className="absolute left-0 top-full z-20 mt-2 w-screen max-w-4xl rounded border border-slate-200 bg-white p-4 shadow-lg">
+									<div className="grid gap-6 sm:grid-cols-3">
+										{navGroups
+											.filter(group => group.label !== 'Admin' || canSeeAdmin)
+											.map(group => (
+												<div key={group.label} className="space-y-2">
+													<p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+														{group.label}
+													</p>
+													<div className="space-y-1">
+														{group.items.map(item => (
+															<NavLink
+																key={item.to}
+																to={item.to}
+																onClick={() => setMenuOpen(false)}
+																className={({ isActive }) =>
+																	`flex w-full items-center justify-between rounded px-3 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-100 ${
+																		isActive ? 'bg-slate-100 font-semibold' : ''
+																	}`
+																}
+															>
+																{item.label}
+																{item.to === '/notifications' && unreadCount > 0 && (
+																	<span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+																		{unreadCount}
+																	</span>
+																)}
+															</NavLink>
+														))}
+													</div>
+												</div>
+											))}
 									</div>
 								</div>
-							))}
-						</nav>
+							)}
+						</div>
 					</div>
 					<div className="flex items-center gap-3 text-sm">
-						<span className="hidden text-slate-600 sm:inline">Signed in</span>
+						<div className="relative" ref={dropdownRef}>
+							<button
+								type="button"
+								onClick={() => setInboxOpen(previous => !previous)}
+								className="flex items-center gap-1 rounded border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+								aria-haspopup="true"
+								aria-expanded={inboxOpen}
+							>
+								<span role="img" aria-label="Notifications">
+									🔔
+								</span>
+								Inbox
+								{unreadCount > 0 && (
+									<span className="rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+										{unreadCount}
+									</span>
+								)}
+							</button>
+							{inboxOpen && (
+								<div className="absolute right-0 top-full z-10 mt-2 w-80 rounded border border-slate-200 bg-white p-3 text-xs shadow-lg">
+									<div className="flex items-center justify-between text-[11px] text-slate-500">
+										<span>Recent notifications</span>
+										<button
+											className="rounded bg-slate-100 px-2 py-0.5 hover:bg-slate-200"
+											onClick={() => {
+												nav('/notifications')
+												setInboxOpen(false)
+											}}
+										>
+											View all
+										</button>
+									</div>
+									<div className="mt-2 flex max-h-64 flex-col gap-2 overflow-y-auto">
+										{inbox.isLoading ? (
+											<p className="text-center text-[11px] text-slate-500">Loading...</p>
+										) : previewItems.length === 0 ? (
+											<p className="text-center text-[11px] text-slate-500">No notifications yet.</p>
+										) : (
+											previewItems.map(note => (
+												<div key={note.id} className="rounded border border-slate-100 bg-slate-50/80 p-2">
+													<div className="flex items-center justify-between gap-2">
+														<p className="text-[12px] font-semibold text-slate-900">
+															{note.subject || note.activity}
+														</p>
+														<button
+															type="button"
+															className="text-[11px] text-slate-500 underline-offset-2 hover:text-slate-900"
+															onClick={() => handleToggleNotification(note.id, !note.readAt)}
+														>
+															{note.readAt ? 'Mark unread' : 'Mark read'}
+														</button>
+													</div>
+													<p className="text-[10px] text-slate-500">
+														{note.createdAt?.slice(0, 16).replace('T', ' ')}
+													</p>
+												</div>
+											))
+										)}
+									</div>
+								</div>
+							)}
+						</div>
 						<button
-							onClick={() => nav('/import/tracker')}
-							className="rounded bg-slate-100 px-3 py-1.5 hover:bg-slate-200"
-						>
-							Import
-						</button>
-						<button
-							onClick={() => nav('/auth/change-password')}
+							onClick={() => nav('/account')}
 							className="rounded bg-slate-100 px-3 py-1.5 hover:bg-slate-200"
 						>
 							Account

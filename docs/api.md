@@ -22,12 +22,14 @@ POST /auth/accept-invite # Accept invite + set password
 POST /auth/forgot-password # Request reset link
 POST /auth/reset-password  # Reset password
 POST /auth/change-password # Change password (auth)
+GET /users/me          # Current user profile (with business roles)
 ```
 
 ### AAD OIDC Auth (Production)
 ```
 GET /auth/login         # Initiates OIDC flow → redirects to Azure AD
 GET /auth/callback      # Handles callback → redirects with token fragment
+GET /analytics/onboarding # Onboarding setup + approval turnaround metrics (admin/manager)
 ```
 
 ### JWT Claims

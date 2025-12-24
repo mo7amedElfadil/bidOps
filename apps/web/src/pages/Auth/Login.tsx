@@ -22,7 +22,7 @@ export default function Login() {
 			if (payload?.mustChangePassword) {
 				nav('/auth/change-password', { replace: true })
 			} else {
-				nav('/', { replace: true })
+				nav('/dashboard', { replace: true })
 			}
 		} catch (e: any) {
 			setError(e.message || 'Login failed')

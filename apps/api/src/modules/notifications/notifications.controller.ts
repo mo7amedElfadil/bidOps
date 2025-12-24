@@ -80,9 +80,21 @@ export class NotificationsController {
 		return this.svc.listForUser(req.user?.id, req.user?.tenantId || 'default', query)
 	}
 
+	@Get('count')
+	count(@Req() req: any) {
+		return this.svc.countForUser(req.user?.id, req.user?.tenantId || 'default').then(unread => ({
+			unread
+		}))
+	}
+
 	@Patch(':id/read')
 	markRead(@Param('id') id: string, @Req() req: any) {
 		return this.svc.markRead(id, req.user?.id, req.user?.tenantId || 'default')
+	}
+
+	@Patch(':id/unread')
+	markUnread(@Param('id') id: string, @Req() req: any) {
+		return this.svc.markUnread(id, req.user?.id, req.user?.tenantId || 'default')
 	}
 
 	@Post('read-all')

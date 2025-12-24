@@ -16,7 +16,7 @@ export class OpportunitiesController {
 
 	@Get()
 	list(@Query() query: QueryOpportunityDto, @Req() req: any) {
-		return this.service.list(query, req.user?.tenantId || 'default')
+		return this.service.list(query, req.user?.tenantId || 'default', req.user?.id || req.user?.userId)
 	}
 
 	@Post()

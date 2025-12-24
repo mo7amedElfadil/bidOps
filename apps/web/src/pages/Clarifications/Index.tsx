@@ -63,9 +63,9 @@ export default function ClarificationsPage() {
 						<UploadButton
 							accept=".csv"
 							label="Import CSV"
-							onFile={files => {
-								const f = files?.[0]
-								if (f) importCsv.mutate(f)
+							onFile={fileOrList => {
+								const file = fileOrList instanceof File ? fileOrList : fileOrList?.[0]
+								if (file) importCsv.mutate(file)
 							}}
 						/>
 						<button

@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate, Outlet, RouterProvider, useLocation } from 'react-router-dom'
+import Dashboard from './pages/Dashboard'
 import List from './pages/Opportunities/List'
 import Board from './pages/Opportunities/Board'
 import Timeline from './pages/Opportunities/Timeline'
@@ -32,6 +33,7 @@ import AcceptInvite from './pages/Auth/AcceptInvite'
 import ForgotPassword from './pages/Auth/ForgotPassword'
 import ResetPassword from './pages/Auth/ResetPassword'
 import ChangePassword from './pages/Auth/ChangePassword'
+import AccountPage from './pages/Account/Index'
 
 function RequireAuth() {
 	const loc = useLocation()
@@ -54,7 +56,9 @@ const router = createBrowserRouter([
 				element: <Layout />,
 				errorElement: <ErrorPage />,
 				children: [
-					{ path: '/', element: <List /> },
+					{ path: '/', element: <Dashboard /> },
+					{ path: '/dashboard', element: <Dashboard /> },
+					{ path: '/opportunities', element: <List /> },
 					{ path: '/post-submission', element: <PostSubmission /> },
 					{ path: '/board', element: <Board /> },
 					{ path: '/timeline', element: <Timeline /> },
@@ -68,6 +72,7 @@ const router = createBrowserRouter([
 					{ path: '/opportunity/:id/submission', element: <SubmissionPage /> },
 					{ path: '/opportunity/:id/outcome', element: <OutcomePage /> },
 					{ path: '/approvals/review', element: <ApprovalReviewPage /> },
+					{ path: '/account', element: <AccountPage /> },
 					{ path: '/awards/staging', element: <AwardsStagingPage /> },
 					{ path: '/awards/events', element: <AwardsEventsPage /> },
 					{ path: '/tenders/available', element: <AvailableTendersPage /> },

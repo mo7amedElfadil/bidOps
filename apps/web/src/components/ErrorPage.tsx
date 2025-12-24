@@ -20,7 +20,7 @@ export default function ErrorPage() {
 					<button className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700" onClick={() => window.location.reload()}>
 						Reload
 					</button>
-					<Link className="rounded border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-300" to="/">
+					<Link className="rounded border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-300" to="/dashboard">
 						Go Home
 					</Link>
 				</div>

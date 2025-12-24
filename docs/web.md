@@ -4,9 +4,16 @@ UI scope and behaviors:
  - Routes now declare an `errorElement` so any runtime failure renders the shared ErrorPage fallback (reload/home actions + status info).
 
 - Opportunity Kanban, timeline, list with filters/SLA indicators
+- Dashboard now includes a role-based onboarding guide with next-step checklist
+- Admins see a first-run setup checklist (users, business roles, notification defaults)
 - Opportunities list shows countdown timer (dd:hh:mm) with circular progress ring and color thresholds
+- Opportunities list supports "My queue" filtering for assigned bids
 - Opportunity overview shell with tabbed navigation across all workspaces
 - Opportunity overview allows selecting/add new business & bid owners, opening a modal to add users (name/email/type/role)
+- Header nav now surfaces a notification inbox dropdown with badge, marking events actionable without leaving the page
+- Navigation collapsed into a grouped mega menu dropdown so the header stays streamlined
+- Account settings page now manages your profile, password link, and personal notification preferences (tenant defaults still in Notifications admin)
+- Change request submissions now trigger change-request notifications for the bid owner so they see the next step immediately
 - Bid review dashboard (`/approvals/review`) summarizes pricing packs, approval chains, and lets the assigned reviewer finalize bids once every signature is captured
 - Opportunity pages include a submission checklist (tender bond submitted, mandatory forms completed, final combined PDF ready, compliance created, clarifications sent or N/A, pricing approved) with per-item notes and attachments
 - Post submission view (`/post-submission`) groups completed proposals or passed deadlines away from the active pipeline; board adds a “Post Submission” lane
@@ -28,6 +35,7 @@ UI scope and behaviors:
 - English and Arabic content support
 - Award staging can trigger Monaqasat collector with date range (from/to)
 - Available ministry tenders view with request Go/No-Go approval CTA, promote-to-opportunity action, and purchase links
+- Navigation streamlined into Pipeline/Market/Admin groups with admin-only visibility
 - Future: AI/smart filtering for potential opportunities so only ITSQ-relevant tenders are surfaced
 - User management for ADMIN (create/edit/disable)
 - Tracker import issues list (invalid values left empty, resolved on update)
@@ -36,7 +44,9 @@ UI scope and behaviors:
 
 | Route | Component | Description |
 |-------|-----------|-------------|
-| `/` | Opportunities List | Table with filters, SLA badges, create modal |
+| `/` | Dashboard | Role-based home with approvals, deadlines, and quick actions |
+| `/dashboard` | Dashboard | Role-based home with approvals, deadlines, and quick actions |
+| `/opportunities` | Opportunities List | Table with filters, SLA badges, create modal |
 | `/board` | Opportunities Kanban | Board grouped by stage with SLA badges |
 | `/timeline` | Timeline View | Ordered by submission date; SLA thresholds displayed |
 | | | Timeline now uses `gantt-task-react` with adjustable name/from/to widths, optional text wrap, and export-to-image support. |

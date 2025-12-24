@@ -26,13 +26,27 @@ export class OpportunitiesService {
 		return Math.ceil(diffMs / (1000 * 60 * 60 * 24))
 	}
 
-	async list(query: QueryOpportunityDto, tenantId: string) {
+	async list(query: QueryOpportunityDto, tenantId: string, userId?: string) {
 		const where: Prisma.OpportunityWhereInput = { tenantId }
 		if (query.clientId) where.clientId = query.clientId
 		if (query.status) where.status = query.status
 		if (query.stage) where.stage = query.stage
 		if (typeof query.maxDaysLeft === 'number') where.daysLeft = { lte: query.maxDaysLeft }
 		if (typeof query.minRank === 'number') where.priorityRank = { gte: query.minRank }
+		const mine =
+			query.mine === 'true' ||
+			query.mine === '1' ||
+			(query.mine as any) === true
+		if (mine && userId) {
+			const assignedFilter: Prisma.OpportunityWhereInput = {
+				OR: [
+					{ ownerId: userId },
+					{ bidOwners: { some: { userId } } }
+				]
+			}
+			const existing = where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []
+			where.AND = [...existing, assignedFilter]
+		}
 		const searchTerm = query.q?.trim()
 		if (searchTerm) {
 			const like = { contains: searchTerm, mode: 'insensitive' as Prisma.QueryMode }
@@ -198,7 +212,7 @@ export class OpportunitiesService {
 		}
 		return this.prisma.opportunity.update({ where: { id }, data: updateData }).then(async updated => {
 			const resolveFields: string[] = []
-			if (input.submissionDate) resolveFields.push('submissionDate')
+			if (input.submissionDate) resolveFields.push('submissionDate', 'daysLeft')
 			if (input.priorityRank !== undefined) resolveFields.push('priorityRank')
 			if (input.validityDays !== undefined) resolveFields.push('validityDays')
 			if (input.daysLeft !== undefined) resolveFields.push('daysLeft')

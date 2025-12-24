@@ -25,8 +25,8 @@ export default function TrackerWizard() {
 		setRows(body)
 	}
 
-	function handleUpload(files: FileList | null) {
-		const f = files?.[0]
+	function handleUpload(fileOrList: File | FileList | null) {
+		const f = fileOrList instanceof File ? fileOrList : fileOrList?.[0]
 		if (!f) return
 		setFile(f)
 		f.text().then(text => {

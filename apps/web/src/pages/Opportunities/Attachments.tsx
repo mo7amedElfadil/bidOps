@@ -135,9 +135,9 @@ export default function AttachmentsPage() {
 				<div className="flex flex-wrap items-center gap-3">
 					<UploadButton
 						label="Upload attachment"
-						onFile={files => {
-							const f = files?.[0]
-							if (f) upload.mutate(f)
+						onFile={fileOrList => {
+							const file = fileOrList instanceof File ? fileOrList : fileOrList?.[0]
+							if (file) upload.mutate(file)
 						}}
 					/>
 					{upload.isPending && <span className="text-sm text-slate-600">Uploading...</span>}

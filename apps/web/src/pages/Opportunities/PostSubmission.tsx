@@ -30,7 +30,7 @@ export default function PostSubmissionPage() {
 			title="Post Submission"
 			subtitle="Opportunities that are past deadline or already finalized for submission."
 			actions={
-				<Link to="/" className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200">
+				<Link to="/opportunities" className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200">
 					Back to Opportunities
 				</Link>
 			}

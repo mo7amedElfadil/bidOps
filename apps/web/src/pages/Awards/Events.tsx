@@ -105,7 +105,7 @@ export default function AwardsEventsPage() {
 			<div className="w-full px-6 py-6">
 				<div className="flex items-center justify-between">
 					<div>
-						<Link to="/" className="text-sm text-blue-600 hover:underline">
+						<Link to="/opportunities" className="text-sm text-blue-600 hover:underline">
 							← Back to Opportunities
 						</Link>
 						<h1 className="mt-1 text-xl font-semibold">Curated Awards</h1>

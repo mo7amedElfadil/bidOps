@@ -18,6 +18,7 @@ export interface Opportunity {
 	status?: string
 	stage?: string
 	daysLeft?: number
+	validityDays?: number
 	startDate?: string
 	priorityRank?: number
 	goNoGoStatus?: string
@@ -327,6 +328,7 @@ export interface NotificationItem {
 	activity?: string
 	subject?: string
 	body?: string
+	payload?: Record<string, any>
 	status?: string
 	readAt?: string
 	createdAt?: string
@@ -349,6 +351,25 @@ export interface NotificationRoutingDefault {
 	stage?: string | null
 	userIds: string[]
 	businessRoleIds: string[]
+}
+
+export interface OnboardingMetrics {
+	startedAt?: string | null
+	usersCompletedAt?: string | null
+	rolesCompletedAt?: string | null
+	defaultsCompletedAt?: string | null
+	durationsHours?: {
+		users?: number | null
+		roles?: number | null
+		defaults?: number | null
+		overall?: number | null
+	}
+	approvalsTurnaround?: {
+		count: number
+		averageHours?: number | null
+		medianHours?: number | null
+		lateCount?: number | null
+	}
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
@@ -845,13 +866,16 @@ export const api = {
 		const suffix = q.toString() ? `?${q.toString()}` : ''
 		return request<Paginated<UserAccount>>(`/users${suffix}`)
 	},
-	createUser(input: Partial<UserAccount> & { email?: string; password?: string }) {
+	getCurrentUser() {
+		return request<UserAccount>(`/users/me`)
+	},
+	createUser(input: Partial<UserAccount> & { email?: string; password?: string; businessRoleIds?: string[] }) {
 		return request<UserAccount>(`/users`, {
 			method: 'POST',
 			body: JSON.stringify(input)
 		})
 	},
-	updateUser(id: string, input: Partial<UserAccount> & { password?: string }) {
+	updateUser(id: string, input: Partial<UserAccount> & { password?: string; businessRoleIds?: string[] }) {
 		return request<UserAccount>(`/users/${id}`, {
 			method: 'PATCH',
 			body: JSON.stringify(input)
@@ -952,6 +976,12 @@ export const api = {
 	markAllNotificationsRead() {
 		return request<{ count?: number }>(`/notifications/read-all`, { method: 'POST' })
 	},
+	markNotificationUnread(id: string) {
+		return request<NotificationItem>(`/notifications/${id}/unread`, { method: 'PATCH' })
+	},
+	getNotificationCount() {
+		return request<{ unread: number }>(`/notifications/count`)
+	},
 	listNotificationPreferences() {
 		return request<NotificationPreference[]>(`/notifications/preferences`)
 	},
@@ -972,6 +1002,9 @@ export const api = {
 	},
 	deleteNotificationDefault(id: string) {
 		return request<void>(`/notifications/defaults/${id}`, { method: 'DELETE' })
+	},
+	getOnboardingMetrics() {
+		return request<OnboardingMetrics>(`/analytics/onboarding`)
 	},
 
 	// Search

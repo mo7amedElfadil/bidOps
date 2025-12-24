@@ -224,10 +224,27 @@ export class NotificationsService {
 		})
 	}
 
+	async markUnread(id: string, userId: string, tenantId: string) {
+		const note = await this.prisma.notification.findUnique({ where: { id } })
+		if (!note || note.userId !== userId || note.tenantId !== tenantId) {
+			throw new BadRequestException('Notification not found')
+		}
+		return this.prisma.notification.update({
+			where: { id },
+			data: { readAt: null, status: 'unread' }
+		})
+	}
+
 	async markAllRead(userId: string, tenantId: string) {
 		return this.prisma.notification.updateMany({
 			where: { userId, tenantId, channel: NotificationChannel.IN_APP, readAt: null },
 			data: { readAt: new Date(), status: 'read' }
+		})
+	}
+
+	async countForUser(userId: string, tenantId: string) {
+		return this.prisma.notification.count({
+			where: { userId, tenantId, channel: NotificationChannel.IN_APP, readAt: null }
 		})
 	}
 

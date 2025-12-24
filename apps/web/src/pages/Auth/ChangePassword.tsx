@@ -22,7 +22,7 @@ export default function ChangePassword() {
 				setToken(res.access_token)
 			}
 			setSuccess(true)
-			setTimeout(() => nav('/', { replace: true }), 800)
+			setTimeout(() => nav('/dashboard', { replace: true }), 800)
 		} catch (e: any) {
 			setError(e.message || 'Failed to change password')
 		} finally {

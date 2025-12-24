@@ -5,14 +5,15 @@ This guide walks through the full BidOps flow in a realistic order, from setup t
 ## 1) Environment & services
 1. Start services: `make up`
 2. Confirm containers are running: `make ps`
-3. Open web app: `http://localhost:8080`
+3. Open web app: `http://localhost:8080` (lands on Dashboard)
 4. Open API health (optional): `http://localhost:4000/health`
 5. Open Mailhog (dev only): `http://localhost:8025` (if enabled)
 
 ## 2) Admin login + account setup
 1. Login as the default admin.
 2. If prompted, change the password.
-3. Go to `Admin → Users`:
+3. On the Dashboard, review the Admin setup checklist and complete any pending steps.
+4. Go to `Admin → Users`:
    - Create a few users with different access roles and business roles.
    - Confirm a new user appears in the table.
 4. Go to `Admin → Business Roles`:
@@ -45,7 +46,7 @@ This guide walks through the full BidOps flow in a realistic order, from setup t
 
 ## 6) Opportunity creation + summary edits
 1. From the tender, promote to opportunity.
-2. Confirm the opportunity is visible in the main list.
+2. Confirm the opportunity is visible in `/opportunities`.
 3. Open the opportunity:
    - Edit client, stage, status, priority, submission method, source portal.
    - Assign business owner and bid owners.
@@ -108,6 +109,7 @@ This guide walks through the full BidOps flow in a realistic order, from setup t
    - Awards
    - Attachments
 2. Confirm page, pageSize, search filters return expected results.
+3. Toggle "My queue" on `/opportunities` and verify only assigned bids appear.
 
 ## 15) Security basics
 1. Confirm non-admins cannot access `Admin` pages.

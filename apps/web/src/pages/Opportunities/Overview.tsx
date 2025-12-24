@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { api, OpportunityChecklist, ChangeRequest } from '../../api/client'
+import { api, OpportunityChecklist, ChangeRequest, ImportIssue } from '../../api/client'
 import { OpportunityShell } from '../../components/OpportunityShell'
 import { SlaBadge } from '../../components/SlaBadge'
 import { toast } from '../../utils/toast'
@@ -79,6 +79,7 @@ export default function OpportunityOverview() {
 		stage: '',
 		status: '',
 		priorityRank: '',
+		validityDays: '',
 		tenderRef: '',
 		submissionDate: '',
 		modeOfSubmission: '',
@@ -88,6 +89,26 @@ export default function OpportunityOverview() {
 		ownerId: '',
 		bidOwnerIds: [] as string[]
 	})
+	const summaryRef = useRef<HTMLDivElement>(null)
+	const submissionDateRef = useRef<HTMLInputElement>(null)
+	const priorityRankRef = useRef<HTMLInputElement>(null)
+	const validityDaysRef = useRef<HTMLInputElement>(null)
+	const ownerIdRef = useRef<HTMLSelectElement>(null)
+	const dataOwnerRef = useRef<HTMLInputElement>(null)
+	const bidOwnersRef = useRef<HTMLSelectElement>(null)
+	const fieldRefs = useMemo(
+		() => ({
+			submissionDate: submissionDateRef,
+			priorityRank: priorityRankRef,
+			validityDays: validityDaysRef,
+			ownerId: ownerIdRef,
+			dataOwner: dataOwnerRef,
+			bidOwnerIds: bidOwnersRef
+		}),
+		[]
+	)
+	type FocusField = keyof typeof fieldRefs
+	const [focusField, setFocusField] = useState<FocusField | null>(null)
 	const stageOptions = stageListQuery.data?.stages ?? DEFAULT_STAGE_LIST
 	const statusOptions = statusListQuery.data?.statuses ?? DEFAULT_STATUS_LIST
 	const [showAddUserModal, setShowAddUserModal] = useState(false)
@@ -132,6 +153,7 @@ export default function OpportunityOverview() {
 			stage: data.stage || '',
 			status: data.status || '',
 			priorityRank: data.priorityRank?.toString() || '',
+			validityDays: data.validityDays?.toString() || '',
 			tenderRef: (data as any).tenderRef || '',
 			submissionDate: data.submissionDate ? toLocalInput(data.submissionDate, offsetHours) : '',
 			modeOfSubmission: data.modeOfSubmission || '',
@@ -142,6 +164,16 @@ export default function OpportunityOverview() {
 			bidOwnerIds: data.bidOwners?.map(owner => owner.id) || []
 		})
 	}, [data, timezoneQuery.data])
+
+	useEffect(() => {
+		if (!isEditing || !focusField) return
+		const ref = fieldRefs[focusField]?.current
+		if (ref) {
+			ref.focus()
+			ref.scrollIntoView({ behavior: 'smooth', block: 'center' })
+		}
+		setFocusField(null)
+	}, [focusField, isEditing, fieldRefs])
 
 	const stageIndex = useMemo(() => stageOptions.findIndex(s => s === (data?.stage || '')), [
 		stageOptions,
@@ -167,6 +199,7 @@ export default function OpportunityOverview() {
 				stage: form.stage || undefined,
 				status: form.status || undefined,
 				priorityRank: form.priorityRank ? Number(form.priorityRank) : undefined,
+				validityDays: form.validityDays ? Number(form.validityDays) : undefined,
 				tenderRef: form.tenderRef || undefined,
 				submissionDate,
 				modeOfSubmission: form.modeOfSubmission || undefined,
@@ -184,12 +217,6 @@ export default function OpportunityOverview() {
 			setIsEditing(false)
 			qc.invalidateQueries({ queryKey: ['opportunity', id] })
 			qc.invalidateQueries({ queryKey: ['opportunities'] })
-			qc.invalidateQueries({ queryKey: ['import-issues', id] })
-		}
-	})
-	const resolveIssue = useMutation({
-		mutationFn: (issueId: string) => api.resolveImportIssue(issueId),
-		onSuccess: () => {
 			qc.invalidateQueries({ queryKey: ['import-issues', id] })
 		}
 	})
@@ -272,6 +299,30 @@ export default function OpportunityOverview() {
 			help: 'Auto-checks after pricing approvals finish; you can toggle manually if needed.'
 		}
 	]
+	const issueFixTargets: Record<string, { label: string; field: FocusField; hint?: string }> = {
+		submissionDate: { label: 'Submission Date/Time', field: 'submissionDate' },
+		daysLeft: {
+			label: 'Submission Date/Time',
+			field: 'submissionDate',
+			hint: 'Days left is derived from the submission date.'
+		},
+		priorityRank: { label: 'Priority', field: 'priorityRank' },
+		validityDays: { label: 'Validity (days)', field: 'validityDays' },
+		ownerId: { label: 'Business Owner (User)', field: 'ownerId' },
+		dataOwner: { label: 'Business Owner', field: 'dataOwner' },
+		bidOwners: { label: 'Bid Owners', field: 'bidOwnerIds' }
+	}
+
+	const handleFixIssue = (issue: ImportIssue) => {
+		const target = issueFixTargets[issue.fieldName]
+		setIsEditing(true)
+		summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+		if (target) {
+			setFocusField(target.field)
+		} else {
+			toast.info('This field is not editable here yet. Update the original tracker CSV and re-import if needed.')
+		}
+	}
 
 	return (
 		<OpportunityShell active="overview">
@@ -287,7 +338,7 @@ export default function OpportunityOverview() {
 							{isEditing ? 'Cancel' : 'Edit'}
 						</button>
 					</div>
-					<div className="rounded border bg-slate-50 p-4 text-sm">
+					<div ref={summaryRef} className="rounded border bg-slate-50 p-4 text-sm">
 						{isEditing ? (
 							<div className="grid gap-3">
 								<label className="grid gap-1 text-xs font-medium">
@@ -350,6 +401,17 @@ export default function OpportunityOverview() {
 											className="rounded border px-2 py-1 text-sm"
 											value={form.priorityRank}
 											onChange={e => setForm({ ...form, priorityRank: e.target.value })}
+											ref={priorityRankRef}
+										/>
+									</label>
+									<label className="grid gap-1 text-xs font-medium">
+										Validity (days)
+										<input
+											type="number"
+											className="rounded border px-2 py-1 text-sm"
+											value={form.validityDays}
+											onChange={e => setForm({ ...form, validityDays: e.target.value })}
+											ref={validityDaysRef}
 										/>
 									</label>
 									<label className="grid gap-1 text-xs font-medium">
@@ -367,6 +429,7 @@ export default function OpportunityOverview() {
 											className="rounded border px-2 py-1 text-sm"
 											value={form.submissionDate}
 											onChange={e => setForm({ ...form, submissionDate: e.target.value })}
+											ref={submissionDateRef}
 										/>
 									</label>
 									<label className="grid gap-1 text-xs font-medium">
@@ -400,6 +463,7 @@ export default function OpportunityOverview() {
 										className="rounded border px-2 py-1 text-sm"
 										value={form.ownerId}
 										onChange={e => setForm({ ...form, ownerId: e.target.value })}
+										ref={ownerIdRef}
 									>
 										<option value="">—</option>
 										{usersQuery.data?.items?.map(user => (
@@ -415,6 +479,7 @@ export default function OpportunityOverview() {
 										className="rounded border px-2 py-1 text-sm"
 										value={form.dataOwner}
 										onChange={e => setForm({ ...form, dataOwner: e.target.value })}
+										ref={dataOwnerRef}
 									/>
 								</label>
 								<label className="grid gap-1 text-xs font-medium">
@@ -438,6 +503,7 @@ export default function OpportunityOverview() {
 												bidOwnerIds: Array.from(e.target.selectedOptions).map(opt => opt.value)
 											})
 										}
+										ref={bidOwnersRef}
 									>
 										{usersQuery.data?.items?.map(user => (
 											<option key={user.id} value={user.id}>
@@ -467,6 +533,7 @@ export default function OpportunityOverview() {
 								<p><span className="font-medium">Stage:</span> {data?.stage || '—'}</p>
 								<p><span className="font-medium">Status:</span> {data?.status || '—'}</p>
 								<p><span className="font-medium">Priority:</span> {data?.priorityRank ?? '—'}</p>
+								<p><span className="font-medium">Validity (days):</span> {data?.validityDays ?? '—'}</p>
 								<p><span className="font-medium">Tender Ref:</span> {(data as any)?.tenderRef || '—'}</p>
 								<p>
 									<span className="font-medium">Business Owner:</span>{' '}
@@ -495,30 +562,40 @@ export default function OpportunityOverview() {
 						<div className="rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
 							<p className="font-medium">Import issues</p>
 							<p className="mt-1 text-amber-800">
-								Invalid values were left empty. Update the fields to clear them from this list.
+								These came from the tracker CSV. Fix the field in Summary (Edit) to clear the warning.
 							</p>
 							<ul className="mt-2 space-y-2">
-								{issuesQuery.data?.map(issue => (
-									<li key={issue.id} className="rounded border border-amber-200 bg-white p-2">
-										<div className="flex items-center justify-between gap-2">
-											<div>
-												<p className="font-medium">
-													Row {issue.rowIndex} • {issue.columnName || issue.fieldName}
-												</p>
-												<p className="text-amber-800">
-													{issue.message} {issue.rawValue ? `(${issue.rawValue})` : ''}
-												</p>
+								{issuesQuery.data?.map(issue => {
+									const fixTarget = issueFixTargets[issue.fieldName]
+									return (
+										<li key={issue.id} className="rounded border border-amber-200 bg-white p-2">
+											<div className="flex items-center justify-between gap-2">
+												<div>
+													<p className="font-medium">
+														Tracker row {issue.rowIndex} • {issue.columnName || issue.fieldName}
+													</p>
+													<p className="text-amber-800">
+														{issue.message} {issue.rawValue ? `(${issue.rawValue})` : ''}
+													</p>
+													{fixTarget ? (
+															<p className="text-amber-700">
+																Fix in Summary {'>'} {fixTarget.label}
+																{fixTarget.hint ? ` (${fixTarget.hint})` : ''}
+															</p>
+													) : (
+														<p className="text-amber-700">Fix in Summary (Edit) or re-import after correction.</p>
+													)}
+												</div>
+												<button
+													className="rounded border px-2 py-1 text-[11px] hover:bg-amber-100"
+													onClick={() => handleFixIssue(issue)}
+												>
+													Fix
+												</button>
 											</div>
-											<button
-												className="rounded border px-2 py-1 text-[11px] hover:bg-amber-100"
-												onClick={() => resolveIssue.mutate(issue.id)}
-												disabled={resolveIssue.isPending}
-											>
-												Mark resolved
-											</button>
-										</div>
-									</li>
-								))}
+										</li>
+									)
+								})}
 							</ul>
 						</div>
 					)}

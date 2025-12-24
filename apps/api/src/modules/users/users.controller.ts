@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common'
 import { Type } from 'class-transformer'
 import {
 	ArrayNotEmpty,
@@ -149,6 +149,15 @@ export class UsersController {
 			{ q: query.q, page: query.page, pageSize: query.pageSize },
 			req.user?.tenantId || 'default'
 		)
+	}
+
+	@Get('me')
+	getMe(@Req() req: any) {
+		const userId = req.user?.id || req.user?.userId
+		if (!userId) {
+			throw new BadRequestException('Invalid user')
+		}
+		return this.svc.get(userId)
 	}
 
 	@Get(':id')

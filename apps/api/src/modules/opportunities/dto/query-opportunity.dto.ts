@@ -19,6 +19,10 @@ export class QueryOpportunityDto {
 	q?: string
 
 	@IsOptional()
+	@IsString()
+	mine?: string
+
+	@IsOptional()
 	@IsInt()
 	@Min(0)
 	@Type(() => Number)

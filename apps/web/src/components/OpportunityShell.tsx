@@ -49,7 +49,7 @@ export function OpportunityShell({ active, children }: { active: TabKey; childre
 		<div className="mx-auto max-w-6xl p-6">
 			<header className="flex flex-wrap items-center justify-between gap-3">
 				<div>
-					<Link to="/" className="text-sm text-blue-600 hover:underline">
+					<Link to="/opportunities" className="text-sm text-blue-600 hover:underline">
 						← Opportunities
 					</Link>
 					<h1 className="mt-1 text-xl font-semibold">{data?.title || 'Opportunity'}</h1>

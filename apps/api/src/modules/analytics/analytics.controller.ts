@@ -1,6 +1,7 @@
 import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common'
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard'
 import { AnalyticsService } from './analytics.service'
+import { Roles } from '../../auth/roles.decorator'
 
 @Controller('analytics')
 @UseGuards(JwtAuthGuard)
@@ -27,6 +28,11 @@ export class AnalyticsController {
 		res.setHeader('Content-Disposition', 'attachment; filename="opportunities.csv"')
 		res.send(csv)
 	}
-}
 
+	@Get('onboarding')
+	@Roles('ADMIN', 'MANAGER')
+	async onboarding(@Req() req: any) {
+		return this.svc.getOnboardingMetrics(req.user?.tenantId || 'default')
+	}
+}
 

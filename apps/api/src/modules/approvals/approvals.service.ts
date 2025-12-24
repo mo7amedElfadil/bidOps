@@ -108,7 +108,7 @@ export class ApprovalsService {
 		return packs
 			.map(pack => this.enrichPack(pack))
 			.filter(pack =>
-				pack.approvals?.some(approval => {
+				pack.approvals?.some((approval: any) => {
 					if (!pendingStatuses.has(approval.status)) return false
 					if (approval.approverId && approval.approverId === userId) return true
 					if (approval.approverIds?.length && approval.approverIds.includes(userId)) return true
@@ -440,6 +440,21 @@ export class ApprovalsService {
 			}
 		})
 		await this.markPricingApproved(pack.opportunityId, userId)
+		try {
+			const tenantId = pack.opportunity?.tenantId || 'default'
+			await this.notifications.dispatch({
+				activity: NotificationActivities.FINALIZATION_COMPLETED,
+				stage: 'FINAL_SUBMISSION',
+				tenantId,
+				subject: `Bid ready: ${pack.opportunity?.title || 'Opportunity'}`,
+				body: `Approvals finalized for ${pack.opportunity?.title || 'Opportunity'}.`,
+				opportunityId: pack.opportunityId,
+				actorId: userId,
+				includeDefaults: true
+			})
+		} catch (err) {
+			console.warn('[notifications] Failed to dispatch finalization', err)
+		}
 		return { packId }
 	}
 
@@ -462,7 +477,10 @@ export class ApprovalsService {
 	}
 
 	async decision(id: string, userId: string, userRole: string, body: ApprovalDecisionDto) {
-        const approval = await this.prisma.approval.findUnique({ where: { id } })
+        const approval = await this.prisma.approval.findUnique({ 
+			where: { id },
+			include: { pack: { include: { opportunity: { include: { client: true } } } } }
+		})
         if (!approval) throw new BadRequestException('Approval not found')
         
         // Authorization Check
@@ -551,6 +569,29 @@ export class ApprovalsService {
 					}
 				})
 			}
+		}
+
+		try {
+			const opportunity = approval.pack?.opportunity
+			const tenantId = opportunity?.tenantId || 'default'
+			const subject = `${stageLabelMap[approval.stage || approval.type || ''] ?? getStageLabel(approval.stage, approval.type)} ${body.status}`
+			await this.notifications.dispatch({
+				activity: NotificationActivities.APPROVAL_DECISION,
+				stage: approval.stage ?? undefined,
+				tenantId,
+				subject,
+				body: `${subject} — ${opportunity?.title || 'Opportunity'}`,
+				opportunityId: opportunity?.id,
+				actorId: userId,
+				includeDefaults: true,
+				payload: {
+					status: body.status,
+					stage: approval.stage,
+					approvalId: approval.id
+				}
+			})
+		} catch (err) {
+			console.warn('[notifications] Failed to dispatch approval decision', err)
 		}
 
 		return updated

@@ -43,35 +43,28 @@ export default function Timeline() {
 	const ganttRef = useRef<HTMLDivElement>(null)
 
 	const timeline = useMemo<TimelineResult | null>(() => {
-		const rows = (opsQuery.data?.items || [])
-			.map(item => {
-				const start =
-					getDate(item.startDate) ||
-					getDate(item.discoveryDate) ||
-					getDate(item.submissionDate)
-				const end =
-					getDate(item.submissionDate) ||
-					(start ? new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000) : undefined)
-				return { ...item, start, end }
+		const entries: TimelineEntry[] = []
+		for (const item of opsQuery.data?.items || []) {
+			const start = getDate(item.startDate) || getDate(item.submissionDate)
+			if (!start) continue
+			const end = getDate(item.submissionDate) || new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000)
+			entries.push({
+				id: item.id,
+				title: item.title,
+				start,
+				end,
+				stage: item.stage ?? null,
+				clientName: item.clientName ?? null,
+				status: item.status ?? null,
+				daysLeft: item.daysLeft ?? null
 			})
-			.filter((row): row is TimelineEntry & { start: Date; end: Date } => Boolean(row.start && row.end))
+		}
 
-		if (!rows.length) return null
+		if (!entries.length) return null
 
-		const min = new Date(Math.min(...rows.map(o => o.start.getTime())))
-		const max = new Date(Math.max(...rows.map(o => o.end.getTime())))
+		const min = new Date(Math.min(...entries.map(o => o.start.getTime())))
+		const max = new Date(Math.max(...entries.map(o => o.end.getTime())))
 		const totalRange = Math.max(1, max.getTime() - min.getTime())
-
-		const entries = rows.map(row => ({
-			id: row.id,
-			title: row.title,
-			start: row.start,
-			end: row.end,
-			stage: row.stage,
-			clientName: row.clientName,
-			status: row.status,
-			daysLeft: row.daysLeft
-		}))
 
 		return { entries, min, max, totalRange }
 	}, [opsQuery.data])
@@ -141,7 +134,7 @@ export default function Timeline() {
 			subtitle="Gantt timeline with SLA signals and zoom controls."
 			actions={
 					<div className="flex gap-2">
-						<LinkButton to="/" label="List" />
+						<LinkButton to="/opportunities" label="List" />
 						<LinkButton to="/board" label="Kanban" />
 					</div>
 				}

@@ -72,8 +72,8 @@ export default function ComplianceMatrix() {
 		onSuccess: () => list.refetch()
 	})
 
-	function handleUpload(files: FileList | null) {
-		const file = files?.[0]
+	function handleUpload(fileOrList: File | FileList | null) {
+		const file = fileOrList instanceof File ? fileOrList : fileOrList?.[0]
 		if (!file) return
 		const ext = file.name.split('.').pop()?.toLowerCase()
 		if (ext === 'csv') {

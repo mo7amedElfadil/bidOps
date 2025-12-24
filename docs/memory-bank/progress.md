@@ -98,6 +98,16 @@
   * Auth: Implemented local auth lifecycle (invite/accept/reset/change), user status fields, and default admin bootstrap
   * Ops: SMTP auth support wired for external email providers (env-driven)
   * Docs: Added full end-to-end testing guide for all modules
+  * Web: Added role-based onboarding guide and streamlined navigation/view switcher
+  * Web: Added dashboard landing page and moved opportunities list to `/opportunities`
+  * API/Web: Added `/users/me` for current-user context (dashboard + onboarding)
+  * Web: Added admin setup checklist to dashboard (users/roles/notification defaults)
+  * Opportunities: Added server-side "my queue" filter and dashboard quick link
+  * Analytics: Added onboarding + approval turnaround telemetry endpoint
+  * Web: Header layout now exposes notification inbox/dropdown with badge and actionable items
+  * Web: Navigation simplified into a grouped mega menu dropdown to tidy the header
+  * Web: Account page now hosts personal profile updates, change-password access, and individual notification preferences
+  * Web: Change request submissions now send change-request notifications to bid owners
 * Next:
   * Rate limiting defaults + security headers docs (hardening sweep)
   * Validate Monaqasat adapter against live pages; add edge-case handling

@@ -14,8 +14,7 @@ export default function Callback() {
 				return
 			}
 		}
-		window.location.replace('/')
+		window.location.replace('/dashboard')
 	}, [])
 	return null
 }
-

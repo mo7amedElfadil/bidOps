@@ -135,7 +135,7 @@ export default function Board() {
 			title="Kanban"
 			subtitle="Opportunities grouped by stage with SLA indicators. Drag cards to move them through the lifecycle."
 			actions={
-				<Link to="/" className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200">
+				<Link to="/opportunities" className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200">
 					Table
 				</Link>
 			}
