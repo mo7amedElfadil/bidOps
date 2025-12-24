@@ -17,14 +17,30 @@ export default function UsersPage() {
 		role: 'VIEWER',
 		team: '',
 		isActive: true,
+		status: 'ACTIVE',
+		mustChangePassword: false,
 		password: '',
 		userType: 'INTERNAL',
 		businessRoleIds: [] as string[]
 	})
+	const [inviteMode, setInviteMode] = useState(true)
 	const [saving, setSaving] = useState(false)
 	const [showCreate, setShowCreate] = useState(false)
 	const [selected, setSelected] = useState<Record<string, boolean>>({})
 	const [bulkDeleting, setBulkDeleting] = useState(false)
+	const statusLabel = (user: UserAccount) => {
+		const status = user.status || (user.isActive ? 'ACTIVE' : 'DISABLED')
+		switch (status) {
+			case 'ACTIVE':
+				return { label: 'active', className: 'bg-emerald-100 text-emerald-800' }
+			case 'INVITED':
+				return { label: 'invited', className: 'bg-blue-100 text-blue-800' }
+			case 'PENDING':
+				return { label: 'pending', className: 'bg-amber-100 text-amber-800' }
+			default:
+				return { label: 'disabled', className: 'bg-slate-100 text-slate-600' }
+		}
+	}
 
 	const toggleAll = (checked: boolean) => {
 		const map: Record<string, boolean> = {}
@@ -69,10 +85,13 @@ export default function UsersPage() {
 			role: user.role,
 			team: user.team || '',
 			isActive: user.isActive,
+			status: user.status || (user.isActive ? 'ACTIVE' : 'DISABLED'),
+			mustChangePassword: user.mustChangePassword || false,
 			password: '',
 			userType: user.userType || 'INTERNAL',
 			businessRoleIds: user.businessRoles?.map(role => role.id) || []
 		})
+		setInviteMode(false)
 	}
 
 	async function saveEdit() {
@@ -86,6 +105,8 @@ export default function UsersPage() {
 				role: editForm.role as any,
 				team: editForm.team || undefined,
 				isActive: editForm.isActive,
+				status: editForm.status as any,
+				mustChangePassword: editForm.mustChangePassword,
 				password: editForm.password || undefined,
 				userType: editForm.userType || undefined,
 				businessRoleIds: editForm.businessRoleIds
@@ -102,16 +123,28 @@ export default function UsersPage() {
 		setSaving(true)
 		setError(null)
 		try {
-			await api.createUser({
-				email: editForm.email || undefined,
-				name: editForm.name || undefined,
-				role: editForm.role as any,
-				team: editForm.team || undefined,
-				isActive: editForm.isActive,
-				password: editForm.password || undefined,
-				userType: editForm.userType || undefined,
-				businessRoleIds: editForm.businessRoleIds
-			})
+			if (inviteMode) {
+				await api.inviteUser({
+					email: editForm.email,
+					name: editForm.name || undefined,
+					role: editForm.role as any,
+					userType: editForm.userType || undefined,
+					businessRoleIds: editForm.businessRoleIds
+				})
+			} else {
+				await api.createUser({
+					email: editForm.email || undefined,
+					name: editForm.name || undefined,
+					role: editForm.role as any,
+					team: editForm.team || undefined,
+					isActive: editForm.isActive,
+					status: editForm.status as any,
+					mustChangePassword: editForm.mustChangePassword,
+					password: editForm.password || undefined,
+					userType: editForm.userType || undefined,
+					businessRoleIds: editForm.businessRoleIds
+				})
+			}
 			setShowCreate(false)
 			setEditForm({
 				email: '',
@@ -119,10 +152,13 @@ export default function UsersPage() {
 				role: 'VIEWER',
 				team: '',
 				isActive: true,
+				status: 'ACTIVE',
+				mustChangePassword: false,
 				password: '',
 				userType: 'INTERNAL',
 				businessRoleIds: []
 			})
+			setInviteMode(true)
 			await load(1)
 		} catch (e: any) {
 			setError(e.message || 'Failed to create user')
@@ -138,6 +174,40 @@ export default function UsersPage() {
 			await load(pagination.page)
 		} catch (e: any) {
 			setError(e.message || 'Failed to delete user')
+		}
+	}
+
+	async function approveUser(user: UserAccount) {
+		setError(null)
+		try {
+			await api.updateUser(user.id, { status: 'ACTIVE', isActive: true })
+			await load(pagination.page)
+		} catch (e: any) {
+			setError(e.message || 'Failed to approve user')
+		}
+	}
+
+	async function resendInvite(user: UserAccount) {
+		setError(null)
+		try {
+			await api.inviteUser({
+				email: user.email,
+				name: user.name,
+				role: user.role,
+				userType: user.userType,
+				businessRoleIds: user.businessRoles?.map(role => role.id)
+			})
+		} catch (e: any) {
+			setError(e.message || 'Failed to resend invite')
+		}
+	}
+
+	async function resetPassword(user: UserAccount) {
+		setError(null)
+		try {
+			await api.forgotPassword({ email: user.email })
+		} catch (e: any) {
+			setError(e.message || 'Failed to send reset')
 		}
 	}
 
@@ -184,10 +254,13 @@ export default function UsersPage() {
 									role: 'VIEWER',
 									team: '',
 									isActive: true,
+									status: 'ACTIVE',
+									mustChangePassword: false,
 									password: '',
 									userType: 'INTERNAL',
 									businessRoleIds: []
 								})
+								setInviteMode(true)
 								setShowCreate(true)
 							}}
 						>
@@ -270,12 +343,41 @@ export default function UsersPage() {
 								</td>
 								<td className="px-3 py-2">{user.team || '-'}</td>
 										<td className="px-3 py-2">
-											<span className="rounded bg-slate-100 px-2 py-0.5 text-xs">
-												{user.isActive ? 'active' : 'disabled'}
-											</span>
+											{(() => {
+												const meta = statusLabel(user)
+												return (
+													<span className={`rounded px-2 py-0.5 text-xs ${meta.className}`}>
+														{meta.label}
+													</span>
+												)
+											})()}
 										</td>
 										<td className="px-3 py-2 text-right">
 											<div className="flex justify-end gap-2">
+												{user.status === 'PENDING' && (
+													<button
+														className="rounded bg-emerald-600 px-2 py-1 text-xs text-white hover:bg-emerald-700"
+														onClick={() => approveUser(user)}
+													>
+														Approve
+													</button>
+												)}
+												{user.status === 'INVITED' && (
+													<button
+														className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700"
+														onClick={() => resendInvite(user)}
+													>
+														Resend invite
+													</button>
+												)}
+												{user.status === 'ACTIVE' && (
+													<button
+														className="rounded bg-slate-100 px-2 py-1 text-xs hover:bg-slate-200"
+														onClick={() => resetPassword(user)}
+													>
+														Reset password
+													</button>
+												)}
 												<button
 													className="rounded bg-slate-200 px-2 py-1 text-xs hover:bg-slate-300"
 													onClick={() => openEdit(user)}
@@ -358,6 +460,16 @@ export default function UsersPage() {
 				<div className="fixed inset-0 z-10 flex items-center justify-center bg-black/30 p-4">
 					<div className="w-full max-w-xl rounded border bg-white p-5 shadow-lg">
 						<h2 className="text-lg font-semibold">{showCreate ? 'Create User' : 'Edit User'}</h2>
+						{showCreate && (
+							<div className="mt-2 flex items-center gap-2 text-xs text-slate-600">
+								<input
+									type="checkbox"
+									checked={inviteMode}
+									onChange={e => setInviteMode(e.target.checked)}
+								/>
+								<span>Send invite (no password required)</span>
+							</div>
+						)}
 						<div className="mt-3 grid gap-3">
 							<label className="text-sm">
 								<span className="font-medium">Email</span>
@@ -435,28 +547,51 @@ export default function UsersPage() {
 								</select>
 								<p className="mt-1 text-[11px] text-slate-500">Hold Ctrl/Cmd to select multiple.</p>
 							</label>
-							<div className="grid gap-3 md:grid-cols-2">
-								<label className="text-sm">
-									<span className="font-medium">Status</span>
-									<select
-										className="mt-1 w-full rounded border px-3 py-2"
-										value={editForm.isActive ? 'active' : 'disabled'}
-										onChange={e => setEditForm({ ...editForm, isActive: e.target.value === 'active' })}
-									>
-										<option value="active">Active</option>
-										<option value="disabled">Disabled</option>
-									</select>
-								</label>
-								<label className="text-sm">
-									<span className="font-medium">Password</span>
-									<input
-										type="password"
-										className="mt-1 w-full rounded border px-3 py-2"
-										value={editForm.password}
-										onChange={e => setEditForm({ ...editForm, password: e.target.value })}
-									/>
-								</label>
-							</div>
+							{!inviteMode && (
+								<div className="grid gap-3 md:grid-cols-2">
+									<label className="text-sm">
+										<span className="font-medium">Status</span>
+										<select
+											className="mt-1 w-full rounded border px-3 py-2"
+											value={editForm.status}
+											onChange={e =>
+												setEditForm({
+													...editForm,
+													status: e.target.value,
+													isActive: e.target.value === 'ACTIVE'
+												})
+											}
+										>
+											<option value="ACTIVE">Active</option>
+											<option value="DISABLED">Disabled</option>
+											<option value="PENDING">Pending</option>
+											<option value="INVITED">Invited</option>
+										</select>
+									</label>
+									<label className="text-sm">
+										<span className="font-medium">Password</span>
+										<input
+											type="password"
+											className="mt-1 w-full rounded border px-3 py-2"
+											value={editForm.password}
+											onChange={e => setEditForm({ ...editForm, password: e.target.value })}
+										/>
+									</label>
+									<label className="text-sm">
+										<span className="font-medium">Force password change</span>
+										<select
+											className="mt-1 w-full rounded border px-3 py-2"
+											value={editForm.mustChangePassword ? 'yes' : 'no'}
+											onChange={e =>
+												setEditForm({ ...editForm, mustChangePassword: e.target.value === 'yes' })
+											}
+										>
+											<option value="no">No</option>
+											<option value="yes">Yes</option>
+										</select>
+									</label>
+								</div>
+							)}
 						</div>
 						<div className="mt-4 flex justify-end gap-2">
 							<button

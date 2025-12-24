@@ -24,6 +24,13 @@ enum PricingTemplateScope {
   OPPORTUNITY
 }
 
+enum UserStatus {
+  ACTIVE
+  DISABLED
+  INVITED
+  PENDING
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -32,6 +39,10 @@ model User {
   team      String?
   passwordHash String?
   isActive  Boolean  @default(true)
+  status    UserStatus @default(ACTIVE)
+  mustChangePassword Boolean @default(false)
+  lastLoginAt DateTime?
+  passwordChangedAt DateTime?
   userType  String   @default("INTERNAL")
   tenantId  String
   createdAt DateTime @default(now())
@@ -41,6 +52,34 @@ model User {
   businessRoleLinks UserBusinessRole[]
   notificationPreferences NotificationPreference[]
   notifications Notification[]
+  inviteTokens InviteToken[]
+  resetTokens PasswordResetToken[]
+}
+
+model InviteToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Client {

@@ -59,6 +59,12 @@ UI scope and behaviors:
 | `/search` | Attachment Search | Search attachments via `/search?q=` |
 | `/settings/sla` | SLA Settings | View/edit thresholds, holiday calendar, retention policy |
 | `/auth/callback` | Auth Callback | Handles OAuth redirect |
+| `/auth/login` | Login | Email/password login |
+| `/auth/signup` | Signup | Request access (pending approval) |
+| `/auth/accept-invite` | Accept Invite | Set password from invite token |
+| `/auth/forgot-password` | Forgot Password | Request password reset |
+| `/auth/reset-password` | Reset Password | Set new password from reset token |
+| `/auth/change-password` | Change Password | Update password (required for default admin) |
 | `/auth/dev` | Dev Login | Local development authentication |
 
 ## Tech Stack
@@ -89,11 +95,12 @@ UI scope and behaviors:
 5. All API requests include `Authorization: Bearer <token>`
 
 ### Local (Development)
-1. User visits `/auth/dev`
-2. Enters email and optional role
-3. POST to `/auth/dev-login` returns JWT
+1. User visits `/auth/login` (or `/auth/dev` for dev shortcut)
+2. Enters email/password
+3. POST to `/auth/login` returns JWT
 4. JWT stored via `utils/auth` helper in `localStorage`
-5. All API requests include `Authorization: Bearer <token>`; 401 clears token and redirects to `/auth/dev`
+5. If `mustChangePassword` is set, redirect to `/auth/change-password`
+6. All API requests include `Authorization: Bearer <token>`; 401 clears token and redirects to `/auth/login`
 
 ## Component Patterns
 
@@ -115,11 +122,11 @@ Each page follows a consistent pattern:
 ### Data Fetching
 - TanStack Query for all reads; mutations invalidate or refetch keys
 - Loading and error states on every query/mutation
-- Token from `utils/auth`; 401 -> redirect to `/auth/dev`
+- Token from `utils/auth`; 401 -> redirect to `/auth/login`
 
 ## Visibility and Security
 
 - Role-based visibility across modules
 - Tenant scoping applied to queries
-- Protected routes redirect to `/auth/dev` when no token
+- Protected routes redirect to `/auth/login` when no token
 - Record-level sharing for selected entities where applicable

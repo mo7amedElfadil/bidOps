@@ -62,6 +62,14 @@ class CreateUserDto {
 
 	@IsOptional()
 	@IsString()
+	status?: 'ACTIVE' | 'DISABLED' | 'INVITED' | 'PENDING'
+
+	@IsOptional()
+	@IsBoolean()
+	mustChangePassword?: boolean
+
+	@IsOptional()
+	@IsString()
 	@MaxLength(100)
 	userType?: string
 
@@ -96,6 +104,14 @@ class UpdateUserDto {
 	@IsOptional()
 	@IsBoolean()
 	isActive?: boolean
+
+	@IsOptional()
+	@IsString()
+	status?: 'ACTIVE' | 'DISABLED' | 'INVITED' | 'PENDING'
+
+	@IsOptional()
+	@IsBoolean()
+	mustChangePassword?: boolean
 
 	@IsOptional()
 	@IsString()

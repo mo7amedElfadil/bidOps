@@ -14,9 +14,14 @@ Auth provider toggle via `AUTH_PROVIDER` environment variable:
 
 ### Local Auth (Development)
 ```
-POST /auth/register     # Create account (email, password, name, role?, tenantId?)
+POST /auth/register     # Request account (email, password, name)
 POST /auth/login        # Login (email, password) → { access_token }
 POST /auth/dev-login    # Quick dev login (email, name?, role?, tenantId?) → { access_token }
+POST /auth/invite       # Admin invite user (email, name, role, businessRoleIds)
+POST /auth/accept-invite # Accept invite + set password
+POST /auth/forgot-password # Request reset link
+POST /auth/reset-password  # Reset password
+POST /auth/change-password # Change password (auth)
 ```
 
 ### AAD OIDC Auth (Production)

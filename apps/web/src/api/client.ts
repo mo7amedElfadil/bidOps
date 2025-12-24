@@ -216,6 +216,11 @@ export interface ReviewOpportunity {
 export interface PricingPackReview extends PricingPack {
 	opportunity: ReviewOpportunity
 	approvals: Approval[]
+	nextApproval?: Approval | null
+	nextStageLabel?: string | null
+	nextActionLabel?: string | null
+	blockedReason?: string | null
+	readyToFinalize?: boolean
 }
 
 export interface Outcome {
@@ -292,6 +297,10 @@ export interface UserAccount {
 	role: 'ADMIN' | 'MANAGER' | 'CONTRIBUTOR' | 'VIEWER'
 	team?: string
 	isActive: boolean
+	status?: 'ACTIVE' | 'DISABLED' | 'INVITED' | 'PENDING'
+	mustChangePassword?: boolean
+	lastLoginAt?: string | null
+	passwordChangedAt?: string | null
 	userType?: string
 	businessRoles?: { id: string; name: string }[]
 	tenantId: string
@@ -351,7 +360,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 	const res = await fetch(`${API_BASE}${path}`, { headers, ...init })
 	if (res.status === 401) {
 		clearToken()
-		window.location.replace('/auth/dev')
+		window.location.replace('/auth/login')
 		throw new Error('Unauthorized')
 	}
 	if (!res.ok) {
@@ -861,6 +870,50 @@ export const api = {
 		return request<{ deleted: number }>(`/users`, {
 			method: 'DELETE',
 			body: JSON.stringify({ ids })
+		})
+	},
+
+	// Auth
+	login(input: { email: string; password: string }) {
+		return request<{ access_token: string }>(`/auth/login`, {
+			method: 'POST',
+			body: JSON.stringify(input)
+		})
+	},
+	register(input: { email: string; password: string; name?: string }) {
+		return request<{ id: string; email: string }>(`/auth/register`, {
+			method: 'POST',
+			body: JSON.stringify(input)
+		})
+	},
+	inviteUser(input: { email: string; name?: string; role?: string; userType?: string; businessRoleIds?: string[] }) {
+		return request<{ userId: string }>(`/auth/invite`, {
+			method: 'POST',
+			body: JSON.stringify(input)
+		})
+	},
+	acceptInvite(input: { token: string; name: string; password: string }) {
+		return request<{ ok: boolean }>(`/auth/accept-invite`, {
+			method: 'POST',
+			body: JSON.stringify(input)
+		})
+	},
+	forgotPassword(input: { email: string }) {
+		return request<{ ok: boolean }>(`/auth/forgot-password`, {
+			method: 'POST',
+			body: JSON.stringify(input)
+		})
+	},
+	resetPassword(input: { token: string; password: string }) {
+		return request<{ ok: boolean }>(`/auth/reset-password`, {
+			method: 'POST',
+			body: JSON.stringify(input)
+		})
+	},
+	changePassword(input: { currentPassword: string; newPassword: string }) {
+		return request<{ ok: boolean; access_token: string }>(`/auth/change-password`, {
+			method: 'POST',
+			body: JSON.stringify(input)
 		})
 	},
 

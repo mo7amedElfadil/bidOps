@@ -72,6 +72,8 @@ export class UsersService {
 		team?: string
 		password?: string
 		isActive?: boolean
+		status?: 'ACTIVE' | 'DISABLED' | 'INVITED' | 'PENDING'
+		mustChangePassword?: boolean
 		userType?: string
 		businessRoleIds?: string[]
 		tenantId: string
@@ -86,6 +88,8 @@ export class UsersService {
 		if (exists) throw new BadRequestException('User already exists')
 
 		const passwordHash = data.password ? await argon2.hash(data.password) : undefined
+		const status = data.status || (data.isActive === false ? 'DISABLED' : 'ACTIVE')
+		const isActive = data.isActive !== undefined ? data.isActive : status === 'ACTIVE'
 		const created = await this.prisma.user.create({
 			data: {
 				email,
@@ -93,7 +97,10 @@ export class UsersService {
 				role: (data.role as any) || 'VIEWER',
 				team: data.team,
 				passwordHash,
-				isActive: data.isActive ?? true,
+				isActive,
+				status: status as any,
+				mustChangePassword: data.mustChangePassword ?? false,
+				passwordChangedAt: data.password ? new Date() : undefined,
 				userType: data.userType || 'INTERNAL',
 				tenantId: data.tenantId
 			}
@@ -113,6 +120,8 @@ export class UsersService {
 			team?: string
 			password?: string
 			isActive?: boolean
+			status?: 'ACTIVE' | 'DISABLED' | 'INVITED' | 'PENDING'
+			mustChangePassword?: boolean
 			userType?: string
 			businessRoleIds?: string[]
 		}
@@ -124,6 +133,13 @@ export class UsersService {
 			isActive: data.isActive,
 			userType: data.userType
 		}
+		if (data.status) {
+			updateData.status = data.status as any
+			updateData.isActive = data.isActive !== undefined ? data.isActive : data.status === 'ACTIVE'
+		}
+		if (data.mustChangePassword !== undefined) {
+			updateData.mustChangePassword = data.mustChangePassword
+		}
 		if (data.email) {
 			const email = data.email.trim()
 			const exists = await this.prisma.user.findUnique({ where: { email } })
@@ -134,6 +150,8 @@ export class UsersService {
 		}
 		if (data.password) {
 			updateData.passwordHash = await argon2.hash(data.password)
+			updateData.passwordChangedAt = new Date()
+			updateData.mustChangePassword = false
 		}
 		const updated = await this.prisma.user.update({ where: { id }, data: updateData })
 		if (data.businessRoleIds) {

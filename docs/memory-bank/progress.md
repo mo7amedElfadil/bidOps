@@ -94,6 +94,10 @@
   * Tenders: Added reject action for Go/No-Go with optional reason
   * Collectors: Added optional Arabic-to-English title translation with original-title preservation
   * Approvals: Review queue supports scope=mine/all and highlights next action in the UI
+  * Docs: Added a comprehensive user management + auth plan (onboarding, invites, password reset, default admin)
+  * Auth: Implemented local auth lifecycle (invite/accept/reset/change), user status fields, and default admin bootstrap
+  * Ops: SMTP auth support wired for external email providers (env-driven)
+  * Docs: Added full end-to-end testing guide for all modules
 * Next:
   * Rate limiting defaults + security headers docs (hardening sweep)
   * Validate Monaqasat adapter against live pages; add edge-case handling

@@ -30,6 +30,11 @@ Mail:
 - SMTP_HOST
 - SMTP_PORT
 - SMTP_FROM
+- SMTP_USER
+- SMTP_PASS
+- SMTP_SECURE (true/false; default false)
+- SMTP_REQUIRE_TLS (true/false; default false)
+- SMTP_TLS_REJECT_UNAUTHORIZED (true/false; default true)
 - SLA_NOTIFY_TO (optional fallback email recipient for SLA alerts)
 - SLA_TICK_INTERVAL_MS (default 21600000)
 - EMAIL_TICK_INTERVAL_MS (default 60000)
@@ -40,6 +45,10 @@ AI extraction:
 - OPENAI_MODEL
 - GEMINI_API_KEY
 - GEMINI_MODEL
+
+Auth defaults:
+- DEFAULT_ADMIN_EMAIL (default elfadil@it-serve.qa)
+- DEFAULT_ADMIN_PASSWORD (default P@ssword1)
 
 Collectors translation:
 - COLLECTOR_TRANSLATE_TITLES (default true; set to false to disable)

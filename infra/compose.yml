@@ -32,13 +32,14 @@ services:
     image: opensearchproject/opensearch:2.15.0
     container_name: bidops-opensearch
     environment:
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=BidOps!2025
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+      - DISABLE_SECURITY_PLUGIN=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
       - cluster.name=bidops-os
       - node.name=os01
       - discovery.type=single-node
       - bootstrap.memory_lock=true
       - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
-      - plugins.security.disabled=true
     ulimits:
       memlock:
         soft: -1
@@ -143,8 +144,6 @@ services:
       - WEB_ORIGIN=http://localhost:8080
       - DATABASE_URL=postgresql://bidops:bidops@postgres:5432/bidops?schema=public
       - OPENSEARCH_HOST=http://opensearch:9200
-      - SMTP_HOST=mailhog
-      - SMTP_PORT=1025
       - STORAGE_PROVIDER=local
       - LOCAL_STORAGE_PATH=/app/data/storage
       - ATTACHMENTS_CONTAINER=attachments
@@ -219,14 +218,14 @@ services:
     image: node:20-bullseye-slim
     container_name: bidops-workers
     working_dir: /app
+    env_file:
+      - ../.env
     command: sh -c "apt-get update && apt-get install -y openssl ca-certificates && corepack enable && pnpm install --frozen-lockfile && pnpm --filter @itsq-bidops/api prisma:generate && pnpm --filter @itsq-bidops/workers build && node apps/workers/dist/index.js"
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://bidops:bidops@postgres:5432/bidops?schema=public
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - SMTP_HOST=mailhog
-      - SMTP_PORT=1025
       - COLLECTORS_URL=http://collectors:4100
       - SLA_WARN_DAYS=7
       - SLA_ALERT_DAYS=3

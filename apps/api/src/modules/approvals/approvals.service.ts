@@ -9,6 +9,51 @@ import { NotificationsService } from '../notifications/notifications.service'
 import { NotificationActivities } from '../notifications/notifications.constants'
 import { RejectWorkApprovalDto } from './dto/reject-work-approval.dto'
 
+const stageOrderMap: Record<string, number> = {
+	GO_NO_GO: 1,
+	WORKING: 2,
+	PRICING: 3,
+	FINAL_SUBMISSION: 4,
+	LEGAL: 2,
+	FINANCE: 3,
+	EXECUTIVE: 4
+}
+
+const pendingStatuses = new Set<ApprovalStatus>([
+	'PENDING',
+	'IN_REVIEW',
+	'CHANGES_REQUESTED',
+	'RESUBMITTED'
+])
+
+const stageLabelMap: Record<string, string> = {
+	GO_NO_GO: 'Go/No-Go',
+	WORKING: 'Working',
+	PRICING: 'Pricing',
+	FINAL_SUBMISSION: 'Final submission',
+	LEGAL: 'Working',
+	FINANCE: 'Pricing',
+	EXECUTIVE: 'Final submission'
+}
+
+const actionLabelMap: Record<string, string> = {
+	LEGAL: 'Approve Working Stage',
+	FINANCE: 'Approve Pricing Stage',
+	EXECUTIVE: 'Approve Final Submission'
+}
+
+function getStageLabel(stage?: string | null, type?: string | null) {
+	return stageLabelMap[stage || ''] ?? stageLabelMap[type || ''] ?? 'Approval'
+}
+
+function getActionLabel(type?: string | null) {
+	return actionLabelMap[type || ''] ?? 'Approve'
+}
+
+function getStageOrderScore(approval: { stage?: string | null; type?: string | null }) {
+	return stageOrderMap[approval.stage || approval.type || ''] ?? 99
+}
+
 interface UserContext {
 	id?: string
 	role?: string
@@ -46,7 +91,10 @@ export class ApprovalsService {
 			},
 			orderBy: [{ updatedAt: 'desc' }]
 		})
-		if (scope !== 'mine' || !user?.id) return packs
+		const userId = user?.id
+		if (scope !== 'mine' || !userId) {
+			return packs.map(pack => this.enrichPack(pack))
+		}
 
 		const roleLinks = await this.prisma.userBusinessRole.findMany({
 			where: { userId: user.id },
@@ -57,19 +105,45 @@ export class ApprovalsService {
 		const userRole = user.role
 		const pendingStatuses = new Set(['PENDING', 'IN_REVIEW', 'CHANGES_REQUESTED', 'RESUBMITTED'])
 
-		return packs.filter(pack =>
-			pack.approvals?.some(approval => {
-				if (!pendingStatuses.has(approval.status)) return false
-				if (approval.approverId && approval.approverId === user.id) return true
-				if (approval.approverIds?.length && approval.approverIds.includes(user.id)) return true
-				if (approval.approverRole) {
-					if (roleIds.includes(approval.approverRole)) return true
-					if (roleNames.includes(approval.approverRole)) return true
-					if (userRole && userRole === approval.approverRole) return true
-				}
-				return false
-			})
-		)
+		return packs
+			.map(pack => this.enrichPack(pack))
+			.filter(pack =>
+				pack.approvals?.some(approval => {
+					if (!pendingStatuses.has(approval.status)) return false
+					if (approval.approverId && approval.approverId === userId) return true
+					if (approval.approverIds?.length && approval.approverIds.includes(userId)) return true
+					if (approval.approverRole) {
+						if (roleIds.includes(approval.approverRole)) return true
+						if (roleNames.includes(approval.approverRole)) return true
+						if (userRole && userRole === approval.approverRole) return true
+					}
+					return false
+				})
+			)
+	}
+
+	private enrichPack(pack: any) {
+		const approvals = (pack.approvals || []).slice().sort((a: any, b: any) => {
+			return getStageOrderScore(a) - getStageOrderScore(b)
+		})
+		const nextApproval =
+			approvals.filter((approval: any) => pendingStatuses.has(approval.status))[0] || null
+		const nextStageLabel = nextApproval ? getStageLabel(nextApproval.stage, nextApproval.type) : null
+		const nextActionLabel = nextApproval ? getActionLabel(nextApproval.type) : null
+		const blockedReason = nextApproval ? `Waiting for ${nextStageLabel}` : null
+		const allApproved =
+			approvals.length > 0 &&
+			approvals.every((approval: any) => ['APPROVED', 'APPROVED_WITH_CONDITIONS'].includes(approval.status))
+		const hasRejected = approvals.some((approval: any) => approval.status === 'REJECTED')
+		return {
+			...pack,
+			approvals,
+			nextApproval,
+			nextStageLabel,
+			nextActionLabel,
+			blockedReason,
+			readyToFinalize: allApproved && !hasRejected && approvals.length > 0
+		}
 	}
 
 	async requestWorkApproval(dto: RequestWorkApprovalDto, user: UserContext) {
@@ -371,7 +445,7 @@ export class ApprovalsService {
 
 	private async markPricingApproved(opportunityId: string, userId?: string) {
 		const payload: Prisma.OpportunityChecklistCreateInput = {
-			opportunityId,
+			opportunity: { connect: { id: opportunityId } },
 			pricingApproved: true,
 			pricingApprovedAt: new Date(),
 			pricingApprovedById: userId || undefined

@@ -82,7 +82,7 @@ export default function Layout() {
 
 	function signOut() {
 		clearToken()
-		nav('/auth/dev', { replace: true })
+		nav('/auth/login', { replace: true })
 	}
 
 	return (
@@ -119,20 +119,26 @@ export default function Layout() {
 						</nav>
 					</div>
 					<div className="flex items-center gap-3 text-sm">
-						<span className="hidden text-slate-600 sm:inline">Signed in (dev)</span>
+						<span className="hidden text-slate-600 sm:inline">Signed in</span>
 						<button
 							onClick={() => nav('/import/tracker')}
 							className="rounded bg-slate-100 px-3 py-1.5 hover:bg-slate-200"
 						>
 							Import
 						</button>
+						<button
+							onClick={() => nav('/auth/change-password')}
+							className="rounded bg-slate-100 px-3 py-1.5 hover:bg-slate-200"
+						>
+							Account
+						</button>
 						{token ? (
 							<button onClick={signOut} className="rounded bg-slate-200 px-3 py-1.5 hover:bg-slate-300">
 								Sign out
 							</button>
 						) : (
-							<button onClick={() => nav('/auth/dev')} className="text-blue-600 hover:underline">
-								Dev Login
+							<button onClick={() => nav('/auth/login')} className="text-blue-600 hover:underline">
+								Sign in
 							</button>
 						)}
 					</div>

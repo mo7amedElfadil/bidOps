@@ -17,6 +17,10 @@
   - Tenders: Added Go/No-Go rejection action with optional reason (tender list)
   - Collectors: Arabic titles can be translated to English during collection while preserving the original text
   - Approvals: Review queue now supports filtering to "my approvals" with next-action messaging
+  - User management: authored plan for onboarding, invites, password reset, and default admin bootstrapping
+  - User management: local auth lifecycle endpoints (invite/accept/reset/change), user status flags, default admin bootstrap
+  - Ops: SMTP env now supports external providers (Office 365) for outbound email delivery
+  - Docs: Added a comprehensive end-to-end testing guide
   - Tenders: Monaqasat available-tender adapter now walks pages until the requested date window (or `MONAQASAT_TENDER_MAX_PAGES`) so date-range filtering works like the award collector
   - Collectors: Monaqasat award + available adapters now force English locale via headers, culture cookie, and ChangeLang
   - Approvals: Added decision DTO (supports changes requested/resubmitted), stage gating, and Go/No-Go request updates

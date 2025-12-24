@@ -95,11 +95,61 @@ class CreateTenderDto {
 	status?: string
 }
 
-class UpdateTenderDto extends CreateTenderDto {
+class UpdateTenderDto {
 	@IsOptional()
 	@IsString()
 	@MaxLength(50)
 	portal?: string
+
+	@IsOptional()
+	@IsString()
+	tenderRef?: string
+
+	@IsOptional()
+	@IsString()
+	title?: string
+
+	@IsOptional()
+	@IsString()
+	ministry?: string
+
+	@IsOptional()
+	@IsString()
+	publishDate?: string
+
+	@IsOptional()
+	@IsString()
+	closeDate?: string
+
+	@IsOptional()
+	@IsString()
+	requestedSectorType?: string
+
+	@IsOptional()
+	@IsString()
+	@Type(() => String)
+	tenderBondValue?: string
+
+	@IsOptional()
+	@IsString()
+	@Type(() => String)
+	documentsValue?: string
+
+	@IsOptional()
+	@IsString()
+	tenderType?: string
+
+	@IsOptional()
+	@IsString()
+	purchaseUrl?: string
+
+	@IsOptional()
+	@IsString()
+	sourceUrl?: string
+
+	@IsOptional()
+	@IsString()
+	status?: string
 }
 
 @Controller('tenders')

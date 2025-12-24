@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router-dom'
+import { createBrowserRouter, Navigate, Outlet, RouterProvider, useLocation } from 'react-router-dom'
 import List from './pages/Opportunities/List'
 import Board from './pages/Opportunities/Board'
 import Timeline from './pages/Opportunities/Timeline'
@@ -25,12 +25,22 @@ import AttachmentSearchPage from './pages/Search/Attachments'
 import SlaSettingsPage from './pages/Settings/Sla'
 import NotificationsPage from './pages/Notifications/Index'
 import ErrorPage from './components/ErrorPage'
-import { getToken } from './utils/auth'
+import { getMustChangePassword, getToken } from './utils/auth'
+import Login from './pages/Auth/Login'
+import Signup from './pages/Auth/Signup'
+import AcceptInvite from './pages/Auth/AcceptInvite'
+import ForgotPassword from './pages/Auth/ForgotPassword'
+import ResetPassword from './pages/Auth/ResetPassword'
+import ChangePassword from './pages/Auth/ChangePassword'
 
 function RequireAuth() {
+	const loc = useLocation()
 	const token = typeof window !== 'undefined' ? getToken() : null
 	if (!token) {
-		return <Navigate to="/auth/dev" replace />
+		return <Navigate to="/auth/login" replace />
+	}
+	if (getMustChangePassword() && loc.pathname !== '/auth/change-password') {
+		return <Navigate to="/auth/change-password" replace />
 	}
 	return <Outlet />
 }
@@ -71,6 +81,12 @@ const router = createBrowserRouter([
 		]
 	},
 	{ path: '/auth/callback', element: <Callback /> },
+	{ path: '/auth/login', element: <Login /> },
+	{ path: '/auth/signup', element: <Signup /> },
+	{ path: '/auth/accept-invite', element: <AcceptInvite /> },
+	{ path: '/auth/forgot-password', element: <ForgotPassword /> },
+	{ path: '/auth/reset-password', element: <ResetPassword /> },
+	{ path: '/auth/change-password', element: <ChangePassword /> },
 	{ path: '/auth/dev', element: <DevLogin /> },
 	{ path: '*', element: <Navigate to="/" replace /> }
 ])

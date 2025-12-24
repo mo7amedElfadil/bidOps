@@ -55,7 +55,7 @@ export default function ApprovalReviewPage() {
 		}
 	})
 
-	const packs = review.data || []
+const packs = review.data || []
 
 	const pendingStatuses = useMemo(
 		() => new Set(['PENDING', 'IN_REVIEW', 'CHANGES_REQUESTED', 'RESUBMITTED']),
@@ -67,29 +67,6 @@ export default function ApprovalReviewPage() {
 		if (approval.approverId && approval.approverId === userId) return true
 		if (approval.approverIds?.length && approval.approverIds.includes(userId)) return true
 		return false
-	}
-
-	function getStageLabel(stage?: string | null, type?: string | null) {
-		if (stage === 'GO_NO_GO') return 'Go/No-Go'
-		if (stage === 'WORKING') return 'Working'
-		if (stage === 'PRICING') return 'Pricing'
-		if (stage === 'FINAL_SUBMISSION') return 'Final submission'
-		if (type === 'LEGAL') return 'Working'
-		if (type === 'FINANCE') return 'Pricing'
-		if (type === 'EXECUTIVE') return 'Final submission'
-		return stage || type || 'Approval'
-	}
-
-	function getNextApproval(approvals: Array<{ stage?: string; type?: string; status?: string }>) {
-		const stageOrder: Record<string, number> = {
-			GO_NO_GO: 1,
-			WORKING: 2,
-			PRICING: 3,
-			FINAL_SUBMISSION: 4
-		}
-		return approvals
-			.filter(a => a.status && pendingStatuses.has(a.status))
-			.sort((a, b) => (stageOrder[a.stage || ''] || 99) - (stageOrder[b.stage || ''] || 99))[0]
 	}
 
 	return (
@@ -123,12 +100,10 @@ export default function ApprovalReviewPage() {
 							approvals.every(a => ['APPROVED', 'APPROVED_WITH_CONDITIONS'].includes(a.status))
 						const hasRejected = approvals.some(a => a.status === 'REJECTED')
 						const isFinalizing = finalizingPack === pack.id
-						const readyToFinalize = allApproved && !hasRejected
-						const nextApproval = getNextApproval(approvals)
-						const myPending = approvals.find(
-							approval => approval.status && pendingStatuses.has(approval.status) && isAssignedToUser(approval)
-						)
-						const nextLabel = nextApproval ? getStageLabel(nextApproval.stage, nextApproval.type) : null
+						const nextApproval = pack.nextApproval
+						const nextLabel = pack.nextStageLabel || (nextApproval ? getStageLabel(nextApproval.stage, nextApproval.type) : null)
+						const readyToFinalize = pack.readyToFinalize || (allApproved && !hasRejected)
+						const myPending = nextApproval ? isAssignedToUser(nextApproval) : false
 
 						return (
 							<Card key={pack.id}>
@@ -172,30 +147,42 @@ export default function ApprovalReviewPage() {
 										</span>
 									))}
 								</div>
+								{pack.nextStageLabel && (
+									<p className="mt-2 text-xs text-slate-500">
+										Next stage: <span className="font-semibold">{pack.nextStageLabel}</span>
+										{pack.nextActionLabel ? ` • ${pack.nextActionLabel}` : ''}
+										{pack.blockedReason ? ` • ${pack.blockedReason}` : ''}
+										{myPending && pack.nextActionLabel ? (
+											<span className="ml-2 text-xs font-semibold text-blue-600">Assigned to you</span>
+										) : null}
+									</p>
+								)}
 
-								<div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-									<div className="text-sm text-slate-500">
-										{hasRejected
-											? 'One or more approvers rejected this pack. Review comments and rerun approvals.'
-											: allApproved
-												? 'All approvals completed.'
-												: `${approvals.filter(a => ['APPROVED', 'APPROVED_WITH_CONDITIONS'].includes(a.status)).length}/${approvals.length} approvals done.`}
-										{!hasRejected && !allApproved && nextLabel && (
-											<span className="ml-2 text-xs text-slate-600">
-												{myPending ? `Your action required: ${nextLabel}` : `Next: ${nextLabel}`}
-											</span>
-										)}
-									</div>
-									<Button
-										size="sm"
-										variant="primary"
-										disabled={!readyToFinalize || finalize.isPending || !approvals.length || !canFinalize}
-										onClick={() => finalize.mutate(pack.id)}
-										className="whitespace-nowrap"
-									>
-										{isFinalizing ? 'Finalizing...' : 'Finalize for submission'}
-									</Button>
+							<div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+								<div className="text-sm text-slate-500">
+									{hasRejected ? (
+										'One or more approvers rejected this pack. Review comments and rerun approvals.'
+									) : allApproved ? (
+										'All approvals completed.'
+									) : pack.blockedReason ? (
+										<>
+											{pack.blockedReason}
+											{myPending && pack.nextActionLabel ? ` • Your action required: ${pack.nextActionLabel}` : myPending ? '' : pack.nextActionLabel ? ` • Next: ${pack.nextActionLabel}` : ''}
+										</>
+									) : (
+										`${approvals.filter(a => ['APPROVED', 'APPROVED_WITH_CONDITIONS'].includes(a.status)).length}/${approvals.length} approvals done.`
+									)}
 								</div>
+								<Button
+									size="sm"
+									variant="primary"
+									disabled={!pack.readyToFinalize || finalize.isPending || !approvals.length || !canFinalize}
+									onClick={() => finalize.mutate(pack.id)}
+									className="whitespace-nowrap"
+								>
+									{isFinalizing ? 'Finalizing...' : 'Finalize for submission'}
+								</Button>
+							</div>
 							</Card>
 						)
 					})}

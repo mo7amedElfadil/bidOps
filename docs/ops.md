@@ -92,6 +92,8 @@ make up
 | `collectors` | (internal) | Award collectors server (Playwright) |
 | `workers` | (internal) | BullMQ worker for SLA ticks, notification/email batches, and queued collector jobs |
 
+Mail delivery uses `SMTP_*` variables from the root `.env`. For local dev you can point SMTP to `mailhog`; for production wire it to an external SMTP provider (Office 365, SES, etc.).
+
 ### Job queue
 
 The `workers` service listens on the Redis-backed BullMQ queue called `bidops-default`. API endpoints such as `POST /awards/collect` and `/tenders/collect` enqueue `collect-awards` or `collect-tenders` jobs via `enqueueAwardCollector`/`enqueueTenderCollector`, and the worker delegates them to the collectors service through `COLLECTORS_URL`. The same queue can host other heavy/async workloads you may add later (SLA/notification bursts, tracker imports, parser/OCR jobs, AI extraction slices, etc.) so that the API stays responsive while background work is serialized through Redis.

@@ -2,10 +2,18 @@ import nodemailer from 'nodemailer'
 import { prisma } from '../prisma'
 
 export async function processEmailBatch(limit = 20) {
+	const host = process.env.SMTP_HOST || 'localhost'
+	const port = Number(process.env.SMTP_PORT || 1025)
+	const secure = process.env.SMTP_SECURE === 'true' || port === 465
+	const user = process.env.SMTP_USER
+	const pass = process.env.SMTP_PASS
 	const transporter = nodemailer.createTransport({
-		host: process.env.SMTP_HOST || 'localhost',
-		port: Number(process.env.SMTP_PORT || 1025),
-		secure: false
+		host,
+		port,
+		secure,
+		auth: user && pass ? { user, pass } : undefined,
+		requireTLS: process.env.SMTP_REQUIRE_TLS === 'true',
+		tls: process.env.SMTP_TLS_REJECT_UNAUTHORIZED === 'false' ? { rejectUnauthorized: false } : undefined
 	})
 
 	const pending = await prisma.notification.findMany({

@@ -1,4 +1,5 @@
-import { PrismaClient, Role, Prisma } from '@prisma/client'
+import { PrismaClient, Role, Prisma, UserStatus } from '@prisma/client'
+import * as argon2 from 'argon2'
 
 const prisma = new PrismaClient()
 
@@ -18,10 +19,22 @@ async function main() {
 	})
 
 	// Users (local auth friendly)
+	const defaultAdminEmail = process.env.DEFAULT_ADMIN_EMAIL || 'elfadil@it-serve.qa'
+	const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'P@ssword1'
+	const adminPasswordHash = await argon2.hash(defaultAdminPassword)
 	const admin = await prisma.user.upsert({
-		where: { email: 'admin@example.com' },
-		update: {},
-		create: { email: 'admin@example.com', name: 'Admin', role: Role.ADMIN, tenantId }
+		where: { email: defaultAdminEmail },
+		update: { role: Role.ADMIN, status: UserStatus.ACTIVE, isActive: true },
+		create: {
+			email: defaultAdminEmail,
+			name: 'Elfadil',
+			role: Role.ADMIN,
+			tenantId,
+			passwordHash: adminPasswordHash,
+			status: UserStatus.ACTIVE,
+			isActive: true,
+			mustChangePassword: true
+		}
 	})
 
 	const roleCount = await prisma.businessRole.count({ where: { tenantId } })
