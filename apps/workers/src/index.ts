@@ -54,7 +54,13 @@ worker.on('failed', (job, err) => {
 console.log('Workers app started. Queue:', queueName)
 
 // Simple schedulers (these can still enqueue jobs if needed)
+const slaIntervalMs = Number(process.env.SLA_TICK_INTERVAL_MS || 6 * 60 * 60 * 1000)
+const emailIntervalMs = Number(process.env.EMAIL_TICK_INTERVAL_MS || 60 * 1000)
+
 setInterval(() => {
 	slaTick().catch(err => console.error('slaTick error', err))
+}, slaIntervalMs)
+
+setInterval(() => {
 	processEmailBatch().catch(err => console.error('email error', err))
-}, 60_000)
+}, emailIntervalMs)

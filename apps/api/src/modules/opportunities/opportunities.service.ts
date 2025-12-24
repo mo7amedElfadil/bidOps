@@ -6,10 +6,15 @@ import { UpdateOpportunityDto } from './dto/update-opportunity.dto'
 import { QueryOpportunityDto } from './dto/query-opportunity.dto'
 import { parsePagination } from '../../utils/pagination'
 import { UpdateChecklistDto } from './dto/update-checklist.dto'
+import { NotificationsService } from '../notifications/notifications.service'
+import { NotificationActivities } from '../notifications/notifications.constants'
 
 @Injectable()
 export class OpportunitiesService {
-	constructor(private readonly prisma: PrismaService) {}
+	constructor(
+		private readonly prisma: PrismaService,
+		private readonly notifications: NotificationsService
+	) {}
 
 	private computeDaysLeft(submissionDate?: Date | string | null): number | null {
 		if (!submissionDate) return null
@@ -128,7 +133,32 @@ export class OpportunitiesService {
 			dataOwner: input.dataOwner ?? undefined,
 			tenantId
 		}
-		return this.prisma.opportunity.create({ data: createData })
+		const created = await this.prisma.opportunity.create({ data: createData })
+		const subject = `New opportunity created: ${created.title}`
+		const body = `Opportunity "${created.title}" has been created.`
+		const bidOwnerLinks = await this.prisma.opportunityBidOwner.findMany({
+			where: { opportunityId: created.id },
+			select: { userId: true }
+		})
+		const explicitUserIds = [
+			...(created.ownerId ? [created.ownerId] : []),
+			...bidOwnerLinks.map(link => link.userId)
+		]
+		try {
+			await this.notifications.dispatch({
+				activity: NotificationActivities.OPPORTUNITY_CREATED,
+				tenantId,
+				subject,
+				body,
+				userIds: explicitUserIds,
+				mergeRoles: true,
+				opportunityId: created.id
+			})
+		} catch (err) {
+			// Avoid failing the create flow on notification errors.
+			console.warn('[notifications] Failed to dispatch opportunity.created', err)
+		}
+		return created
 	}
 
 	async update(id: string, input: UpdateOpportunityDto, tenantId: string) {
@@ -189,6 +219,10 @@ export class OpportunitiesService {
 			select: { id: true }
 		})
 		const validIds = users.map(user => user.id)
+		const existing = await this.prisma.opportunityBidOwner.findMany({
+			where: { opportunityId: id },
+			select: { userId: true }
+		})
 		await this.prisma.$transaction([
 			this.prisma.opportunityBidOwner.deleteMany({ where: { opportunityId: id } }),
 			...(validIds.length
@@ -199,6 +233,28 @@ export class OpportunitiesService {
 					]
 				: [])
 		])
+		const existingIds = new Set(existing.map(link => link.userId))
+		const newlyAssigned = validIds.filter(userId => !existingIds.has(userId))
+		if (newlyAssigned.length) {
+			const opp = await this.prisma.opportunity.findUnique({
+				where: { id },
+				select: { title: true, tenantId: true }
+			})
+			if (opp) {
+				try {
+					await this.notifications.dispatch({
+						activity: NotificationActivities.OPPORTUNITY_CREATED,
+						tenantId,
+						subject: `Assigned as bid owner: ${opp.title}`,
+						body: `You have been added as a bid owner for "${opp.title}".`,
+						userIds: newlyAssigned,
+						opportunityId: id
+					})
+				} catch (err) {
+					console.warn('[notifications] Failed to dispatch bid owner assignment', err)
+				}
+			}
+		}
 		await this.prisma.importIssue.updateMany({
 			where: { opportunityId: id, fieldName: 'bidOwners', resolvedAt: null },
 			data: { resolvedAt: new Date() }

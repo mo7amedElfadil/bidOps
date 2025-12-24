@@ -102,7 +102,7 @@ export default function AwardsEventsPage() {
 
 	return (
 		<div className="min-h-screen bg-slate-50 text-slate-900">
-			<div className="mx-auto max-w-6xl p-6">
+			<div className="w-full px-6 py-6">
 				<div className="flex items-center justify-between">
 					<div>
 						<Link to="/" className="text-sm text-blue-600 hover:underline">

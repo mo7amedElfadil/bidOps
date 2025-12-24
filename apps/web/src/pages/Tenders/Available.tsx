@@ -21,6 +21,34 @@ export default function AvailableTendersPage() {
 	const [requestComment, setRequestComment] = useState('')
 	const [requestError, setRequestError] = useState<string | null>(null)
 	const [requestingApproval, setRequestingApproval] = useState(false)
+	const [selected, setSelected] = useState<Record<string, boolean>>({})
+	const selectedRows = rows.filter(r => selected[r.id])
+	const allSelected = rows.length > 0 && rows.every(r => selected[r.id])
+
+	function toggleAllRows(checked: boolean) {
+		const map: Record<string, boolean> = {}
+		rows.forEach(r => {
+			map[r.id] = checked
+		})
+		setSelected(map)
+	}
+
+	function toggleRowSelect(id: string, checked: boolean) {
+		setSelected(prev => ({ ...prev, [id]: checked }))
+	}
+	const [editingTender, setEditingTender] = useState<MinistryTender | null>(null)
+	const [editSaving, setEditSaving] = useState(false)
+	const [editError, setEditError] = useState<string | null>(null)
+	const [editForm, setEditForm] = useState({
+		ministry: '',
+		publishDate: '',
+		closeDate: '',
+		tenderBondValue: '',
+		documentsValue: '',
+		tenderType: '',
+		purchaseUrl: '',
+		status: 'new'
+	})
 
 	async function load(pageOverride?: number) {
 		setLoading(true)
@@ -39,6 +67,7 @@ export default function AvailableTendersPage() {
 			setRows(data.items)
 			setPagination({ page: data.page, pageSize: data.pageSize, total: data.total })
 			setPageInput(String(data.page))
+			setSelected({})
 		} catch (e: any) {
 			setError(e.message || 'Failed to load tenders')
 		}
@@ -64,7 +93,12 @@ export default function AvailableTendersPage() {
 			if (res && (res as any).error) {
 				setRunError((res as any).error)
 			} else {
-				setRunSummary('Collector run completed. Refresh to see new records.')
+				const jobId = (res as any)?.jobId
+				setRunSummary(
+					jobId
+						? `Collector job ${jobId} queued. Refresh after the worker signals completion.`
+						: 'Collector job queued. Refresh once it finishes.'
+				)
 				await load(1)
 			}
 		} catch (e: any) {
@@ -73,10 +107,62 @@ export default function AvailableTendersPage() {
 		setRunning(false)
 	}
 
-	async function promote(id: string) {
+	function openEditModal(tender: MinistryTender) {
+		setEditError(null)
+		setEditingTender(tender)
+		setEditForm({
+			ministry: tender.ministry || '',
+			publishDate: tender.publishDate ? tender.publishDate.slice(0, 10) : '',
+			closeDate: tender.closeDate ? tender.closeDate.slice(0, 10) : '',
+			tenderBondValue: tender.tenderBondValue ? String(tender.tenderBondValue) : '',
+			documentsValue: tender.documentsValue ? String(tender.documentsValue) : '',
+			tenderType: tender.tenderType || '',
+			purchaseUrl: tender.purchaseUrl || '',
+			status: tender.status || 'new'
+		})
+	}
+
+	async function saveEdit() {
+		if (!editingTender) return
+		setEditSaving(true)
+		setEditError(null)
+		try {
+			await api.updateMinistryTender(editingTender.id, {
+				ministry: editForm.ministry || undefined,
+				publishDate: editForm.publishDate || undefined,
+				closeDate: editForm.closeDate || undefined,
+				tenderBondValue: editForm.tenderBondValue ? Number(editForm.tenderBondValue) : undefined,
+				documentsValue: editForm.documentsValue ? Number(editForm.documentsValue) : undefined,
+				tenderType: editForm.tenderType || undefined,
+				purchaseUrl: editForm.purchaseUrl || undefined,
+				status: editForm.status || undefined
+			})
+			await load(1)
+			setEditingTender(null)
+		} catch (e: any) {
+			setEditError(e.message || 'Failed to save tender')
+		}
+		setEditSaving(false)
+	}
+
+	function ensureRequiredFields(tender: MinistryTender) {
+		if (!tender.ministry?.trim()) {
+			setRunError('Ministry is required before promoting or requesting work approval. Please update the record.')
+			openEditModal(tender)
+			return false
+		}
+		return true
+	}
+
+async function promote(id: string) {
 		setPromoting(id)
 		setError(null)
 		try {
+			const tender = rows.find(r => r.id === id)
+			if (!tender || !ensureRequiredFields(tender)) {
+				setPromoting(null)
+				return
+			}
 			const opp = await api.promoteMinistryTender(id)
 			await load()
 			nav(`/opportunity/${opp.id}`)
@@ -91,6 +177,10 @@ export default function AvailableTendersPage() {
 		setRequestingApproval(true)
 		setRequestError(null)
 		try {
+			if (!ensureRequiredFields(requestTender)) {
+				setRequestingApproval(false)
+				return
+			}
 			const res = await api.requestWorkApproval({
 				sourceTenderId: requestTender.id,
 				comment: requestComment || undefined
@@ -105,9 +195,24 @@ export default function AvailableTendersPage() {
 		setRequestingApproval(false)
 	}
 
+	async function deleteSelectedTenders() {
+		const ids = Object.entries(selected).filter(([, checked]) => checked).map(([id]) => id)
+		if (!ids.length) return
+		if (!confirm(`Delete ${ids.length} selected tender(s)?`)) return
+		setError(null)
+		try {
+			for (const id of ids) {
+				await api.deleteMinistryTender(id)
+			}
+			await load(1)
+		} catch (e: any) {
+			setError(e.message || 'Failed to delete selected tenders')
+		}
+	}
+
 	return (
 		<div className="min-h-screen bg-slate-50 text-slate-900">
-			<div className="mx-auto max-w-6xl p-6">
+			<div className="w-full px-6 py-6">
 				<div className="flex items-center justify-between">
 					<div>
 						<Link to="/" className="text-sm text-blue-600 hover:underline">
@@ -166,6 +271,17 @@ export default function AvailableTendersPage() {
 					</div>
 					{runError && <p className="mt-3 text-sm text-red-600">{runError}</p>}
 					{runSummary && <p className="mt-3 text-sm text-green-700">{runSummary}</p>}
+					{selectedRows.length > 0 && (
+						<div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+							<button
+								className="rounded bg-red-600 px-3 py-1 text-white hover:bg-red-700 disabled:opacity-60"
+								onClick={deleteSelectedTenders}
+								disabled={running}
+							>
+								Delete selected ({selectedRows.length})
+							</button>
+						</div>
+					)}
 				</div>
 
 				<div className="mt-3 flex flex-wrap items-center gap-3">
@@ -214,6 +330,13 @@ export default function AvailableTendersPage() {
 						<table className="min-w-full text-sm">
 							<thead className="bg-slate-100">
 								<tr>
+									<th className="px-3 py-2 text-left">
+										<input
+											type="checkbox"
+											checked={allSelected}
+											onChange={e => toggleAllRows(e.target.checked)}
+										/>
+									</th>
 									<th className="px-3 py-2 text-left">Tender Ref</th>
 									<th className="px-3 py-2 text-left">Title</th>
 									<th className="px-3 py-2 text-left">Ministry</th>
@@ -230,6 +353,14 @@ export default function AvailableTendersPage() {
 							<tbody>
 								{rows.map(row => (
 									<tr key={row.id} className="border-t align-top">
+										<td className="px-3 py-2">
+											<input
+												type="checkbox"
+												checked={Boolean(selected[row.id])}
+												onChange={e => toggleRowSelect(row.id, e.target.checked)}
+											/>
+										</td>
+										<td className="px-3 py-2 font-mono text-xs">{row.tenderRef || '-'}</td>
 										<td className="px-3 py-2 font-mono text-xs">{row.tenderRef || '-'}</td>
 										<td className="px-3 py-2 max-w-sm whitespace-pre-wrap">{row.title || '-'}</td>
 										<td className="px-3 py-2">{row.ministry || '-'}</td>
@@ -278,6 +409,12 @@ export default function AvailableTendersPage() {
 													disabled={promoting === row.id || row.status === 'promoted'}
 												>
 													{promoting === row.id ? 'Promoting...' : 'Promote'}
+												</button>
+												<button
+													className="rounded bg-slate-200 px-3 py-1 text-xs hover:bg-slate-300"
+													onClick={() => openEditModal(row)}
+												>
+													Edit
 												</button>
 											</div>
 										</td>
@@ -377,6 +514,108 @@ export default function AvailableTendersPage() {
 								disabled={requestingApproval}
 							>
 								{requestingApproval ? 'Submitting...' : 'Send Request'}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+			{editingTender && (
+				<div className="fixed inset-0 z-20 flex items-center justify-center bg-black/40 p-4">
+					<div className="w-full max-w-lg space-y-3 rounded border bg-white p-5 shadow-lg">
+						<h2 className="text-lg font-semibold">Edit Tender</h2>
+						<div className="grid gap-3">
+							<label className="text-sm">
+								<span className="font-medium">Ministry / Buyer</span>
+								<input
+									value={editForm.ministry}
+									onChange={e => setEditForm({ ...editForm, ministry: e.target.value })}
+									className="mt-1 w-full rounded border px-3 py-2"
+								/>
+							</label>
+							<div className="grid gap-3 md:grid-cols-2">
+								<label className="text-sm">
+									<span className="font-medium">Publish date</span>
+									<input
+										type="date"
+										value={editForm.publishDate}
+										onChange={e => setEditForm({ ...editForm, publishDate: e.target.value })}
+										className="mt-1 w-full rounded border px-3 py-2"
+									/>
+								</label>
+								<label className="text-sm">
+									<span className="font-medium">Close date</span>
+									<input
+										type="date"
+										value={editForm.closeDate}
+										onChange={e => setEditForm({ ...editForm, closeDate: e.target.value })}
+										className="mt-1 w-full rounded border px-3 py-2"
+									/>
+								</label>
+							</div>
+							<div className="grid gap-3 md:grid-cols-2">
+								<label className="text-sm">
+									<span className="font-medium">Bond value</span>
+									<input
+										type="number"
+										value={editForm.tenderBondValue}
+										onChange={e => setEditForm({ ...editForm, tenderBondValue: e.target.value })}
+										className="mt-1 w-full rounded border px-3 py-2"
+									/>
+								</label>
+								<label className="text-sm">
+									<span className="font-medium">Documents value</span>
+									<input
+										type="number"
+										value={editForm.documentsValue}
+										onChange={e => setEditForm({ ...editForm, documentsValue: e.target.value })}
+										className="mt-1 w-full rounded border px-3 py-2"
+									/>
+								</label>
+							</div>
+							<label className="text-sm">
+								<span className="font-medium">Tender type</span>
+								<input
+									value={editForm.tenderType}
+									onChange={e => setEditForm({ ...editForm, tenderType: e.target.value })}
+									className="mt-1 w-full rounded border px-3 py-2"
+								/>
+							</label>
+							<label className="text-sm">
+								<span className="font-medium">Purchase URL</span>
+								<input
+									value={editForm.purchaseUrl}
+									onChange={e => setEditForm({ ...editForm, purchaseUrl: e.target.value })}
+									className="mt-1 w-full rounded border px-3 py-2"
+								/>
+							</label>
+							<label className="text-sm">
+								<span className="font-medium">Status</span>
+								<select
+									value={editForm.status}
+									onChange={e => setEditForm({ ...editForm, status: e.target.value })}
+									className="mt-1 w-full rounded border px-3 py-2"
+								>
+									<option value="new">new</option>
+									<option value="promoted">promoted</option>
+									<option value="requested">requested</option>
+								</select>
+							</label>
+						</div>
+						{editError && <p className="text-sm text-red-600">{editError}</p>}
+						<div className="flex justify-end gap-2">
+							<button
+								className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
+								onClick={() => setEditingTender(null)}
+								disabled={editSaving}
+							>
+								Cancel
+							</button>
+							<button
+								className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+								onClick={saveEdit}
+								disabled={editSaving}
+							>
+								{editSaving ? 'Saving...' : 'Save changes'}
 							</button>
 						</div>
 					</div>

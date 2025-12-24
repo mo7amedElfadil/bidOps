@@ -17,4 +17,12 @@ export class RequestWorkApprovalDto {
 	@IsOptional()
 	@IsArray()
 	assignBidOwnerIds?: string[]
+
+	@IsOptional()
+	@IsArray()
+	reviewerUserIds?: string[]
+
+	@IsOptional()
+	@IsArray()
+	reviewerRoleIds?: string[]
 }

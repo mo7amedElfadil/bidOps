@@ -9,12 +9,15 @@ export async function processEmailBatch(limit = 20) {
 	})
 
 	const pending = await prisma.notification.findMany({
-		where: { status: 'pending', type: 'email' },
+		where: { status: 'pending', channel: 'EMAIL' },
 		orderBy: { createdAt: 'asc' },
 		take: limit
 	})
 	for (const n of pending) {
 		try {
+			if (!n.to) {
+				throw new Error('Missing recipient')
+			}
 			await transporter.sendMail({
 				from: process.env.SMTP_FROM || 'bidops@example.com',
 				to: n.to,
@@ -37,5 +40,3 @@ export async function processEmailBatch(limit = 20) {
 		}
 	}
 }
-
-

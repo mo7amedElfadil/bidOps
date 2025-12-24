@@ -1,3 +1,4 @@
+import { NotificationChannel, NotificationDigestMode } from '@prisma/client'
 import { prisma } from '../prisma'
 
 export interface SlaConfig {
@@ -24,7 +25,7 @@ export async function slaTick() {
 	const now = new Date()
 	const opps = await prisma.opportunity.findMany({
 		where: { submissionDate: { not: null } },
-		select: { id: true, title: true, submissionDate: true }
+		select: { id: true, title: true, submissionDate: true, slaLastNotifiedLevel: true, slaLastNotifiedAt: true, tenantId: true }
 	})
 	for (const opp of opps) {
 		if (!opp.submissionDate) continue
@@ -35,19 +36,77 @@ export async function slaTick() {
 		else if (days <= cfg.alertDays) level = 'alert'
 		else if (days <= cfg.warnDays) level = 'warn'
 
-		if (level) {
-			const subject = `[SLA ${level.toUpperCase()}] ${opp.title} due in ${days} day(s)`
-			const body = `Opportunity "${opp.title}" is due on ${opp.submissionDate.toISOString().slice(0, 10)}.`
-			await prisma.notification.create({
-				data: {
-					type: 'email',
-					to: process.env.SLA_NOTIFY_TO || 'alerts@example.com',
-					subject,
-					body
-				}
-			})
+		if (!level || days < 0) continue
+		if (opp.slaLastNotifiedLevel === level && opp.slaLastNotifiedAt) {
+			const hoursSince = (now.getTime() - opp.slaLastNotifiedAt.getTime()) / (1000 * 60 * 60)
+			if (hoursSince < 24) continue
 		}
+
+		const routing = await prisma.notificationRoutingDefault.findUnique({
+			where: { tenantId_activity_stage: { tenantId: opp.tenantId || 'default', activity: 'sla', stage: null } }
+		})
+		const directUserIds = routing?.userIds || []
+		const roleIds = routing?.businessRoleIds || []
+		const roleLinks = roleIds.length
+			? await prisma.userBusinessRole.findMany({
+					where: { businessRoleId: { in: roleIds }, user: { tenantId: opp.tenantId || 'default', isActive: true } },
+					include: { user: true }
+				})
+			: []
+		const roleUserIds = roleLinks.map(link => link.userId)
+		const recipientIds = Array.from(new Set([...directUserIds, ...roleUserIds]))
+		const recipients = recipientIds.length
+			? await prisma.user.findMany({
+					where: { id: { in: recipientIds }, tenantId: opp.tenantId || 'default', isActive: true },
+					select: { id: true, email: true }
+				})
+			: []
+
+		const prefRows = recipientIds.length
+			? await prisma.notificationPreference.findMany({
+					where: { userId: { in: recipientIds }, activity: 'sla' }
+				})
+			: []
+		const prefMap = new Map(prefRows.map(row => [`${row.userId}:${row.channel}`, row]))
+
+		const subject = `[SLA ${level.toUpperCase()}] ${opp.title} due in ${days} day(s)`
+		const body = `Opportunity "${opp.title}" is due on ${opp.submissionDate.toISOString().slice(0, 10)}.`
+		const notifications = []
+
+		for (const recipient of recipients) {
+			for (const channel of [NotificationChannel.EMAIL, NotificationChannel.IN_APP]) {
+				const pref = prefMap.get(`${recipient.id}:${channel}`)
+				if (pref && (!pref.enabled || pref.digestMode === NotificationDigestMode.OFF)) continue
+				notifications.push({
+					type: 'sla',
+					channel,
+					activity: 'sla',
+					userId: recipient.id,
+					to: channel === NotificationChannel.EMAIL ? recipient.email : undefined,
+					subject,
+					body,
+					status: channel === NotificationChannel.EMAIL ? 'pending' : 'unread',
+					opportunityId: opp.id,
+					tenantId: opp.tenantId || 'default'
+				})
+			}
+		}
+
+		if (!notifications.length) {
+			await prisma.opportunity.update({
+				where: { id: opp.id },
+				data: { slaLastNotifiedLevel: level, slaLastNotifiedAt: now }
+			})
+			continue
+		}
+
+		await prisma.$transaction([
+			prisma.notification.createMany({ data: notifications }),
+			prisma.opportunity.update({
+				where: { id: opp.id },
+				data: { slaLastNotifiedLevel: level, slaLastNotifiedAt: now }
+			})
+		])
 	}
 }
-
 

@@ -11,7 +11,9 @@ const links = [
 	{ to: '/awards/staging', label: 'Awards' },
 	{ to: '/tenders/available', label: 'Tenders' },
 	{ to: '/approvals/review', label: 'Bid Review' },
+	{ to: '/notifications', label: 'Notifications' },
 	{ to: '/admin/users', label: 'Users' },
+	{ to: '/admin/business-roles', label: 'Business Roles' },
 	{ to: '/search', label: 'Search' },
 	{ to: '/settings/sla', label: 'SLA' }
 ]
@@ -23,7 +25,9 @@ const routeLabels: Record<string, string> = {
 	'/awards/staging': 'Awards',
 	'/tenders/available': 'Tenders',
 	'/approvals/review': 'Bid Review',
+	'/notifications': 'Notifications',
 	'/admin/users': 'Users',
+	'/admin/business-roles': 'Business Roles',
 	'/search': 'Search',
 	'/settings/sla': 'SLA',
 	'/import/tracker': 'Tracker Import'
@@ -50,7 +54,9 @@ const navGroups = [
 		label: 'Admin',
 		items: [
 			{ to: '/approvals/review', label: 'Bid Review' },
+			{ to: '/notifications', label: 'Notifications' },
 			{ to: '/admin/users', label: 'Users' },
+			{ to: '/admin/business-roles', label: 'Business Roles' },
 			{ to: '/settings/sla', label: 'SLA' }
 		]
 	}

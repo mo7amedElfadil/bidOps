@@ -43,9 +43,10 @@ export class MonaqasatAvailableAdapter extends BaseTenderAdapter {
 			let pageNum = 1
 			let stop = false
 
-			while (!stop && pageNum <= maxPages) {
-				const availableUrl = this.buildPagedUrl(availablePath, pageNum)
-				await page.goto(availableUrl, { waitUntil: 'networkidle', timeout: 30000 })
+				while (!stop && pageNum <= maxPages) {
+					const availableUrl = this.buildPagedUrl(availablePath, pageNum)
+					await this.ensureEnglish(page)
+					await page.goto(availableUrl, { waitUntil: 'networkidle', timeout: 30000 })
 				await page.waitForSelector('.custom-cards, .custom--table', { timeout: 15000 }).catch(() => {
 					console.warn(`[${this.id}] Available tenders table not found (page ${pageNum})`)
 				})
@@ -62,34 +63,38 @@ export class MonaqasatAvailableAdapter extends BaseTenderAdapter {
 				let pageMaxDate: Date | null = null
 
 				for (const card of cards) {
-					const summary = await card.evaluate(el => {
-						const text = (node: Element | null | undefined) => node?.textContent?.trim() || ''
-						const findRowValue = (label: string) => {
-							const rows = Array.from(el.querySelectorAll('.cards-row'))
-							for (const row of rows) {
-								const labelText = text(row.querySelector('.card-label'))
-								if (labelText.includes(label)) {
-									return text(row.querySelector('.card-title'))
-								}
+				const summary = await card.evaluate(el => {
+					const text = (node: Element | null | undefined) => node?.textContent?.trim() || ''
+					const normalize = (value: string) => value.trim().toLowerCase()
+					const matches = (value: string, targets: string[]) =>
+						targets.some(target => normalize(value).includes(target))
+					const findRowValue = (labels: string[]) => {
+						const rows = Array.from(el.querySelectorAll('.cards-row'))
+						for (const row of rows) {
+							const labelText = text(row.querySelector('.card-label'))
+							if (!labelText) continue
+							if (matches(labelText, labels)) {
+								return text(row.querySelector('.card-title'))
 							}
-							return ''
 						}
+						return ''
+					}
 
-						const tenderRef = text(el.querySelector('.col-md-7 .col-header .card-label'))
-						const titleAnchor = el.querySelector('.col-md-7 .col-header .card-title a') as HTMLAnchorElement | null
-						const title = text(titleAnchor)
-						const tenderHref = titleAnchor?.getAttribute('href') || ''
-						const publishDateText = findRowValue('Publish date')
-						const requestedSectorType = findRowValue('Requested Sector Type')
-						const tenderBondText = findRowValue('Tender Bond')
-						const documentsValueText = findRowValue('Documents value')
+					const tenderRef = text(el.querySelector('.col-md-7 .col-header .card-label'))
+					const titleAnchor = el.querySelector('.col-md-7 .col-header .card-title a') as HTMLAnchorElement | null
+					const title = text(titleAnchor)
+					const tenderHref = titleAnchor?.getAttribute('href') || ''
+					const publishDateText = findRowValue(['publish date', 'opendate', 'تاريخ النشر'])
+					const requestedSectorType = findRowValue(['requested sector type', 'sector', 'القطاع المطلوب'])
+					const tenderBondText = findRowValue(['tender bond', 'bond', 'قيمة الضمان'])
+					const documentsValueText = findRowValue(['documents value', 'document value', 'قيمة المستندات'])
 
-						let ministry = ''
-						const ministryLabel = text(el.querySelector('.col-md-3 .col-header .card-label'))
-						if (ministryLabel.includes('Ministry')) {
-							ministry = text(el.querySelector('.col-md-3 .col-header .card-title'))
-						}
-						const tenderType = findRowValue('Type')
+					let ministry = ''
+					const ministryLabel = text(el.querySelector('.col-md-3 .col-header .card-label'))
+					if (ministryLabel && matches(ministryLabel, ['ministry', 'الجهة'])) {
+						ministry = text(el.querySelector('.col-md-3 .col-header .card-title'))
+					}
+					const tenderType = findRowValue(['type', 'نوع العطاء'])
 
 						const closeLabel = el.querySelector('.circle-container .card-label')
 						let closeDateText = ''

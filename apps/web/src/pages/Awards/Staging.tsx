@@ -32,6 +32,20 @@ export default function AwardsStagingPage() {
 		status: 'new'
 	})
 	const [saving, setSaving] = useState(false)
+	const [selected, setSelected] = useState<Record<string, boolean>>({})
+	const allSelected = rows.length > 0 && rows.every(row => selected[row.id])
+
+	function toggleSelectAll(checked: boolean) {
+		const map: Record<string, boolean> = {}
+		rows.forEach(row => {
+			map[row.id] = checked
+		})
+		setSelected(map)
+	}
+
+	function toggleRow(id: string, checked: boolean) {
+		setSelected(prev => ({ ...prev, [id]: checked }))
+	}
 
 	async function load(activeRange?: { from?: string; to?: string }, pageOverride?: number) {
 		setLoading(true)
@@ -51,6 +65,7 @@ export default function AwardsStagingPage() {
 			setRows(data.items)
 			setPagination({ page: data.page, pageSize: data.pageSize, total: data.total })
 			setPageInput(String(data.page))
+			setSelected({})
 		} catch (e: any) {
 			setError(e.message || 'Failed to load staging awards')
 		}
@@ -123,6 +138,48 @@ export default function AwardsStagingPage() {
 		}
 	}
 
+	function getSelectedIds() {
+		return Object.entries(selected)
+			.filter(([, checked]) => checked)
+			.map(([id]) => id)
+	}
+
+	async function curateSelected() {
+		const ids = getSelectedIds()
+		if (!ids.length) return
+		setRunError(null)
+		setRunSummary(null)
+		setCurating('bulk')
+		try {
+			for (const id of ids) {
+				await api.curateAward(id)
+			}
+			await load({ from: range.from, to: range.to }, 1)
+			setRunSummary(`${ids.length} record(s) curated.`)
+		} catch (e: any) {
+			setRunError(e.message || 'Failed to curate selected records')
+		}
+		setCurating(null)
+	}
+
+	async function deleteSelected() {
+		const ids = getSelectedIds()
+		if (!ids.length) return
+		if (!confirm(`Delete ${ids.length} selected record(s)?`)) return
+		setRunError(null)
+		setCurating('bulk')
+		try {
+			for (const id of ids) {
+				await api.deleteAwardStaging(id)
+			}
+			await load({ from: range.from, to: range.to }, 1)
+			setRunSummary(`${ids.length} record(s) deleted.`)
+		} catch (e: any) {
+			setRunError(e.message || 'Failed to delete selected records')
+		}
+		setCurating(null)
+	}
+
 	async function runCollector() {
 		setRunning(true)
 		setRunError(null)
@@ -138,7 +195,12 @@ export default function AwardsStagingPage() {
 			if (res && (res as any).error) {
 				setRunError((res as any).error)
 			} else {
-				setRunSummary('Collector run completed. Refresh to see new records.')
+				const jobId = (res as any)?.jobId
+				setRunSummary(
+					jobId
+						? `Collector job ${jobId} queued. Refresh after the worker signals completion.`
+						: 'Collector job queued. Refresh once it finishes.'
+				)
 				await load({ from: normalizedFrom, to: normalizedTo }, 1)
 			}
 		} catch (e: any) {
@@ -149,7 +211,7 @@ export default function AwardsStagingPage() {
 
 	return (
 		<div className="min-h-screen bg-slate-50 text-slate-900">
-			<div className="mx-auto max-w-6xl p-6">
+			<div className="w-full px-6 py-6">
 				<div className="flex items-center justify-between">
 					<div>
 						<Link to="/" className="text-sm text-blue-600 hover:underline">
@@ -254,8 +316,29 @@ export default function AwardsStagingPage() {
 							Filters apply to award date. Use Filter List to apply to staging view.
 						</span>
 					</div>
-					{runError && <p className="mt-3 text-sm text-red-600">{runError}</p>}
-					{runSummary && <p className="mt-3 text-sm text-green-700">{runSummary}</p>}
+				{runError && <p className="mt-3 text-sm text-red-600">{runError}</p>}
+				{runSummary && <p className="mt-3 text-sm text-green-700">{runSummary}</p>}
+				{rows.length > 0 && (
+					<div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+						<button
+							className="rounded bg-emerald-600 px-3 py-1 text-white hover:bg-emerald-700 disabled:opacity-60"
+							onClick={curateSelected}
+							disabled={curating === 'bulk' || runSummary === 'No staging records yet.'}
+						>
+							Curate selected
+						</button>
+						<button
+							className="rounded bg-red-600 px-3 py-1 text-white hover:bg-red-700 disabled:opacity-60"
+							onClick={deleteSelected}
+							disabled={curating === 'bulk'}
+						>
+							Delete selected
+						</button>
+						<span className="text-slate-500">
+							{getSelectedIds().length} selected
+						</span>
+					</div>
+				)}
 				</div>
 
 				{error && <p className="mt-4 text-sm text-red-600">{error}</p>}
@@ -268,6 +351,13 @@ export default function AwardsStagingPage() {
 						<table className="min-w-full text-sm">
 							<thead className="bg-slate-100">
 								<tr>
+									<th className="px-3 py-2 text-left">
+										<input
+											type="checkbox"
+											checked={allSelected}
+											onChange={e => toggleSelectAll(e.target.checked)}
+										/>
+									</th>
 									<th className="px-3 py-2 text-left">Portal</th>
 									<th className="px-3 py-2 text-left">Tender Ref</th>
 									<th className="px-3 py-2 text-left">Client</th>
@@ -284,6 +374,13 @@ export default function AwardsStagingPage() {
 							<tbody>
 								{rows.map(r => (
 									<tr key={r.id} className="border-t align-top">
+										<td className="px-3 py-2">
+											<input
+												type="checkbox"
+												checked={Boolean(selected[r.id])}
+												onChange={e => toggleRow(r.id, e.target.checked)}
+											/>
+										</td>
 										<td className="px-3 py-2 font-mono text-xs">{r.portal}</td>
 										<td className="px-3 py-2 font-mono text-xs">{r.tenderRef || '-'}</td>
 										<td className="px-3 py-2">{r.client || '-'}</td>
@@ -503,3 +600,4 @@ export default function AwardsStagingPage() {
 		</div>
 	)
 }
+	const [selected, setSelected] = useState<Record<string, boolean>>({})

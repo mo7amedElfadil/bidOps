@@ -27,16 +27,30 @@ export class UsersService {
 				where,
 				orderBy: { createdAt: 'desc' },
 				skip,
-				take: pageSize
+				take: pageSize,
+				include: {
+					businessRoleLinks: { include: { businessRole: true } }
+				}
 			}),
 			this.prisma.user.count({ where })
 		])
 
-		return { items, total, page, pageSize }
+		const mapped = items.map(user => ({
+			...user,
+			businessRoles: user.businessRoleLinks.map(link => ({
+				id: link.businessRole.id,
+				name: link.businessRole.name
+			}))
+		}))
+
+		return { items: mapped, total, page, pageSize }
 	}
 
 	get(id: string) {
-		return this.prisma.user.findUnique({ where: { id } })
+		return this.prisma.user.findUnique({
+			where: { id },
+			include: { businessRoleLinks: { include: { businessRole: true } } }
+		})
 	}
 
 	async create(data: {
@@ -47,6 +61,7 @@ export class UsersService {
 		password?: string
 		isActive?: boolean
 		userType?: string
+		businessRoleIds?: string[]
 		tenantId: string
 	}) {
 		let email = data.email?.trim()
@@ -59,7 +74,7 @@ export class UsersService {
 		if (exists) throw new BadRequestException('User already exists')
 
 		const passwordHash = data.password ? await argon2.hash(data.password) : undefined
-		return this.prisma.user.create({
+		const created = await this.prisma.user.create({
 			data: {
 				email,
 				name: name || email,
@@ -71,6 +86,10 @@ export class UsersService {
 				tenantId: data.tenantId
 			}
 		})
+		if (data.businessRoleIds?.length) {
+			await this.setBusinessRoles(created.id, data.businessRoleIds, data.tenantId)
+		}
+		return created
 	}
 
 	async update(
@@ -83,6 +102,7 @@ export class UsersService {
 			password?: string
 			isActive?: boolean
 			userType?: string
+			businessRoleIds?: string[]
 		}
 	) {
 		const updateData: Prisma.UserUpdateInput = {
@@ -103,7 +123,31 @@ export class UsersService {
 		if (data.password) {
 			updateData.passwordHash = await argon2.hash(data.password)
 		}
-		return this.prisma.user.update({ where: { id }, data: updateData })
+		const updated = await this.prisma.user.update({ where: { id }, data: updateData })
+		if (data.businessRoleIds) {
+			await this.setBusinessRoles(id, data.businessRoleIds, updated.tenantId)
+		}
+		return updated
+	}
+
+	async setBusinessRoles(userId: string, roleIds: string[], tenantId: string) {
+		const roles = await this.prisma.businessRole.findMany({
+			where: { tenantId, id: { in: roleIds } },
+			select: { id: true }
+		})
+		const validRoleIds = roles.map(role => role.id)
+		await this.prisma.$transaction([
+			this.prisma.userBusinessRole.deleteMany({ where: { userId } }),
+			...(validRoleIds.length
+				? [
+						this.prisma.userBusinessRole.createMany({
+							data: validRoleIds.map(businessRoleId => ({ userId, businessRoleId })),
+							skipDuplicates: true
+						})
+					]
+				: [])
+		])
+		return { businessRoleIds: validRoleIds }
 	}
 
 	private async generateDefaultEmail(fullName: string): Promise<string> {

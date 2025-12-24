@@ -64,6 +64,11 @@ class CreateUserDto {
 	@IsString()
 	@MaxLength(100)
 	userType?: string
+
+	@IsOptional()
+	@IsArray()
+	@IsUUID('4', { each: true })
+	businessRoleIds?: string[]
 }
 
 class UpdateUserDto {
@@ -96,6 +101,17 @@ class UpdateUserDto {
 	@IsString()
 	@MaxLength(100)
 	userType?: string
+
+	@IsOptional()
+	@IsArray()
+	@IsUUID('4', { each: true })
+	businessRoleIds?: string[]
+}
+
+class SetBusinessRolesDto {
+	@IsArray()
+	@IsUUID('4', { each: true })
+	roleIds!: string[]
 }
 
 class BulkDeleteUsersDto {
@@ -135,6 +151,12 @@ export class UsersController {
 	@Roles('ADMIN')
 	update(@Param('id') id: string, @Body() body: UpdateUserDto) {
 		return this.svc.update(id, body)
+	}
+
+	@Patch(':id/business-roles')
+	@Roles('ADMIN')
+	setBusinessRoles(@Param('id') id: string, @Body() body: SetBusinessRolesDto, @Req() req: any) {
+		return this.svc.setBusinessRoles(id, body.roleIds || [], req.user?.tenantId || 'default')
 	}
 
 	@Delete()

@@ -4,6 +4,8 @@ import * as crypto from 'crypto'
 import { ApprovalStatus, ApprovalType } from '@prisma/client'
 import { RequestWorkApprovalDto } from './dto/request-work-approval.dto'
 import { ApprovalDecisionDto } from './dto/approval-decision.dto'
+import { NotificationsService } from '../notifications/notifications.service'
+import { NotificationActivities } from '../notifications/notifications.constants'
 
 interface UserContext {
 	id?: string
@@ -13,7 +15,10 @@ interface UserContext {
 
 @Injectable()
 export class ApprovalsService {
-	constructor(private prisma: PrismaService) {}
+	constructor(
+		private prisma: PrismaService,
+		private notifications: NotificationsService
+	) {}
 
 	list(packId: string) {
 		return this.prisma.approval.findMany({
@@ -106,6 +111,24 @@ export class ApprovalsService {
 			}
 		})
 
+		const reviewerUserIds = dto.reviewerUserIds?.filter(Boolean) || []
+		const reviewerRoleIds = dto.reviewerRoleIds?.filter(Boolean) || []
+		const resolvedRecipients = await this.notifications.resolveRecipients({
+			tenantId,
+			activity: NotificationActivities.REVIEW_REQUESTED,
+			stage: 'GO_NO_GO',
+			userIds: reviewerUserIds,
+			roleIds: reviewerRoleIds
+		})
+		if (resolvedRecipients.length) {
+			await this.prisma.approval.update({
+				where: { id: approval.id },
+				data: {
+					approverIds: resolvedRecipients.map(r => r.id)
+				}
+			})
+		}
+
 		if (dto.assignBidOwnerIds?.length) {
 			const users = await this.prisma.user.findMany({
 				where: { tenantId, id: { in: dto.assignBidOwnerIds } },
@@ -120,6 +143,22 @@ export class ApprovalsService {
 			}
 		}
 
+		try {
+			await this.notifications.dispatch({
+				activity: NotificationActivities.REVIEW_REQUESTED,
+				stage: 'GO_NO_GO',
+				tenantId,
+				subject: `Review requested: ${opportunity.title}`,
+				body: `A Go/No-Go review has been requested for "${opportunity.title}".`,
+				userIds: reviewerUserIds,
+				roleIds: reviewerRoleIds,
+				opportunityId: opportunity.id,
+				actorId: user.id
+			})
+		} catch (err) {
+			console.warn('[notifications] Failed to dispatch review.requested', err)
+		}
+
 		return { opportunity, packId: pack.id, approvalId: approval.id }
 	}
 
@@ -131,22 +170,50 @@ export class ApprovalsService {
 	async bootstrap(packId: string, chain?: { role?: string; userId?: string; type: ApprovalType; stage?: string }[]) {
         // Default chain
         const steps = chain || [
-            { type: 'LEGAL', role: 'MANAGER', stage: 'PRICING' },
-            { type: 'FINANCE', role: 'MANAGER', stage: 'PRICING' },
-            { type: 'EXECUTIVE', role: 'ADMIN', stage: 'FINAL_SUBMISSION' }
+            { type: 'LEGAL', role: 'Project Manager', stage: 'PRICING' },
+            { type: 'FINANCE', role: 'Bid Manager', stage: 'PRICING' },
+            { type: 'EXECUTIVE', role: 'Executive', stage: 'FINAL_SUBMISSION' }
         ]
 
         await this.prisma.approval.deleteMany({ where: { packId, status: 'PENDING' } })
 
-		await this.prisma.approval.createMany({
-			data: steps.map(c => ({
+		const pack = await this.prisma.pricingPack.findUnique({
+			where: { id: packId },
+			select: { opportunity: { select: { tenantId: true } } }
+		} as any)
+		const tenantId = (pack as any)?.opportunity?.tenantId || 'default'
+		const approvalsData = []
+		for (const step of steps) {
+			let approverIds: string[] = []
+			if (step.userId) {
+				approverIds = [step.userId]
+			} else if (step.role) {
+				const roleMatches = await this.prisma.businessRole.findMany({
+					where: { tenantId, OR: [{ id: step.role }, { name: step.role }] }
+				})
+				const roleIds = roleMatches.map(role => role.id)
+				if (roleIds.length) {
+					const roleUsers = await this.notifications.resolveRecipients({
+						tenantId,
+						activity: NotificationActivities.REVIEW_REQUESTED,
+						stage: step.stage,
+						roleIds
+					})
+					approverIds = roleUsers.map(user => user.id)
+				}
+			}
+			approvalsData.push({
 				packId,
-				type: c.type,
-				stage: (c.stage as any) || 'PRICING',
-				approverId: c.userId,
-				approverRole: c.role
-			}))
-		})
+				type: step.type,
+				stage: (step.stage as any) || 'PRICING',
+				approverId: step.userId,
+				approverIds,
+				approverRole: step.role
+			})
+		}
+		if (approvalsData.length) {
+			await this.prisma.approval.createMany({ data: approvalsData })
+		}
 		return this.list(packId)
 	}
 
@@ -187,19 +254,28 @@ export class ApprovalsService {
         if (!approval) throw new BadRequestException('Approval not found')
         
         // Authorization Check
-        let authorized = false
-        if (approval.approverId && approval.approverId === userId) {
-            authorized = true
-        } else if (approval.approverRole && userRole === approval.approverRole) {
-            authorized = true
-        }
+		let authorized = false
+		if (approval.approverId && approval.approverId === userId) {
+			authorized = true
+		} else if (approval.approverIds?.length && approval.approverIds.includes(userId)) {
+			authorized = true
+		} else if (approval.approverRole) {
+			const roles = await this.prisma.userBusinessRole.findMany({
+				where: { userId },
+				include: { businessRole: true }
+			})
+			const match = roles.some(link =>
+				link.businessRole?.id === approval.approverRole || link.businessRole?.name === approval.approverRole
+			)
+			if (match) authorized = true
+			else if (userRole === approval.approverRole) authorized = true
+		}
 
         // For dev/testing, if simple IDs are used (e.g. 'legal-user'), allow sloppy match if needed, 
         // but for better security strict match is preferred. 
         // We will assume the controller passes the real user ID and Role from the JWT.
         
         if (!authorized) {
-            // Check if user is ADMIN, maybe they can override? For now strict.
             if (userRole === 'ADMIN') authorized = true
             else throw new BadRequestException('Not authorized to sign this approval')
         }

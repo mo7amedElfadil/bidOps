@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, UserAccount } from '../../api/client'
+import { api, BusinessRole, UserAccount } from '../../api/client'
 import { USER_TYPE_OPTIONS, getUserTypeLabel } from '../../constants/user-types'
 
 export default function UsersPage() {
@@ -10,6 +10,7 @@ export default function UsersPage() {
 	const [pageInput, setPageInput] = useState('1')
 	const [filter, setFilter] = useState({ q: '' })
 	const [editing, setEditing] = useState<UserAccount | null>(null)
+	const [businessRoles, setBusinessRoles] = useState<BusinessRole[]>([])
 	const [editForm, setEditForm] = useState({
 		email: '',
 		name: '',
@@ -17,7 +18,8 @@ export default function UsersPage() {
 		team: '',
 		isActive: true,
 		password: '',
-		userType: 'INTERNAL'
+		userType: 'INTERNAL',
+		businessRoleIds: [] as string[]
 	})
 	const [saving, setSaving] = useState(false)
 	const [showCreate, setShowCreate] = useState(false)
@@ -47,6 +49,8 @@ export default function UsersPage() {
 			setPagination({ page: data.page, pageSize: data.pageSize, total: data.total })
 			setPageInput(String(data.page))
 			setSelected({})
+			const roles = await api.listBusinessRoles()
+			setBusinessRoles(roles)
 		} catch (e: any) {
 			setError(e.message || 'Failed to load users')
 		}
@@ -66,7 +70,8 @@ export default function UsersPage() {
 			team: user.team || '',
 			isActive: user.isActive,
 			password: '',
-			userType: user.userType || 'INTERNAL'
+			userType: user.userType || 'INTERNAL',
+			businessRoleIds: user.businessRoles?.map(role => role.id) || []
 		})
 	}
 
@@ -82,7 +87,8 @@ export default function UsersPage() {
 				team: editForm.team || undefined,
 				isActive: editForm.isActive,
 				password: editForm.password || undefined,
-				userType: editForm.userType || undefined
+				userType: editForm.userType || undefined,
+				businessRoleIds: editForm.businessRoleIds
 			})
 			await load(pagination.page)
 			setEditing(null)
@@ -103,7 +109,8 @@ export default function UsersPage() {
 				team: editForm.team || undefined,
 				isActive: editForm.isActive,
 				password: editForm.password || undefined,
-				userType: editForm.userType || undefined
+				userType: editForm.userType || undefined,
+				businessRoleIds: editForm.businessRoleIds
 			})
 			setShowCreate(false)
 			setEditForm({
@@ -113,7 +120,8 @@ export default function UsersPage() {
 				team: '',
 				isActive: true,
 				password: '',
-				userType: 'INTERNAL'
+				userType: 'INTERNAL',
+				businessRoleIds: []
 			})
 			await load(1)
 		} catch (e: any) {
@@ -153,7 +161,7 @@ export default function UsersPage() {
 
 	return (
 		<div className="min-h-screen bg-slate-50 text-slate-900">
-			<div className="mx-auto max-w-6xl p-6">
+			<div className="w-full px-6 py-6">
 				<div className="flex items-center justify-between">
 					<div>
 						<h1 className="text-xl font-semibold">User Management</h1>
@@ -177,7 +185,8 @@ export default function UsersPage() {
 									team: '',
 									isActive: true,
 									password: '',
-									userType: 'INTERNAL'
+									userType: 'INTERNAL',
+									businessRoleIds: []
 								})
 								setShowCreate(true)
 							}}
@@ -234,6 +243,7 @@ export default function UsersPage() {
 								<th className="px-3 py-2 text-left">Email</th>
 								<th className="px-3 py-2 text-left">Role</th>
 								<th className="px-3 py-2 text-left">Type</th>
+								<th className="px-3 py-2 text-left">Business Roles</th>
 								<th className="px-3 py-2 text-left">Team</th>
 								<th className="px-3 py-2 text-left">Status</th>
 								<th className="px-3 py-2 text-left"></th>
@@ -253,9 +263,12 @@ export default function UsersPage() {
 									</td>
 									<td className="px-3 py-2">{user.name}</td>
 										<td className="px-3 py-2">{user.email}</td>
-										<td className="px-3 py-2">{user.role}</td>
-										<td className="px-3 py-2">{getUserTypeLabel(user.userType)}</td>
-										<td className="px-3 py-2">{user.team || '-'}</td>
+								<td className="px-3 py-2">{user.role}</td>
+								<td className="px-3 py-2">{getUserTypeLabel(user.userType)}</td>
+								<td className="px-3 py-2 text-xs">
+									{user.businessRoles?.map(role => role.name).join(', ') || '-'}
+								</td>
+								<td className="px-3 py-2">{user.team || '-'}</td>
 										<td className="px-3 py-2">
 											<span className="rounded bg-slate-100 px-2 py-0.5 text-xs">
 												{user.isActive ? 'active' : 'disabled'}
@@ -402,6 +415,25 @@ export default function UsersPage() {
 										</option>
 									))}
 								</select>
+							</label>
+							<label className="text-sm">
+								<span className="font-medium">Business Roles</span>
+								<select
+									multiple
+									className="mt-1 w-full rounded border px-3 py-2"
+									value={editForm.businessRoleIds}
+									onChange={e => {
+										const selectedRoles = Array.from(e.target.selectedOptions).map(opt => opt.value)
+										setEditForm({ ...editForm, businessRoleIds: selectedRoles })
+									}}
+								>
+									{businessRoles.map(role => (
+										<option key={role.id} value={role.id}>
+											{role.name}
+										</option>
+									))}
+								</select>
+								<p className="mt-1 text-[11px] text-slate-500">Hold Ctrl/Cmd to select multiple.</p>
 							</label>
 							<div className="grid gap-3 md:grid-cols-2">
 								<label className="text-sm">

@@ -271,9 +271,53 @@ export interface UserAccount {
 	team?: string
 	isActive: boolean
 	userType?: string
+	businessRoles?: { id: string; name: string }[]
 	tenantId: string
 	createdAt?: string
 	updatedAt?: string
+}
+
+export interface BusinessRole {
+	id: string
+	name: string
+	description?: string
+	tenantId?: string
+	createdAt?: string
+	updatedAt?: string
+}
+
+export type NotificationChannel = 'EMAIL' | 'IN_APP'
+export type NotificationDigestMode = 'INSTANT' | 'DAILY' | 'WEEKLY' | 'OFF'
+
+export interface NotificationItem {
+	id: string
+	type: string
+	channel: NotificationChannel
+	activity?: string
+	subject?: string
+	body?: string
+	status?: string
+	readAt?: string
+	createdAt?: string
+	opportunityId?: string
+}
+
+export interface NotificationPreference {
+	id: string
+	userId: string
+	activity: string
+	channel: NotificationChannel
+	enabled: boolean
+	digestMode: NotificationDigestMode
+}
+
+export interface NotificationRoutingDefault {
+	id: string
+	tenantId: string
+	activity: string
+	stage?: string | null
+	userIds: string[]
+	businessRoleIds: string[]
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
@@ -467,7 +511,14 @@ export const api = {
 			body: JSON.stringify(data)
 		})
 	},
-	requestWorkApproval(data: { sourceTenderId: string; comment?: string; attachments?: string[]; assignBidOwnerIds?: string[] }) {
+	requestWorkApproval(data: {
+		sourceTenderId: string
+		comment?: string
+		attachments?: string[]
+		assignBidOwnerIds?: string[]
+		reviewerUserIds?: string[]
+		reviewerRoleIds?: string[]
+	}) {
 		return request<WorkApprovalRequestResult>(`/approvals/request`, {
 			method: 'POST',
 			body: JSON.stringify(data)
@@ -763,6 +814,12 @@ export const api = {
 			body: JSON.stringify(input)
 		})
 	},
+	setUserBusinessRoles(id: string, roleIds: string[]) {
+		return request<{ businessRoleIds: string[] }>(`/users/${id}/business-roles`, {
+			method: 'PATCH',
+			body: JSON.stringify({ roleIds })
+		})
+	},
 	deleteUser(id: string) {
 		return request<void>(`/users/${id}`, { method: 'DELETE' })
 	},
@@ -770,6 +827,60 @@ export const api = {
 		return request<{ deleted: number }>(`/users`, {
 			method: 'DELETE',
 			body: JSON.stringify({ ids })
+		})
+	},
+
+	// Business roles
+	listBusinessRoles() {
+		return request<BusinessRole[]>(`/business-roles`)
+	},
+	createBusinessRole(input: { name: string; description?: string }) {
+		return request<BusinessRole>(`/business-roles`, {
+			method: 'POST',
+			body: JSON.stringify(input)
+		})
+	},
+	updateBusinessRole(id: string, input: { name?: string; description?: string }) {
+		return request<BusinessRole>(`/business-roles/${id}`, {
+			method: 'PATCH',
+			body: JSON.stringify(input)
+		})
+	},
+	deleteBusinessRole(id: string) {
+		return request<void>(`/business-roles/${id}`, { method: 'DELETE' })
+	},
+
+	// Notifications
+	listNotifications(params: Record<string, string | number | undefined> = {}) {
+		const q = new URLSearchParams()
+		for (const [k, v] of Object.entries(params)) {
+			if (v !== undefined && v !== null && v !== '') q.set(k, String(v))
+		}
+		const suffix = q.toString() ? `?${q.toString()}` : ''
+		return request<Paginated<NotificationItem>>(`/notifications${suffix}`)
+	},
+	markNotificationRead(id: string) {
+		return request<NotificationItem>(`/notifications/${id}/read`, { method: 'PATCH' })
+	},
+	markAllNotificationsRead() {
+		return request<{ count?: number }>(`/notifications/read-all`, { method: 'POST' })
+	},
+	listNotificationPreferences() {
+		return request<NotificationPreference[]>(`/notifications/preferences`)
+	},
+	saveNotificationPreferences(items: Array<Omit<NotificationPreference, 'id' | 'userId'>>) {
+		return request<NotificationPreference[]>(`/notifications/preferences`, {
+			method: 'PATCH',
+			body: JSON.stringify({ items })
+		})
+	},
+	listNotificationDefaults() {
+		return request<NotificationRoutingDefault[]>(`/notifications/defaults`)
+	},
+	saveNotificationDefaults(items: Array<Omit<NotificationRoutingDefault, 'id' | 'tenantId'>>) {
+		return request<NotificationRoutingDefault[]>(`/notifications/defaults`, {
+			method: 'PATCH',
+			body: JSON.stringify({ items })
 		})
 	},
 

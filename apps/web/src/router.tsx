@@ -15,6 +15,7 @@ import AwardsStagingPage from './pages/Awards/Staging'
 import AwardsEventsPage from './pages/Awards/Events'
 import AvailableTendersPage from './pages/Tenders/Available'
 import UsersPage from './pages/Admin/Users'
+import BusinessRolesPage from './pages/Admin/BusinessRoles'
 import ApprovalReviewPage from './pages/Approvals/Review'
 import Callback from './pages/Auth/Callback'
 import DevLogin from './pages/Auth/DevLogin'
@@ -22,6 +23,7 @@ import Layout from './components/Layout'
 import OpportunityOverview from './pages/Opportunities/Overview'
 import AttachmentSearchPage from './pages/Search/Attachments'
 import SlaSettingsPage from './pages/Settings/Sla'
+import NotificationsPage from './pages/Notifications/Index'
 import ErrorPage from './components/ErrorPage'
 import { getToken } from './utils/auth'
 
@@ -59,9 +61,11 @@ const router = createBrowserRouter([
 					{ path: '/awards/staging', element: <AwardsStagingPage /> },
 					{ path: '/awards/events', element: <AwardsEventsPage /> },
 					{ path: '/tenders/available', element: <AvailableTendersPage /> },
+					{ path: '/notifications', element: <NotificationsPage /> },
 					{ path: '/search', element: <AttachmentSearchPage /> },
 					{ path: '/settings/sla', element: <SlaSettingsPage /> },
-					{ path: '/admin/users', element: <UsersPage /> }
+					{ path: '/admin/users', element: <UsersPage /> },
+					{ path: '/admin/business-roles', element: <BusinessRolesPage /> }
 				]
 			}
 		]
