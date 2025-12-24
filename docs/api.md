@@ -153,8 +153,9 @@ GET /auth/callback      # Handles callback → redirects with token fragment
 | GET | `/approvals/:packId` | List approvals for pack | All |
 | POST | `/approvals/:packId/bootstrap` | Create approval chain | MANAGER, ADMIN |
 | POST | `/approvals/request` | Request Go/No-Go approval from tender | MANAGER, ADMIN |
+| POST | `/approvals/reject` | Reject Go/No-Go approval from tender | MANAGER, ADMIN |
 | POST | `/approvals/decision/:id` | Submit approval decision (supports CHANGES_REQUESTED/RESUBMITTED) | All |
-| GET | `/approvals/review` | List pricing packs and approvals pending review | All |
+| GET | `/approvals/review` | List pricing packs and approvals pending review (query: `scope=mine|all`) | All |
 | POST | `/approvals/:packId/finalize` | Finalize approvals and move opportunity to submission | MANAGER, ADMIN |
 
 ### Submission

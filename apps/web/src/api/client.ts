@@ -235,6 +235,7 @@ export interface AwardStaging {
 	tenderRef?: string
 	client?: string
 	title?: string
+	titleOriginal?: string
 	closeDate?: string
 	awardDate?: string
 	winners: string[]
@@ -252,6 +253,7 @@ export interface AwardEvent {
 	tenderRef?: string
 	client?: string
 	title?: string
+	titleOriginal?: string
 	awardDate?: string
 	winners: string[]
 	awardValue?: number
@@ -265,6 +267,7 @@ export interface MinistryTender {
 	portal: string
 	tenderRef?: string
 	title?: string
+	titleOriginal?: string
 	ministry?: string
 	publishDate?: string
 	closeDate?: string
@@ -507,8 +510,11 @@ export const api = {
 	listApprovals(packId: string) {
 		return request<Approval[]>(`/approvals/${packId}`)
 	},
-	reviewApprovals() {
-		return request<PricingPackReview[]>(`/approvals/review`)
+	reviewApprovals(params?: { scope?: 'mine' | 'all' }) {
+		const q = new URLSearchParams()
+		if (params?.scope) q.set('scope', params.scope)
+		const suffix = q.toString() ? `?${q.toString()}` : ''
+		return request<PricingPackReview[]>(`/approvals/review${suffix}`)
 	},
 	bootstrapApprovals(packId: string, approvers?: { legal?: string; finance?: string; executive?: string }) {
 		return request<Approval[]>(`/approvals/${packId}/bootstrap`, {
@@ -561,6 +567,9 @@ export const api = {
 			formsCompleted?: { done?: boolean; attachmentId?: string; notes?: string }
 			finalPdfReady?: { done?: boolean; attachmentId?: string; notes?: string }
 			portalCredentialsVerified?: { done?: boolean; attachmentId?: string; notes?: string }
+			complianceCreated?: { done?: boolean; attachmentId?: string; notes?: string }
+			clarificationsSent?: { done?: boolean; attachmentId?: string; notes?: string }
+			pricingApproved?: { done?: boolean; notes?: string }
 		}
 	) {
 		return request<OpportunityChecklist>(`/opportunities/${opportunityId}/checklist`, {

@@ -19,7 +19,7 @@ export function isPostSubmission(opportunity: Opportunity, options: Options = {}
 	)
 	const stageIndex = opportunity.stage ? stageOptions.findIndex(stage => stage === opportunity.stage) : -1
 	const isStageAfterSubmission =
-		submissionIndex >= 0 && stageIndex >= submissionIndex && stageIndex !== -1
+		submissionIndex >= 0 && stageIndex > submissionIndex && stageIndex !== -1
 
 	const normalizedStatus = normalize(opportunity.status)
 	const postStatuses = statusOptions.filter(status => normalize(status) !== 'open')

@@ -1,10 +1,11 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
-import { api, PricingPackReview } from '../../api/client'
+import { useMemo, useState } from 'react'
+import { api } from '../../api/client'
 import { Page } from '../../components/Page'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import { toast } from '../../utils/toast'
+import { getUserId, getUserRole } from '../../utils/auth'
 
 const statusClasses: Record<string, string> = {
 	APPROVED: 'bg-green-100 text-green-800',
@@ -25,12 +26,17 @@ function formatDate(value?: string) {
 }
 
 export default function ApprovalReviewPage() {
+	const role = getUserRole()
+	const userId = getUserId()
+	const canViewAll = role === 'ADMIN' || role === 'MANAGER'
+	const [scope, setScope] = useState<'mine' | 'all'>(canViewAll ? 'mine' : 'mine')
 	const review = useQuery({
-		queryKey: ['approvals', 'review'],
-		queryFn: api.reviewApprovals,
+		queryKey: ['approvals', 'review', scope],
+		queryFn: () => api.reviewApprovals({ scope }),
 		refetchOnWindowFocus: false
 	})
 	const [finalizingPack, setFinalizingPack] = useState<string | null>(null)
+	const canFinalize = canViewAll
 
 	const finalize = useMutation({
 		mutationFn: (packId: string) => api.finalizeApproval(packId),
@@ -51,11 +57,57 @@ export default function ApprovalReviewPage() {
 
 	const packs = review.data || []
 
+	const pendingStatuses = useMemo(
+		() => new Set(['PENDING', 'IN_REVIEW', 'CHANGES_REQUESTED', 'RESUBMITTED']),
+		[]
+	)
+
+	function isAssignedToUser(approval: { approverId?: string | null; approverIds?: string[] | null }) {
+		if (!userId) return false
+		if (approval.approverId && approval.approverId === userId) return true
+		if (approval.approverIds?.length && approval.approverIds.includes(userId)) return true
+		return false
+	}
+
+	function getStageLabel(stage?: string | null, type?: string | null) {
+		if (stage === 'GO_NO_GO') return 'Go/No-Go'
+		if (stage === 'WORKING') return 'Working'
+		if (stage === 'PRICING') return 'Pricing'
+		if (stage === 'FINAL_SUBMISSION') return 'Final submission'
+		if (type === 'LEGAL') return 'Working'
+		if (type === 'FINANCE') return 'Pricing'
+		if (type === 'EXECUTIVE') return 'Final submission'
+		return stage || type || 'Approval'
+	}
+
+	function getNextApproval(approvals: Array<{ stage?: string; type?: string; status?: string }>) {
+		const stageOrder: Record<string, number> = {
+			GO_NO_GO: 1,
+			WORKING: 2,
+			PRICING: 3,
+			FINAL_SUBMISSION: 4
+		}
+		return approvals
+			.filter(a => a.status && pendingStatuses.has(a.status))
+			.sort((a, b) => (stageOrder[a.stage || ''] || 99) - (stageOrder[b.stage || ''] || 99))[0]
+	}
+
 	return (
 		<Page
 			title="Bid Review & Approvals"
 			subtitle="Track pricing packs, review pending approvals, and finalize bids when all signatures are complete."
 		>
+			<div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
+				<label className="text-xs font-semibold text-slate-500">Queue</label>
+				<select
+					className="rounded border px-2 py-1 text-xs"
+					value={scope}
+					onChange={e => setScope(e.target.value as 'mine' | 'all')}
+				>
+					<option value="mine">My queue</option>
+					{canViewAll && <option value="all">All approvals</option>}
+				</select>
+			</div>
 			{review.isLoading ? (
 				<p className="mt-6 text-sm text-slate-600">Loading review queue...</p>
 			) : packs.length === 0 ? (
@@ -72,6 +124,11 @@ export default function ApprovalReviewPage() {
 						const hasRejected = approvals.some(a => a.status === 'REJECTED')
 						const isFinalizing = finalizingPack === pack.id
 						const readyToFinalize = allApproved && !hasRejected
+						const nextApproval = getNextApproval(approvals)
+						const myPending = approvals.find(
+							approval => approval.status && pendingStatuses.has(approval.status) && isAssignedToUser(approval)
+						)
+						const nextLabel = nextApproval ? getStageLabel(nextApproval.stage, nextApproval.type) : null
 
 						return (
 							<Card key={pack.id}>
@@ -123,11 +180,16 @@ export default function ApprovalReviewPage() {
 											: allApproved
 												? 'All approvals completed.'
 												: `${approvals.filter(a => ['APPROVED', 'APPROVED_WITH_CONDITIONS'].includes(a.status)).length}/${approvals.length} approvals done.`}
+										{!hasRejected && !allApproved && nextLabel && (
+											<span className="ml-2 text-xs text-slate-600">
+												{myPending ? `Your action required: ${nextLabel}` : `Next: ${nextLabel}`}
+											</span>
+										)}
 									</div>
 									<Button
 										size="sm"
 										variant="primary"
-										disabled={!readyToFinalize || finalize.isPending || !approvals.length}
+										disabled={!readyToFinalize || finalize.isPending || !approvals.length || !canFinalize}
 										onClick={() => finalize.mutate(pack.id)}
 										className="whitespace-nowrap"
 									>

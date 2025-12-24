@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common'
+import { IsIn, IsOptional, IsString } from 'class-validator'
 import { TenantService } from '../../tenant/tenant.service'
 import { ApprovalsService } from './approvals.service'
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard'
@@ -7,14 +8,21 @@ import { RequestWorkApprovalDto } from './dto/request-work-approval.dto'
 import { ApprovalDecisionDto } from './dto/approval-decision.dto'
 import { RejectWorkApprovalDto } from './dto/reject-work-approval.dto'
 
+class ReviewApprovalsQuery {
+	@IsOptional()
+	@IsString()
+	@IsIn(['mine', 'all'])
+	scope?: 'mine' | 'all'
+}
+
 @Controller('approvals')
 @UseGuards(JwtAuthGuard)
 export class ApprovalsController {
 	constructor(private svc: ApprovalsService, private tenants: TenantService) {}
 
 	@Get('review')
-	review(@Req() req: any) {
-		return this.svc.reviewOverview(req.user?.tenantId || 'default')
+	review(@Query() query: ReviewApprovalsQuery, @Req() req: any) {
+		return this.svc.reviewOverview(req.user?.tenantId || 'default', req.user || {}, query.scope)
 	}
 
 	@Get(':packId')

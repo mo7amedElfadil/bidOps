@@ -39,7 +39,7 @@ class ListTendersQuery {
 	pageSize?: number
 }
 
-	class CreateTenderDto {
+class CreateTenderDto {
 	@IsString()
 	@MaxLength(50)
 	portal!: string
@@ -70,10 +70,12 @@ class ListTendersQuery {
 
 	@IsOptional()
 	@IsString()
+	@Type(() => String)
 	tenderBondValue?: string
 
 	@IsOptional()
 	@IsString()
+	@Type(() => String)
 	documentsValue?: string
 
 	@IsOptional()
@@ -91,6 +93,13 @@ class ListTendersQuery {
 	@IsOptional()
 	@IsString()
 	status?: string
+}
+
+class UpdateTenderDto extends CreateTenderDto {
+	@IsOptional()
+	@IsString()
+	@MaxLength(50)
+	portal?: string
 }
 
 @Controller('tenders')
@@ -133,7 +142,7 @@ export class TendersController {
 
 	@Patch(':id')
 	@Roles('MANAGER','ADMIN','CONTRIBUTOR')
-	update(@Param('id') id: string, @Body() body: CreateTenderDto) {
+	update(@Param('id') id: string, @Body() body: UpdateTenderDto) {
 		return this.svc.update(id, body)
 	}
 

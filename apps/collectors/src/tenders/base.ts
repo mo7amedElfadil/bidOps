@@ -2,6 +2,7 @@ export interface TenderListingRecord {
 	portal: string
 	tenderRef?: string
 	title?: string
+	titleOriginal?: string
 	ministry?: string
 	publishDate?: Date
 	closeDate?: Date

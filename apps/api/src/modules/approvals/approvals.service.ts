@@ -29,8 +29,8 @@ export class ApprovalsService {
 		})
 	}
 
-	async reviewOverview(tenantId: string) {
-		return this.prisma.pricingPack.findMany({
+	async reviewOverview(tenantId: string, user?: UserContext, scope?: 'mine' | 'all') {
+		const packs = await this.prisma.pricingPack.findMany({
 			where: {
 				opportunity: {
 					tenantId
@@ -46,6 +46,30 @@ export class ApprovalsService {
 			},
 			orderBy: [{ updatedAt: 'desc' }]
 		})
+		if (scope !== 'mine' || !user?.id) return packs
+
+		const roleLinks = await this.prisma.userBusinessRole.findMany({
+			where: { userId: user.id },
+			include: { businessRole: true }
+		})
+		const roleIds = roleLinks.map(link => link.businessRoleId)
+		const roleNames = roleLinks.map(link => link.businessRole?.name).filter(Boolean) as string[]
+		const userRole = user.role
+		const pendingStatuses = new Set(['PENDING', 'IN_REVIEW', 'CHANGES_REQUESTED', 'RESUBMITTED'])
+
+		return packs.filter(pack =>
+			pack.approvals?.some(approval => {
+				if (!pendingStatuses.has(approval.status)) return false
+				if (approval.approverId && approval.approverId === user.id) return true
+				if (approval.approverIds?.length && approval.approverIds.includes(user.id)) return true
+				if (approval.approverRole) {
+					if (roleIds.includes(approval.approverRole)) return true
+					if (roleNames.includes(approval.approverRole)) return true
+					if (userRole && userRole === approval.approverRole) return true
+				}
+				return false
+			})
+		)
 	}
 
 	async requestWorkApproval(dto: RequestWorkApprovalDto, user: UserContext) {
@@ -55,8 +79,7 @@ export class ApprovalsService {
 		if (!tender) throw new BadRequestException('Tender not found')
 		const tenantId = user.tenantId || 'default'
 
-		const clientName = tender.ministry?.trim() || tender.title
-		if (!clientName) throw new BadRequestException('Tender missing buyer/ministry')
+		const clientName = tender.ministry?.trim() || tender.title || tender.tenderRef || 'Unknown buyer'
 
 		const client = await this.prisma.client.upsert({
 			where: { name_tenantId: { name: clientName, tenantId } },
@@ -171,8 +194,7 @@ export class ApprovalsService {
 		if (!tender) throw new BadRequestException('Tender not found')
 		const tenantId = user.tenantId || 'default'
 
-		const clientName = tender.ministry?.trim() || tender.title
-		if (!clientName) throw new BadRequestException('Tender missing buyer/ministry')
+		const clientName = tender.ministry?.trim() || tender.title || tender.tenderRef || 'Unknown buyer'
 
 		const client = await this.prisma.client.upsert({
 			where: { name_tenantId: { name: clientName, tenantId } },

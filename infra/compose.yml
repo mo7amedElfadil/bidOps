@@ -191,6 +191,8 @@ services:
     image: mcr.microsoft.com/playwright:v1.57.0-jammy
     container_name: bidops-collectors
     working_dir: /app
+    env_file:
+      - ../.env
     command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm --filter @itsq-bidops/collectors build && pnpm --filter @itsq-bidops/api prisma:generate && COLLECTOR_SERVER=true COLLECTOR_PORT=4100 node /app/apps/collectors/dist/index.js"
     environment:
       - NODE_ENV=development

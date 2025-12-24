@@ -37,3 +37,10 @@ export function getUserRole(): string | null {
 	const payload = parseJwt(token)
 	return payload?.role || null
 }
+
+export function getUserId(): string | null {
+	const token = getToken()
+	if (!token) return null
+	const payload = parseJwt(token)
+	return payload?.sub || null
+}

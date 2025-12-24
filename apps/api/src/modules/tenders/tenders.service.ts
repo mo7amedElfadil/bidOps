@@ -42,13 +42,25 @@ export class TendersService {
 		}
 		if (filters.portal) where.portal = filters.portal
 		if (filters.status) where.status = filters.status
-		if (filters.q) {
-			const like = { contains: filters.q, mode: 'insensitive' as Prisma.QueryMode }
-			where.OR = [
+		if (filters.q?.trim()) {
+			const term = filters.q.trim()
+			const like: Prisma.StringFilter = { contains: term, mode: 'insensitive' as Prisma.QueryMode }
+			const orFilters: Prisma.MinistryTenderWhereInput[] = [
+				{ portal: like },
 				{ tenderRef: like },
 				{ title: like },
-				{ ministry: like }
+				{ ministry: like },
+				{ status: like },
+				{ tenderType: like },
+				{ requestedSectorType: like },
+				{ purchaseUrl: like },
+				{ sourceUrl: like }
 			]
+			const numericTerm = Number(term.replace(/[^\d.-]/g, ''))
+			if (!Number.isNaN(numericTerm)) {
+				orFilters.push({ tenderBondValue: numericTerm }, { documentsValue: numericTerm })
+			}
+			where.OR = orFilters
 		}
 		if (andFilters.length) {
 			where.AND = andFilters
@@ -160,16 +172,42 @@ export class TendersService {
 			update: {}
 		})
 
-		const opportunity = await this.prisma.opportunity.create({
-			data: {
-				clientId: client.id,
-				title: tender.title || tender.tenderRef || 'New Opportunity',
-				tenderRef: tender.tenderRef || undefined,
-				sourcePortal: tender.portal,
-				discoveryDate: tender.publishDate || undefined,
-				tenantId
+		let opportunity = await this.prisma.opportunity.findFirst({
+			where: {
+				tenantId,
+				sourceTenderId: tender.id
 			}
 		})
+
+		if (!opportunity && tender.tenderRef) {
+			const match = await this.prisma.opportunity.findFirst({
+				where: {
+					tenantId,
+					sourcePortal: tender.portal,
+					tenderRef: tender.tenderRef
+				}
+			})
+			if (match) {
+				opportunity = await this.prisma.opportunity.update({
+					where: { id: match.id },
+					data: { sourceTenderId: tender.id }
+				})
+			}
+		}
+
+		if (!opportunity) {
+			opportunity = await this.prisma.opportunity.create({
+				data: {
+					clientId: client.id,
+					title: tender.title || tender.tenderRef || 'New Opportunity',
+					tenderRef: tender.tenderRef || undefined,
+					sourcePortal: tender.portal,
+					sourceTenderId: tender.id,
+					discoveryDate: tender.publishDate || undefined,
+					tenantId
+				}
+			})
+		}
 
 		await this.prisma.ministryTender.update({
 			where: { id },

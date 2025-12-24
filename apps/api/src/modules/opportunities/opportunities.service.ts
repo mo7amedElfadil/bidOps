@@ -308,7 +308,7 @@ export class OpportunitiesService {
 				flag: keyof Prisma.OpportunityChecklistUpdateInput
 				at: keyof Prisma.OpportunityChecklistUpdateInput
 				by: keyof Prisma.OpportunityChecklistUpdateInput
-				attachment: keyof Prisma.OpportunityChecklistUpdateInput
+				attachment?: keyof Prisma.OpportunityChecklistUpdateInput
 			},
 			item?: { done?: boolean; attachmentId?: string; notes?: string }
 		) => {
@@ -325,7 +325,7 @@ export class OpportunitiesService {
 					data[fieldBase.by] = null
 				}
 			}
-			if (item.attachmentId !== undefined) {
+			if (item.attachmentId !== undefined && fieldBase.attachment) {
 				data[fieldBase.attachment] = item.attachmentId || null
 			}
 			if (item.notes !== undefined) {
@@ -400,8 +400,7 @@ export class OpportunitiesService {
 				{
 					flag: 'pricingApproved',
 					at: 'pricingApprovedAt',
-					by: 'pricingApprovedById',
-					attachment: 'pricingApprovedAttachmentId'
+					by: 'pricingApprovedById'
 				},
 				input.pricingApproved
 			),

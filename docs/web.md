@@ -8,7 +8,7 @@ UI scope and behaviors:
 - Opportunity overview shell with tabbed navigation across all workspaces
 - Opportunity overview allows selecting/add new business & bid owners, opening a modal to add users (name/email/type/role)
 - Bid review dashboard (`/approvals/review`) summarizes pricing packs, approval chains, and lets the assigned reviewer finalize bids once every signature is captured
-- Opportunity pages include a submission checklist (bond purchased, forms completed, final PDF ready, portal credentials verified) with per-item notes and attachments
+- Opportunity pages include a submission checklist (tender bond submitted, mandatory forms completed, final combined PDF ready, compliance created, clarifications sent or N/A, pricing approved) with per-item notes and attachments
 - Post submission view (`/post-submission`) groups completed proposals or passed deadlines away from the active pipeline; board adds a “Post Submission” lane
 - Settings page now drives the stage and status dropdowns used in opportunity forms
 - Opportunity summary fields are editable; stage progression is shown with a dropdown and visual indicator

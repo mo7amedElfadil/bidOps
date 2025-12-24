@@ -1,5 +1,6 @@
 import { chromium, Page } from 'playwright'
 import { BaseTenderAdapter, TenderListingRecord } from './base.js'
+import { translateIfArabic } from '../utils/translate.js'
 
 export class MonaqasatAvailableAdapter extends BaseTenderAdapter {
 	id = 'monaqasat_available'
@@ -139,10 +140,13 @@ export class MonaqasatAvailableAdapter extends BaseTenderAdapter {
 						}
 					}
 
+					const translated = await translateIfArabic(summary.title)
+
 					records.push({
 						portal: 'monaqasat',
 						tenderRef: summary.tenderRef || summary.title,
-						title: summary.title,
+						title: translated.translated || summary.title,
+						titleOriginal: translated.original,
 						ministry: summary.ministry || undefined,
 						publishDate,
 						closeDate,

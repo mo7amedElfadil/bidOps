@@ -138,10 +138,12 @@ POST /approvals/decision/:id
 
 ### Checklist
 Add a checklist component on the Opportunity page and approvals review view listing:
-1. Tender bond purchased (toggle + upload receipt)
+1. Tender bond submitted (toggle + upload receipt)
 2. Mandatory forms completed
 3. Final combined PDF generated
-4. Submission portal credentials verified
+4. Compliance created
+5. Clarifications sent (or N/A)
+6. Pricing approved (auto-checks once pricing approvals finish)
 
 Each item stores `doneBy`, `doneAt`, `notes`, `attachment`.
 
@@ -157,7 +159,9 @@ PATCH /opportunities/:id/checklist
   "bondPurchased": { "done": true, "attachmentId": "uuid", "notes": "optional" },
   "formsCompleted": { "done": false },
   "finalPdfReady": { "done": true },
-  "portalCredentialsVerified": { "done": false }
+  "complianceCreated": { "done": true },
+  "clarificationsSent": { "done": false },
+  "pricingApproved": { "done": true }
 }
 ```
 

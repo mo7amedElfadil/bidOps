@@ -1,5 +1,6 @@
 import { chromium, Page } from 'playwright'
 import { BaseAdapter, AwardRecord } from './base.js'
+import { translateIfArabic } from '../utils/translate.js'
 
 export class MonaqasatAdapter extends BaseAdapter {
 	id = 'monaqasat'
@@ -135,11 +136,14 @@ export class MonaqasatAdapter extends BaseAdapter {
 						}
 					}
 
+					const translated = await translateIfArabic(summary.title)
+
 					records.push({
 						portal: this.id,
 						tenderRef: summary.tenderRef || summary.title,
 						client: summary.client || 'Unknown',
-						title: summary.title,
+						title: translated.translated || summary.title,
+						titleOriginal: translated.original,
 						awardDate: awardDate ?? undefined,
 						winners,
 						awardValue,

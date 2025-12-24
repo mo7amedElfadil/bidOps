@@ -91,6 +91,9 @@
   * Notifications: Added business roles, notification routing defaults, preferences, and in-app notification endpoints/UI
   * Notifications: Event-driven dispatch for opportunity creation and review requests; SLA alerts de-duped with longer cadence
   * Tenders/Opportunities: Go/No-Go status mapped to tenders list and displayed as status chips with quick access to linked opportunities
+  * Tenders: Added reject action for Go/No-Go with optional reason
+  * Collectors: Added optional Arabic-to-English title translation with original-title preservation
+  * Approvals: Review queue supports scope=mine/all and highlights next action in the UI
 * Next:
   * Rate limiting defaults + security headers docs (hardening sweep)
   * Validate Monaqasat adapter against live pages; add edge-case handling

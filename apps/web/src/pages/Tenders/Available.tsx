@@ -2,9 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, BusinessRole, MinistryTender, UserAccount } from '../../api/client'
 import { normalizeDateInput } from '../../utils/date'
+import { getUserRole } from '../../utils/auth'
+import { toast } from '../../utils/toast'
 
 export default function AvailableTendersPage() {
 	const nav = useNavigate()
+	const role = getUserRole()
+	const canReview = role === 'ADMIN' || role === 'MANAGER'
+	const canPromote = canReview
 	const [rows, setRows] = useState<MinistryTender[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
@@ -21,6 +26,10 @@ export default function AvailableTendersPage() {
 	const [requestComment, setRequestComment] = useState('')
 	const [requestError, setRequestError] = useState<string | null>(null)
 	const [requestingApproval, setRequestingApproval] = useState(false)
+	const [rejectTender, setRejectTender] = useState<MinistryTender | null>(null)
+	const [rejectComment, setRejectComment] = useState('')
+	const [rejectError, setRejectError] = useState<string | null>(null)
+	const [rejectingApproval, setRejectingApproval] = useState(false)
 	const [reviewerRoleIds, setReviewerRoleIds] = useState<string[]>([])
 	const [reviewerUserIds, setReviewerUserIds] = useState<string[]>([])
 	const [businessRoles, setBusinessRoles] = useState<BusinessRole[]>([])
@@ -95,9 +104,10 @@ export default function AvailableTendersPage() {
 	}, [])
 
 	useEffect(() => {
+		if (!canReview) return
 		api.listBusinessRoles().then(setBusinessRoles).catch(() => {})
 		api.listUsers({ pageSize: 200 }).then(data => setUsers(data.items)).catch(() => {})
-	}, [])
+	}, [canReview])
 
 	async function runCollector() {
 		setRunning(true)
@@ -175,7 +185,11 @@ export default function AvailableTendersPage() {
 		return true
 	}
 
-async function promote(id: string) {
+	async function promote(id: string) {
+		if (!canPromote) {
+			toast.error('Only managers and admins can promote tenders.')
+			return
+		}
 		setPromoting(id)
 		setError(null)
 		try {
@@ -185,6 +199,7 @@ async function promote(id: string) {
 				return
 			}
 			const opp = await api.promoteMinistryTender(id)
+			toast.success('Tender promoted')
 			await load()
 			nav(`/opportunity/${opp.id}`)
 		} catch (e: any) {
@@ -218,6 +233,24 @@ async function promote(id: string) {
 			setRequestError(e.message || 'Failed to request approval')
 		}
 		setRequestingApproval(false)
+	}
+
+	async function submitRejectApproval() {
+		if (!rejectTender) return
+		setRejectingApproval(true)
+		setRejectError(null)
+		try {
+			await api.rejectWorkApproval({
+				sourceTenderId: rejectTender.id,
+				comment: rejectComment || undefined
+			})
+			setRejectTender(null)
+			setRejectComment('')
+			await load()
+		} catch (e: any) {
+			setRejectError(e.message || 'Failed to reject tender')
+		}
+		setRejectingApproval(false)
 	}
 
 	async function deleteSelectedTenders() {
@@ -426,23 +459,38 @@ async function promote(id: string) {
 										</td>
 										<td className="px-3 py-2 text-right">
 											<div className="flex flex-col items-end gap-2">
-												<button
-													className="rounded bg-indigo-600 px-3 py-1 text-xs text-white hover:bg-indigo-700 disabled:opacity-50"
-													onClick={() => {
-														setRequestTender(row)
-														setRequestComment('')
-														setRequestError(null)
-													}}
-													disabled={requestingApproval || approvalPending || approvalApproved}
-												>
-													{approvalPending
-														? 'Approval pending'
-														: approvalApproved
-															? 'Approval granted'
-															: approvalRejected
-																? 'Request again'
-																: 'Request Work Approval'}
-												</button>
+												{canReview && (
+													<>
+														<button
+															className="rounded bg-indigo-600 px-3 py-1 text-xs text-white hover:bg-indigo-700 disabled:opacity-50"
+															onClick={() => {
+																setRequestTender(row)
+																setRequestComment('')
+																setRequestError(null)
+															}}
+															disabled={requestingApproval || approvalPending || approvalApproved}
+														>
+															{approvalPending
+																? 'Approval pending'
+																: approvalApproved
+																	? 'Approval granted'
+																	: approvalRejected
+																		? 'Request again'
+																		: 'Request Approval'}
+														</button>
+														<button
+															className="rounded bg-rose-600 px-3 py-1 text-xs text-white hover:bg-rose-700 disabled:opacity-50"
+															onClick={() => {
+																setRejectTender(row)
+																setRejectComment('')
+																setRejectError(null)
+															}}
+															disabled={rejectingApproval || approvalApproved}
+														>
+															Reject
+														</button>
+													</>
+												)}
 												{hasOpportunity && (
 													<button
 														className="rounded bg-slate-900 px-3 py-1 text-xs text-white hover:bg-slate-800"
@@ -454,7 +502,7 @@ async function promote(id: string) {
 												<button
 													className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700 disabled:opacity-50"
 													onClick={() => promote(row.id)}
-													disabled={promoting === row.id || row.status === 'promoted' || hasOpportunity}
+													disabled={!canPromote || promoting === row.id || row.status === 'promoted' || hasOpportunity}
 												>
 													{promoting === row.id ? 'Promoting...' : 'Promote'}
 												</button>
@@ -532,7 +580,7 @@ async function promote(id: string) {
 			{requestTender && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
 					<div className="w-full max-w-lg rounded border bg-white p-5 shadow-lg">
-						<h2 className="text-lg font-semibold">Request Go/No-Go Approval</h2>
+						<h2 className="text-lg font-semibold">Request Approval</h2>
 						<p className="mt-1 text-sm text-slate-600">
 							Provide a brief rationale before sending this tender for managerial approval.
 						</p>
@@ -595,6 +643,45 @@ async function promote(id: string) {
 								disabled={requestingApproval}
 							>
 								{requestingApproval ? 'Submitting...' : 'Send Request'}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+			{rejectTender && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+					<div className="w-full max-w-lg rounded border bg-white p-5 shadow-lg">
+						<h2 className="text-lg font-semibold">Reject Tender</h2>
+						<p className="mt-1 text-sm text-slate-600">
+							Provide a short note before rejecting this tender.
+						</p>
+						<div className="mt-4 rounded border bg-slate-50 p-3 text-sm">
+							<p className="font-medium">{rejectTender.title || rejectTender.tenderRef}</p>
+							<p className="text-slate-600">{rejectTender.ministry || 'Unknown ministry'}</p>
+						</div>
+						<label className="mt-4 block text-xs font-medium text-slate-600">Reason (optional)</label>
+						<textarea
+							className="mt-1 w-full rounded border p-2 text-sm"
+							rows={4}
+							value={rejectComment}
+							onChange={e => setRejectComment(e.target.value)}
+							placeholder="Why are we rejecting this tender?"
+						/>
+						{rejectError && <p className="mt-2 text-sm text-red-600">{rejectError}</p>}
+						<div className="mt-4 flex items-center justify-end gap-2">
+							<button
+								className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200"
+								onClick={() => setRejectTender(null)}
+								disabled={rejectingApproval}
+							>
+								Cancel
+							</button>
+							<button
+								className="rounded bg-rose-600 px-3 py-1.5 text-sm text-white hover:bg-rose-700 disabled:opacity-50"
+								onClick={submitRejectApproval}
+								disabled={rejectingApproval}
+							>
+								{rejectingApproval ? 'Rejecting...' : 'Reject tender'}
 							</button>
 						</div>
 					</div>

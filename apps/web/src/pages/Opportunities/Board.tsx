@@ -24,6 +24,8 @@ export default function Board() {
 	const queryClient = useQueryClient()
 	const [draggingId, setDraggingId] = useState<string | null>(null)
 	const [dragOverStage, setDragOverStage] = useState<string | null>(null)
+	const scrollAnimationRef = useRef<number | null>(null)
+	const lastAutoScrollStageRef = useRef<string | null>(null)
 	const { data, isLoading } = useQuery({
 		queryKey: ['opportunities', 'board'],
 		queryFn: () => api.listOpportunities({ page: 1, pageSize: 200 })
@@ -61,18 +63,21 @@ export default function Board() {
 	const handleDragStart = (event: DragEvent<HTMLDivElement>, id: string) => {
 		event.dataTransfer?.setData('text/plain', id)
 		event.dataTransfer.effectAllowed = 'move'
+		lastAutoScrollStageRef.current = null
 		setDraggingId(id)
 	}
 
 	const handleDragEnd = () => {
 		setDraggingId(null)
 		setDragOverStage(null)
+		lastAutoScrollStageRef.current = null
 	}
 
 	const handleDrop = (stage: string, event: DragEvent<HTMLDivElement>) => {
 		event.preventDefault()
 		setDragOverStage(null)
 		setDraggingId(null)
+		lastAutoScrollStageRef.current = null
 		const id = event.dataTransfer?.getData('text/plain')
 		if (!id) return
 		if (mutation.isPending) return
@@ -82,14 +87,47 @@ export default function Board() {
 		mutation.mutate({ id, stage: targetStage })
 	}
 
+	const animateBoardScroll = (targetLeft: number) => {
+		const board = boardRef.current
+		if (!board) return
+		if (scrollAnimationRef.current !== null) {
+			cancelAnimationFrame(scrollAnimationRef.current)
+			scrollAnimationRef.current = null
+		}
+		const startLeft = board.scrollLeft
+		const delta = targetLeft - startLeft
+		if (Math.abs(delta) < 4) return
+		const durationMs = 650
+		const startTime = performance.now()
+		const step = (now: number) => {
+			const progress = Math.min(1, (now - startTime) / durationMs)
+			const eased = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress
+			board.scrollLeft = startLeft + delta * eased
+			if (progress < 1) {
+				scrollAnimationRef.current = requestAnimationFrame(step)
+			} else {
+				scrollAnimationRef.current = null
+			}
+		}
+		scrollAnimationRef.current = requestAnimationFrame(step)
+	}
+
 	const handleDragOverStage = (stage: string, event: DragEvent<HTMLDivElement>) => {
 		event.preventDefault()
 		event.dataTransfer!.dropEffect = 'move'
 		setDragOverStage(stage)
 		const column = columnRefs.current[stage]
-		if (column) {
-			column.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
-		}
+		const board = boardRef.current
+		if (!column || !board) return
+		if (lastAutoScrollStageRef.current === stage) return
+		lastAutoScrollStageRef.current = stage
+		const boardRect = board.getBoundingClientRect()
+		const columnRect = column.getBoundingClientRect()
+		const columnCenter = columnRect.left - boardRect.left + board.scrollLeft + columnRect.width / 2
+		const targetLeft = columnCenter - board.clientWidth / 2
+		const maxLeft = board.scrollWidth - board.clientWidth
+		const clampedLeft = Math.min(maxLeft, Math.max(0, targetLeft))
+		animateBoardScroll(clampedLeft)
 	}
 
 	return (

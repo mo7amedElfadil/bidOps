@@ -7,6 +7,7 @@ export interface AwardRecord {
 	tenderRef: string
 	client: string
 	title: string
+	titleOriginal?: string
 	closeDate?: Date
 	awardDate?: Date
 	winners: string[]

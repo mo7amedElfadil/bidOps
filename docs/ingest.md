@@ -123,6 +123,8 @@ Deduplication:
 | `MONAQASAT_MAX_PAGES` | `10` | Max pages to scan when collecting awards |
 | `MONAQASAT_TENDER_MAX_PAGES` | `10` | Max pages to scan when collecting available tenders |
 | `MONAQASAT_DELAY_MS` | `800` | Per-row delay for Monaqasat |
+| `COLLECTOR_TRANSLATE_TITLES` | `true` | Translate Arabic titles to English (stores original separately) |
+| `COLLECTOR_TRANSLATION_PROVIDER` | `openai` | Translation provider (openai or gemini) |
 
 ## API Endpoints
 
@@ -151,6 +153,7 @@ Deduplication:
 - Date filtering uses `MONAQASAT_TENDER_FROM_DATE`/`MONAQASAT_TENDER_TO_DATE` (YYYY-MM-DD). The collector filters each card as it goes and stops when earlier pages fall entirely before `fromDate`, so runs stay efficient while still honoring the date window passed from the UI.
 - Use `MONAQASAT_TENDER_MAX_PAGES` (default `10`) to bound how many pages are fetched per run, preventing runaway scraping while still covering the window that executives typically request.
 - Monaqasat adapters force the English locale via `Accept-Language` headers, culture cookies, and an explicit `/Main/ChangeLang` call so fields are consistent even when the portal defaults to Arabic.
+- When an Arabic title still appears, collectors translate it to English and store the Arabic text in `titleOriginal` for future bilingual support.
 
 ### Curated Events
 

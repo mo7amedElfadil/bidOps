@@ -62,6 +62,7 @@ export class AwardsService {
 				tenderRef: data.tenderRef,
 				client: data.client ?? data.buyer,
 				title: data.title,
+				titleOriginal: data.titleOriginal,
 				closeDate: data.closeDate ? new Date(data.closeDate) : undefined,
 				awardDate: data.awardDate ? new Date(data.awardDate) : undefined,
 				winners: Array.isArray(data.winners) ? data.winners : (data.winners ? String(data.winners).split(',').map((w: string) => w.trim()).filter(Boolean) : []),
@@ -83,6 +84,7 @@ export class AwardsService {
 				tenderRef: data.tenderRef,
 				client: data.client ?? data.buyer,
 				title: data.title,
+				titleOriginal: data.titleOriginal,
 				closeDate: data.closeDate ? new Date(data.closeDate) : undefined,
 				awardDate: data.awardDate ? new Date(data.awardDate) : undefined,
 				winners: Array.isArray(data.winners)
@@ -117,6 +119,7 @@ export class AwardsService {
 				tenderRef: row.tenderRef || undefined,
 				client: row.client || undefined,
 				title: row.title || undefined,
+				titleOriginal: row.titleOriginal || undefined,
 				awardDate: row.awardDate || undefined,
 				winners: row.winners,
 				awardValue: row.awardValue || undefined,
@@ -160,6 +163,7 @@ export class AwardsService {
 				tenderRef: data.tenderRef,
 				client: data.client ?? data.buyer,
 				title: data.title,
+				titleOriginal: data.titleOriginal,
 				awardDate: data.awardDate ? new Date(data.awardDate) : undefined,
 				winners: Array.isArray(data.winners)
 					? data.winners

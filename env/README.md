@@ -40,3 +40,9 @@ AI extraction:
 - OPENAI_MODEL
 - GEMINI_API_KEY
 - GEMINI_MODEL
+
+Collectors translation:
+- COLLECTOR_TRANSLATE_TITLES (default true; set to false to disable)
+- COLLECTOR_TRANSLATION_PROVIDER (openai|gemini, defaults to AI_PROVIDER)
+- OPENAI_API_KEY / OPENAI_MODEL (required if using OpenAI)
+- GEMINI_API_KEY / GEMINI_MODEL (required if using Gemini)

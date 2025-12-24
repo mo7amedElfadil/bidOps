@@ -465,6 +465,7 @@ model AwardStaging {
   tenderRef     String?
   client        String?
   title         String?
+  titleOriginal String?
   closeDate     DateTime?
   awardDate     DateTime?
   winners       String[]
@@ -483,6 +484,7 @@ model AwardEvent {
   tenderRef  String?
   client     String?
   title      String?
+  titleOriginal String?
   awardDate  DateTime?
   winners    String[]
   awardValue Float?
@@ -496,6 +498,7 @@ model MinistryTender {
   portal              String
   tenderRef           String?
   title               String?
+  titleOriginal       String?
   ministry            String?
   publishDate         DateTime?
   closeDate           DateTime?

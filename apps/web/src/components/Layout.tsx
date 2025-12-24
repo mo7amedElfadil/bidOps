@@ -89,13 +89,16 @@ export default function Layout() {
 		<div className="min-h-screen bg-slate-50 text-slate-900">
 			<Toasts />
 			<header className="border-b bg-white">
-				<div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-					<div className="flex items-center gap-4">
+				<div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+					<div className="flex flex-wrap items-center gap-4">
 						<div className="rounded bg-blue-600 px-2 py-1 text-sm font-semibold text-white">BidOps</div>
-						<nav className="flex flex-wrap gap-2 text-sm">
+						<nav className="flex flex-wrap gap-3 text-[11px]">
 							{navGroups.map(group => (
-								<div key={group.label} className="flex items-center gap-2 rounded border border-slate-200 bg-slate-50 px-3 py-1">
-									<span className="text-xs uppercase tracking-wider text-slate-500">{group.label}</span>
+								<div
+									key={group.label}
+									className="flex flex-wrap items-center gap-2 rounded border border-slate-200 bg-slate-50 px-3 py-1"
+								>
+									<span className="text-[10px] uppercase tracking-wider text-slate-500">{group.label}</span>
 									<div className="flex items-center gap-1">
 										{group.items.map(item => (
 											<NavLink
@@ -117,7 +120,10 @@ export default function Layout() {
 					</div>
 					<div className="flex items-center gap-3 text-sm">
 						<span className="hidden text-slate-600 sm:inline">Signed in (dev)</span>
-						<button onClick={() => nav('/import/tracker')} className="rounded bg-slate-100 px-3 py-1.5 hover:bg-slate-200">
+						<button
+							onClick={() => nav('/import/tracker')}
+							className="rounded bg-slate-100 px-3 py-1.5 hover:bg-slate-200"
+						>
 							Import
 						</button>
 						{token ? (
@@ -132,28 +138,28 @@ export default function Layout() {
 					</div>
 				</div>
 				<div className="border-t bg-slate-100">
-					<div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs text-slate-600">
-						<nav className="flex items-center gap-2">
+					<div className="flex flex-wrap items-center gap-2 px-4 py-2 text-xs text-slate-600">
+						<nav aria-label="breadcrumb" className="flex flex-wrap items-center gap-1">
 							{breadcrumbs.map((crumb, index) => (
-								<React.Fragment key={crumb.to}>
+								<div key={crumb.to} className="flex items-center gap-1">
 									<button
 										onClick={() => nav(crumb.to)}
-										className="flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium text-slate-600 transition hover:bg-slate-200"
+										className="flex items-center gap-1 rounded bg-white/80 px-3 py-1 text-[11px] font-medium text-slate-600 shadow-sm transition hover:bg-slate-200"
 									>
 										{index === 0 ? '🏠' : null}
 										{crumb.label}
 									</button>
 									{index < breadcrumbs.length - 1 && (
-										<span className="text-slate-400">/</span>
+										<span className="text-slate-400">›</span>
 									)}
-								</React.Fragment>
+								</div>
 							))}
 						</nav>
-						<span>Tenant scope: default</span>
+						<span className="ml-auto text-[11px] text-slate-500">Tenant scope: default</span>
 					</div>
 				</div>
 			</header>
-			<main>
+			<main className="px-4 py-6">
 				<Outlet />
 			</main>
 		</div>

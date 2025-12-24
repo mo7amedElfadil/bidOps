@@ -96,6 +96,13 @@ make up
 
 The `workers` service listens on the Redis-backed BullMQ queue called `bidops-default`. API endpoints such as `POST /awards/collect` and `/tenders/collect` enqueue `collect-awards` or `collect-tenders` jobs via `enqueueAwardCollector`/`enqueueTenderCollector`, and the worker delegates them to the collectors service through `COLLECTORS_URL`. The same queue can host other heavy/async workloads you may add later (SLA/notification bursts, tracker imports, parser/OCR jobs, AI extraction slices, etc.) so that the API stays responsive while background work is serialized through Redis.
 
+Additional workloads that can be routed through this queue include:
+- Tracker-import processing (CSV parsing + field reconciliation) so uploads do not block the API.
+- Pricing recalculations and worksheet lift/pack rebuilds when there are many line items.
+- AI extraction for attachments or compliance/parser jobs that need chunking or OCR.
+- Large exports (opportunities, awards, analytics snapshots) so the UI can poll the queue for completion.
+- Ad-hoc maintenance jobs (reindexing OpenSearch, cleaning storage) you want to run safely in the background.
+
 ### Optional Services
 
 ```bash
