@@ -7,6 +7,7 @@ import CountdownRing from '../../components/CountdownRing'
 import { downloadWithAuth } from '../../utils/download'
 import { DEFAULT_STAGE_LIST, DEFAULT_STATUS_LIST } from '../../constants/opportunity-lists'
 import { isPostSubmission } from '../../utils/postSubmission'
+import PaginationControls from '../../components/PaginationControls'
 
 function toIsoWithOffset(value: string, offsetHours: number) {
 	const [datePart, timePart = '00:00'] = value.split('T')
@@ -44,7 +45,6 @@ export default function List() {
 	})
 	const [page, setPage] = useState(1)
 	const [pageSize] = useState(25)
-	const [pageInput, setPageInput] = useState('1')
 	const [now, setNow] = useState(Date.now())
 	const timezoneQuery = useQuery({ queryKey: ['timezone'], queryFn: api.getTimezoneSettings })
 	const stageListQuery = useQuery({ queryKey: ['opportunity-stages'], queryFn: api.getOpportunityStages })
@@ -121,11 +121,6 @@ export default function List() {
 		}
 		nav({ pathname: loc.pathname, search: params.toString() }, { replace: true })
 	}, [mineOnly, loc.pathname, loc.search, nav])
-	useEffect(() => {
-		if (opportunities.data?.page) {
-			setPageInput(String(opportunities.data.page))
-		}
-	}, [opportunities.data?.page])
 	const rows = opportunities.data?.items || []
 	const [showPostSubmission, setShowPostSubmission] = useState(true)
 	const activeRows = rows.filter(o => !isPostSubmission(o, { stageOptions, statusOptions }))
@@ -433,62 +428,14 @@ export default function List() {
 				</div>
 			)}
 			{opportunities.data && (
-				<div className="mt-4 flex items-center justify-between text-sm text-slate-600">
-					<span>
-						Page {opportunities.data.page} of {Math.max(1, Math.ceil(opportunities.data.total / opportunities.data.pageSize))}
-					</span>
-					<div className="flex flex-wrap items-center gap-2">
-						<div className="flex items-center gap-2">
-							<span className="text-xs text-slate-500">Go to</span>
-							<input
-								type="number"
-								min={1}
-								max={Math.max(1, Math.ceil(opportunities.data.total / opportunities.data.pageSize))}
-								className="w-20 rounded border px-2 py-1 text-sm"
-								value={pageInput}
-								onChange={e => setPageInput(e.target.value)}
-								onKeyDown={e => {
-									if (e.key === 'Enter') {
-										const maxPage = Math.max(1, Math.ceil(opportunities.data.total / opportunities.data.pageSize))
-										const nextPage = Math.min(maxPage, Math.max(1, Number(pageInput || 1)))
-										setPage(nextPage)
-									}
-								}}
-							/>
-							<button
-								className="rounded bg-slate-100 px-2 py-1 text-xs hover:bg-slate-200 disabled:opacity-50"
-								onClick={() => {
-									const maxPage = Math.max(1, Math.ceil(opportunities.data.total / opportunities.data.pageSize))
-									const nextPage = Math.min(maxPage, Math.max(1, Number(pageInput || 1)))
-									setPage(nextPage)
-								}}
-								disabled={opportunities.isLoading}
-							>
-								Go
-							</button>
-						</div>
-						<button
-							className="rounded bg-slate-100 px-3 py-1.5 hover:bg-slate-200 disabled:opacity-50"
-							onClick={() => setPage(p => Math.max(1, p - 1))}
-							disabled={opportunities.data.page <= 1}
-						>
-							Prev
-						</button>
-						<button
-							className="rounded bg-slate-100 px-3 py-1.5 hover:bg-slate-200 disabled:opacity-50"
-							onClick={() =>
-								setPage(p =>
-									p < Math.ceil(opportunities.data.total / opportunities.data.pageSize) ? p + 1 : p
-								)
-							}
-							disabled={
-								opportunities.data.page >=
-								Math.ceil(opportunities.data.total / opportunities.data.pageSize)
-							}
-						>
-							Next
-						</button>
-					</div>
+				<div className="mt-4 flex flex-col gap-2 text-sm text-slate-600">
+					<PaginationControls
+						page={opportunities.data.page}
+						pageSize={opportunities.data.pageSize}
+						total={opportunities.data.total}
+						onPageChange={setPage}
+						disabled={opportunities.isLoading}
+					/>
 				</div>
 			)}
 

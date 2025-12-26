@@ -20,7 +20,9 @@ const routeLabels: Record<string, string> = {
 	'/admin/users': 'Users',
 	'/admin/business-roles': 'Business Roles',
 	'/search': 'Search',
-	'/settings/sla': 'Settings',
+	'/settings/sla': 'SLA Settings',
+	'/settings/lifecycle': 'Opportunity Lists',
+	'/settings/system': 'System Settings',
 	'/import/tracker': 'Tracker Import'
 }
 
@@ -56,7 +58,9 @@ const navGroups = [
 		items: [
 			{ to: '/admin/users', label: 'Users' },
 			{ to: '/admin/business-roles', label: 'Business Roles' },
-			{ to: '/settings/sla', label: 'Settings' }
+			{ to: '/settings/sla', label: 'SLA' },
+			{ to: '/settings/lifecycle', label: 'Opportunity Lists' },
+			{ to: '/settings/system', label: 'System Settings' }
 		]
 	}
 ]

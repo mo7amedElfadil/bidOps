@@ -5,7 +5,7 @@ alwaysApply: true
 
 # docs/ (living documentation the Agent must maintain)
 
-Create and keep updated:
+Create and/or keep updated (if they exist do not recreate):
 
 ```
 docs/
@@ -104,7 +104,5 @@ subgraph Process
 end
 Start --> Process
 ```
-
-REMEMBER: After every memory reset, you begin fresh. The Memory Bank is your only link to previous work. Maintain it with precision. Your effectiveness depends on it.
 
 ---

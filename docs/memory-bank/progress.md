@@ -110,6 +110,7 @@
   * Web: Change request submissions now send change-request notifications to bid owners
   * Web: Standardized tenders/awards filters with shared Button/Input/Card components; tender search placement aligned with awards
   * Web: Navigation now includes a User group for personal settings; Settings page separates SLA vs general configuration
+  * Web: Settings split into separate routes for SLA, opportunity lists, and system defaults with a shared settings nav
 * Next:
   * Rate limiting defaults + security headers docs (hardening sweep)
   * Validate Monaqasat adapter against live pages; add edge-case handling

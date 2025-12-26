@@ -168,7 +168,7 @@ export class OpportunitiesService {
 				userIds: explicitUserIds,
 				mergeRoles: true,
 				includeDefaults: true,
-				opportunityId: created.id
+				opportunityId: created.id,
 				payload: {
 					actionUrl: buildFrontendUrl(`/opportunity/${created.id}`),
 					actionLabel: 'View opportunity'

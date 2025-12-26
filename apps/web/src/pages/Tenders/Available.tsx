@@ -4,6 +4,7 @@ import { api, BusinessRole, MinistryTender, UserAccount } from '../../api/client
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import Input from '../../components/ui/Input'
+import PaginationControls from '../../components/PaginationControls'
 import { normalizeDateInput } from '../../utils/date'
 import { getUserRole } from '../../utils/auth'
 import { toast } from '../../utils/toast'
@@ -22,7 +23,6 @@ export default function AvailableTendersPage() {
 	const [runSummary, setRunSummary] = useState<string | null>(null)
 	const [promoting, setPromoting] = useState<string | null>(null)
 	const [pagination, setPagination] = useState({ page: 1, pageSize: 25, total: 0 })
-	const [pageInput, setPageInput] = useState('1')
 	const [fromDate, setFromDate] = useState('')
 	const [toDate, setToDate] = useState('')
 	const [requestTender, setRequestTender] = useState<MinistryTender | null>(null)
@@ -94,7 +94,6 @@ export default function AvailableTendersPage() {
 			})
 			setRows(data.items)
 			setPagination({ page: data.page, pageSize: data.pageSize, total: data.total })
-			setPageInput(String(data.page))
 			setSelected({})
 		} catch (e: any) {
 			setError(e.message || 'Failed to load tenders')
@@ -516,58 +515,14 @@ export default function AvailableTendersPage() {
 					</div>
 				)}
 				{pagination.total > 0 && (
-					<div className="mt-4 flex items-center justify-between text-sm text-slate-600">
-						<span>
-							Page {pagination.page} of {Math.max(1, Math.ceil(pagination.total / pagination.pageSize))}
-						</span>
-						<div className="flex flex-wrap items-center gap-2">
-							<div className="flex items-center gap-2">
-								<span className="text-xs text-slate-500">Go to</span>
-								<input
-									type="number"
-									min={1}
-									max={Math.max(1, Math.ceil(pagination.total / pagination.pageSize))}
-									className="w-20 rounded border px-2 py-1 text-sm"
-									value={pageInput}
-									onChange={e => setPageInput(e.target.value)}
-									onKeyDown={e => {
-										if (e.key === 'Enter') {
-											const maxPage = Math.max(1, Math.ceil(pagination.total / pagination.pageSize))
-											const nextPage = Math.min(maxPage, Math.max(1, Number(pageInput || 1)))
-											load(nextPage)
-										}
-									}}
-								/>
-								<button
-									className="rounded bg-slate-100 px-2 py-1 text-xs hover:bg-slate-200 disabled:opacity-50"
-									onClick={() => {
-										const maxPage = Math.max(1, Math.ceil(pagination.total / pagination.pageSize))
-										const nextPage = Math.min(maxPage, Math.max(1, Number(pageInput || 1)))
-										load(nextPage)
-									}}
-									disabled={loading}
-								>
-									Go
-								</button>
-							</div>
-							<button
-								className="rounded bg-slate-100 px-3 py-1.5 hover:bg-slate-200 disabled:opacity-50"
-								onClick={() => load(Math.max(1, pagination.page - 1))}
-								disabled={pagination.page <= 1}
-							>
-								Prev
-							</button>
-							<button
-								className="rounded bg-slate-100 px-3 py-1.5 hover:bg-slate-200 disabled:opacity-50"
-								onClick={() => {
-									const maxPage = Math.ceil(pagination.total / pagination.pageSize)
-									load(Math.min(maxPage, pagination.page + 1))
-								}}
-								disabled={pagination.page >= Math.ceil(pagination.total / pagination.pageSize)}
-							>
-								Next
-							</button>
-						</div>
+					<div className="mt-4">
+						<PaginationControls
+							page={pagination.page}
+							pageSize={pagination.pageSize}
+							total={pagination.total}
+							onPageChange={load}
+							disabled={loading}
+						/>
 					</div>
 				)}
 			</div>

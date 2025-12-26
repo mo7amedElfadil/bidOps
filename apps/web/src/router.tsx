@@ -24,6 +24,8 @@ import Layout from './components/Layout'
 import OpportunityOverview from './pages/Opportunities/Overview'
 import AttachmentSearchPage from './pages/Search/Attachments'
 import SlaSettingsPage from './pages/Settings/Sla'
+import LifecycleSettingsPage from './pages/Settings/Lifecycle'
+import SystemSettingsPage from './pages/Settings/System'
 import NotificationsPage from './pages/Notifications/Index'
 import ErrorPage from './components/ErrorPage'
 import { getMustChangePassword, getToken } from './utils/auth'
@@ -79,6 +81,8 @@ const router = createBrowserRouter([
 					{ path: '/notifications', element: <NotificationsPage /> },
 					{ path: '/search', element: <AttachmentSearchPage /> },
 					{ path: '/settings/sla', element: <SlaSettingsPage /> },
+					{ path: '/settings/lifecycle', element: <LifecycleSettingsPage /> },
+					{ path: '/settings/system', element: <SystemSettingsPage /> },
 					{ path: '/admin/users', element: <UsersPage /> },
 					{ path: '/admin/business-roles', element: <BusinessRolesPage /> }
 				]

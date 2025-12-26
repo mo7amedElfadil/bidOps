@@ -33,6 +33,7 @@
   - Web: Change requests now alert the bid owner via in-app notifications when submitted
   - Web: Tenders/Awards filter UI now reuses Button/Input/Card primitives and tender search placement matches awards
   - Web: Navigation includes a User group for personal settings; Settings page now separates SLA vs general configuration
+  - Web: Settings split into `/settings/sla`, `/settings/lifecycle`, and `/settings/system` with a shared navigation strip
   - Tenders: Monaqasat available-tender adapter now walks pages until the requested date window (or `MONAQASAT_TENDER_MAX_PAGES`) so date-range filtering works like the award collector
   - Collectors: Monaqasat award + available adapters now force English locale via headers, culture cookie, and ChangeLang
   - Approvals: Added decision DTO (supports changes requested/resubmitted), stage gating, and Go/No-Go request updates

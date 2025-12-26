@@ -63,11 +63,14 @@ UI scope and behaviors:
 | `/awards/staging` | Awards Staging | Review and curate collected awards |
 | `/awards/events` | Curated Awards | View curated award events |
 | `/tenders/available` | Available Tenders | List Monaqasat tenders and promote to opportunities |
+| `/account` | Account | Profile details, password, notification preferences |
 | `/admin/users` | Users | Admin user management |
 | `/admin/business-roles` | Business Roles | Manage business roles for routing and approvals |
-| `/notifications` | Notifications | In-app notifications and preferences |
+| `/notifications` | Notifications | In-app notifications + admin default routing |
 | `/search` | Attachment Search | Search attachments via `/search?q=` |
-| `/settings/sla` | Settings | SLA thresholds + holidays, opportunity lists, retention, timezone, import format, FX rates |
+| `/settings/sla` | SLA Settings | SLA thresholds + holiday calendar |
+| `/settings/lifecycle` | Opportunity Lists | Manage opportunity stages and statuses |
+| `/settings/system` | System Settings | Retention, timezone, import format, FX rates |
 | `/auth/callback` | Auth Callback | Handles OAuth redirect |
 | `/auth/login` | Login | Email/password login |
 | `/auth/signup` | Signup | Request access (pending approval) |
