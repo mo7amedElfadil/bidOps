@@ -10,6 +10,7 @@ export default function Login() {
 	const [password, setPassword] = useState('')
 	const [error, setError] = useState<string | null>(null)
 	const [loading, setLoading] = useState(false)
+	const [showPassword, setShowPassword] = useState(false)
 
 	async function submit(e: React.FormEvent) {
 		e.preventDefault()
@@ -38,17 +39,17 @@ export default function Login() {
 			footer={
 				<div className="space-y-2">
 					<div>
-						<a className="text-blue-600 hover:underline" href="/auth/signup">
+						<a className="text-accent hover:underline" href="/auth/signup">
 							Request access
 						</a>
 					</div>
 					<div>
-						<a className="text-blue-600 hover:underline" href="/auth/forgot-password">
+						<a className="text-accent hover:underline" href="/auth/forgot-password">
 							Forgot password?
 						</a>
 					</div>
 					<div>
-						<a className="text-slate-500 hover:underline" href="/auth/dev">
+						<a className="text-muted-foreground hover:underline" href="/auth/dev">
 							Developer login
 						</a>
 					</div>
@@ -68,18 +69,27 @@ export default function Login() {
 				</label>
 				<label className="text-sm">
 					<span className="font-medium">Password</span>
-					<input
-						type="password"
-						className="mt-1 w-full rounded border px-3 py-2"
-						value={password}
-						onChange={e => setPassword(e.target.value)}
-						required
-					/>
+					<div className="relative mt-1">
+						<input
+							type={showPassword ? 'text' : 'password'}
+							className="w-full rounded border px-3 py-2"
+							value={password}
+							onChange={e => setPassword(e.target.value)}
+							required
+						/>
+						<button
+							type="button"
+							className="absolute inset-y-0 right-2 flex items-center text-xs font-semibold text-slate-500 hover:text-slate-700"
+							onClick={() => setShowPassword(show => !show)}
+						>
+							{showPassword ? 'Hide' : 'Show'}
+						</button>
+					</div>
 				</label>
-				{error && <p className="text-sm text-red-600">{error}</p>}
+				{error && <p className="text-sm text-destructive">{error}</p>}
 				<button
 					type="submit"
-					className="mt-2 rounded bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+					className="mt-2 rounded bg-primary text-primary-foreground px-3 py-2 text-sm hover:bg-primary/90 disabled:opacity-50"
 					disabled={loading}
 				>
 					{loading ? 'Signing in...' : 'Sign in'}

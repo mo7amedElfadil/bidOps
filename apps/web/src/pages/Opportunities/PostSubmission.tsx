@@ -30,17 +30,17 @@ export default function PostSubmissionPage() {
 			title="Post Submission"
 			subtitle="Opportunities that are past deadline or already finalized for submission."
 			actions={
-				<Link to="/opportunities" className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200">
+				<Link to="/opportunities" className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80">
 					Back to Opportunities
 				</Link>
 			}
 		>
 			{opportunities.isLoading ? (
-				<p className="mt-4 text-sm text-slate-600">Loading...</p>
+				<p className="mt-4 text-sm text-muted-foreground">Loading...</p>
 			) : (
-				<div className="mt-4 overflow-x-auto rounded border bg-white shadow-sm">
+				<div className="mt-4 overflow-x-auto rounded border bg-card shadow-sm">
 					<table className="min-w-full text-sm">
-						<thead className="bg-slate-100">
+						<thead className="bg-muted">
 							<tr>
 								<th className="px-3 py-2 text-left">Title</th>
 								<th className="px-3 py-2 text-left">Client</th>
@@ -52,7 +52,7 @@ export default function PostSubmissionPage() {
 						</thead>
 						<tbody>
 							{rows.map(o => (
-								<tr key={o.id} className="border-t hover:bg-slate-50">
+								<tr key={o.id} className="border-t hover:bg-muted/80">
 									<td className="px-3 py-2 font-medium">
 										<Link to={`/opportunity/${o.id}`} className="hover:underline">
 											{o.title}
@@ -73,19 +73,19 @@ export default function PostSubmissionPage() {
 										<div className="flex flex-wrap gap-1">
 											<Link
 												to={`/opportunity/${o.id}/approvals`}
-												className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+												className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 											>
 												Approvals
 											</Link>
 											<Link
 												to={`/opportunity/${o.id}/submission`}
-												className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+												className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 											>
 												Submit
 											</Link>
 											<Link
 												to={`/opportunity/${o.id}/outcome`}
-												className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+												className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 											>
 												Outcome
 											</Link>
@@ -95,7 +95,7 @@ export default function PostSubmissionPage() {
 							))}
 							{rows.length === 0 && (
 								<tr>
-									<td colSpan={6} className="px-3 py-4 text-center text-slate-500">
+									<td colSpan={6} className="px-3 py-4 text-center text-muted-foreground">
 										No post-submission opportunities yet.
 									</td>
 								</tr>

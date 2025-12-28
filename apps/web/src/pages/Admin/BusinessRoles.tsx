@@ -66,15 +66,15 @@ export default function BusinessRolesPage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-slate-50 text-slate-900">
+		<div className="min-h-screen bg-muted text-foreground">
 			<div className="mx-auto max-w-4xl p-6">
 				<div className="flex items-center justify-between">
 					<div>
 						<h1 className="text-xl font-semibold">Business Roles</h1>
-						<p className="text-sm text-slate-600">Manage roles used for approvals and notifications.</p>
+						<p className="text-sm text-muted-foreground">Manage roles used for approvals and notifications.</p>
 					</div>
 					<button
-						className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200"
+						className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
 						onClick={() => load()}
 						disabled={loading}
 					>
@@ -82,7 +82,7 @@ export default function BusinessRolesPage() {
 					</button>
 				</div>
 
-				<div className="mt-4 rounded border bg-white p-4 shadow-sm">
+				<div className="mt-4 rounded border bg-card p-4 shadow-sm">
 					<h2 className="text-sm font-semibold">{editing ? 'Edit Role' : 'Add Role'}</h2>
 					<div className="mt-3 grid gap-3 md:grid-cols-2">
 						<label className="text-sm">
@@ -105,7 +105,7 @@ export default function BusinessRolesPage() {
 					<div className="mt-3 flex gap-2">
 						{editing && (
 							<button
-								className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
+								className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
 								onClick={() => {
 									setEditing(null)
 									setForm({ name: '', description: '' })
@@ -116,24 +116,24 @@ export default function BusinessRolesPage() {
 							</button>
 						)}
 						<button
-							className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+							className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
 							onClick={save}
 							disabled={saving || !form.name.trim()}
 						>
 							{saving ? 'Saving...' : editing ? 'Save Changes' : 'Create Role'}
 						</button>
 					</div>
-					{error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+					{error && <p className="mt-2 text-sm text-destructive">{error}</p>}
 				</div>
 
 				{loading ? (
-					<p className="mt-4 text-sm text-slate-600">Loading...</p>
+					<p className="mt-4 text-sm text-muted-foreground">Loading...</p>
 				) : rows.length === 0 ? (
-					<p className="mt-4 text-sm text-slate-600">No business roles found.</p>
+					<p className="mt-4 text-sm text-muted-foreground">No business roles found.</p>
 				) : (
-					<div className="mt-4 overflow-x-auto rounded border bg-white shadow-sm">
+					<div className="mt-4 overflow-x-auto rounded border bg-card shadow-sm">
 						<table className="min-w-full text-sm">
-							<thead className="bg-slate-100">
+							<thead className="bg-muted">
 								<tr>
 									<th className="px-3 py-2 text-left">Name</th>
 									<th className="px-3 py-2 text-left">Description</th>
@@ -144,17 +144,17 @@ export default function BusinessRolesPage() {
 								{rows.map(role => (
 									<tr key={role.id} className="border-t">
 										<td className="px-3 py-2 font-medium">{role.name}</td>
-										<td className="px-3 py-2 text-slate-600">{role.description || '-'}</td>
+										<td className="px-3 py-2 text-muted-foreground">{role.description || '-'}</td>
 										<td className="px-3 py-2 text-right">
 											<div className="flex justify-end gap-2">
 												<button
-													className="rounded bg-slate-100 px-2 py-1 text-xs hover:bg-slate-200"
+													className="rounded bg-muted px-2 py-1 text-xs hover:bg-muted/80"
 													onClick={() => startEdit(role)}
 												>
 													Edit
 												</button>
 												<button
-													className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700"
+													className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground hover:bg-destructive/90"
 													onClick={() => remove(role.id)}
 												>
 													Delete

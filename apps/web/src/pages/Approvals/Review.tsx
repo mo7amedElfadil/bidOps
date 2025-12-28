@@ -12,7 +12,7 @@ const statusClasses: Record<string, string> = {
 	APPROVED: 'bg-green-100 text-green-800',
 	APPROVED_WITH_CONDITIONS: 'bg-green-100 text-green-800',
 	REJECTED: 'bg-red-100 text-red-800',
-	PENDING: 'bg-amber-100 text-amber-800'
+	PENDING: 'bg-amber-500/10 text-amber-600'
 }
 
 const typeLabels: Record<string, string> = {
@@ -79,7 +79,7 @@ const packs = review.data || []
 			subtitle="Track pricing packs, review pending approvals, and finalize bids when all signatures are complete."
 		>
 			<div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
-				<label className="text-xs font-semibold text-slate-500">Queue</label>
+				<label className="text-xs font-semibold text-muted-foreground">Queue</label>
 				<select
 					className="rounded border px-2 py-1 text-xs"
 					value={scope}
@@ -90,9 +90,9 @@ const packs = review.data || []
 				</select>
 			</div>
 			{review.isLoading ? (
-				<p className="mt-6 text-sm text-slate-600">Loading review queue...</p>
+				<p className="mt-6 text-sm text-muted-foreground">Loading review queue...</p>
 			) : packs.length === 0 ? (
-				<div className="mt-6 rounded border border-dashed border-slate-300 bg-white/80 p-6 text-center text-sm text-slate-600">
+				<div className="mt-6 rounded border border-dashed border-border bg-card 80 p-6 text-center text-sm text-muted-foreground">
 					No bids are currently awaiting review. Start by building a pricing pack and kicking off the approval chain.
 				</div>
 			) : (
@@ -112,11 +112,11 @@ const packs = review.data || []
 							<Card key={pack.id}>
 								<div className="flex flex-wrap items-start justify-between gap-4">
 									<div>
-										<p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Opportunity</p>
-										<h3 className="text-lg font-semibold text-slate-900">{pack.opportunity.title}</h3>
-										<p className="text-sm text-slate-600">{pack.opportunity.client?.name || 'Unknown client'}</p>
+										<p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Opportunity</p>
+										<h3 className="text-lg font-semibold text-foreground">{pack.opportunity.title}</h3>
+										<p className="text-sm text-muted-foreground">{pack.opportunity.client?.name || 'Unknown client'}</p>
 									</div>
-									<div className="text-sm text-slate-500">
+									<div className="text-sm text-muted-foreground">
 										<div>Stage: {pack.opportunity.stage || '—'}</div>
 										<div>Status: {pack.opportunity.status || '—'}</div>
 										<div>Submission: {formatDate(pack.opportunity.submissionDate)}</div>
@@ -126,11 +126,11 @@ const packs = review.data || []
 								<div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
 									<div>
 										Base Cost:
-										<span className="ml-1 font-semibold text-slate-900">{pack.baseCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+										<span className="ml-1 font-semibold text-foreground">{pack.baseCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
 									</div>
 									<div>
 										Margin:
-										<span className="ml-1 font-semibold text-slate-900">{(pack.margin * 100).toFixed(0)}%</span>
+										<span className="ml-1 font-semibold text-foreground">{(pack.margin * 100).toFixed(0)}%</span>
 									</div>
 									<div>
 										Total:
@@ -143,7 +143,7 @@ const packs = review.data || []
 										<span
 											key={approval.id}
 											className={`rounded-full border px-3 py-1 text-xs font-semibold ${statusClasses[approval.status]} ${
-												approval.approverId ? 'border-transparent' : 'border-slate-200'
+												approval.approverId ? 'border-transparent' : 'border-border'
 											}`}
 										>
 											{typeLabels[approval.type] || approval.type} • {approval.status}
@@ -152,15 +152,15 @@ const packs = review.data || []
 								</div>
 							<div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,260px)]">
 								<div className="space-y-3">
-									<div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
+									<div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-foreground">
 										<span>
 											Next stage:
-											<span className="ml-1 text-slate-900">
+											<span className="ml-1 text-foreground">
 												{pack.nextStageLabel ?? 'All approvals complete'}
 											</span>
 										</span>
 										{pack.nextActionLabel ? (
-											<span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+											<span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">
 												{pack.nextActionLabel}
 											</span>
 										) : null}
@@ -171,12 +171,12 @@ const packs = review.data || []
 										)}
 									</div>
 									{pack.blockedReason ? (
-										<div className="rounded border-l-4 border-amber-400 bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
+										<div className="rounded border-l-4 border-amber-400 bg-amber-50 px-3 py-2 text-[12px] text-amber-600">
 											{pack.blockedReason}
 											{myPending && pack.nextActionLabel ? ` • Your action required: ${pack.nextActionLabel}` : ''}
 										</div>
 									) : null}
-									<div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+									<div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
 										<span>
 											{approvals.filter(a => ['APPROVED', 'APPROVED_WITH_CONDITIONS'].includes(a.status)).length}/{approvals.length} approvals done
 										</span>
@@ -184,9 +184,9 @@ const packs = review.data || []
 										{hasRejected && <span className="text-rose-600">Contains rejection</span>}
 									</div>
 								</div>
-								<div className="rounded border border-slate-200 bg-white p-4 shadow-sm">
-									<div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Submission status</div>
-									<div className="mt-2 space-y-1 text-sm text-slate-700">
+								<div className="rounded border border-border bg-card p-4 shadow-sm">
+									<div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Submission status</div>
+									<div className="mt-2 space-y-1 text-sm text-foreground">
 										<div>
 											Stage: <span className="font-semibold">{pack.opportunity.stage || '—'}</span>
 										</div>

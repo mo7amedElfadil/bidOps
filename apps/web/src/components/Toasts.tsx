@@ -3,8 +3,8 @@ import { subscribe, ToastMessage } from '../utils/toast'
 
 function getStyle(type: ToastMessage['type']) {
 	if (type === 'success') return 'bg-green-600'
-	if (type === 'info') return 'bg-slate-800'
-	return 'bg-red-600'
+	if (type === 'info') return 'bg-card'
+	return 'bg-destructive'
 }
 
 export default function Toasts() {

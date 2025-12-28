@@ -6,8 +6,11 @@ import * as argon2 from 'argon2'
 import * as crypto from 'crypto'
 import { JwtAuthGuard } from './jwt-auth.guard'
 import { Roles } from './roles.decorator'
-import { Role, UserStatus } from '@prisma/client'
+import { Role, UserStatus, NotificationChannel } from '@prisma/client'
 import { IsArray, IsEmail, IsIn, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator'
+import { NotificationsService } from '../modules/notifications/notifications.service'
+import { NotificationActivities } from '../modules/notifications/notifications.constants'
+import { buildFrontendUrl } from '../utils/frontend-url'
 
 class InviteUserDto {
 	@IsEmail()
@@ -32,6 +35,11 @@ class InviteUserDto {
 	@IsArray()
 	@IsUUID('4', { each: true })
 	businessRoleIds?: string[]
+}
+
+class InviteLinkDto {
+	@IsUUID('4')
+	userId!: string
 }
 
 class AcceptInviteDto {
@@ -72,7 +80,11 @@ class ChangePasswordDto {
 
 @Controller('auth')
 export class AuthController {
-	constructor(private jwt: JwtService, private prisma: PrismaService) {}
+	constructor(
+		private jwt: JwtService,
+		private prisma: PrismaService,
+		private notifications: NotificationsService
+	) {}
 
 	private isLocalAuth() {
 		return (process.env.AUTH_PROVIDER || 'local').toLowerCase() === 'local'
@@ -184,26 +196,30 @@ export class AuthController {
 			await this.assignBusinessRoles(user.id, body.businessRoleIds, tenantId)
 		}
 
-		await this.prisma.inviteToken.deleteMany({ where: { userId: user.id } })
-		const token = this.generateToken()
-		const tokenHash = this.hashToken(token)
-		const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
-		await this.prisma.inviteToken.create({
-			data: {
-				userId: user.id,
-				tokenHash,
-				expiresAt
-			}
-		})
-
-		const link = `${process.env.WEB_ORIGIN || 'http://localhost:8080'}/auth/accept-invite?token=${encodeURIComponent(token)}`
+		const link = await this.createInviteLink(user.id, tenantId)
 		await this.queueEmail({
 			to: user.email,
 			subject: 'You have been invited to BidOps',
 			body: `You have been invited to BidOps. Use this link to set your password:\n\n${link}\n\nThis link expires in 24 hours.`
 		}, user, tenantId, 'auth.invite')
 
-		return { userId: user.id }
+		return { userId: user.id, link }
+	}
+
+	@Post('invite-link')
+	@UseGuards(JwtAuthGuard)
+	@Roles('ADMIN')
+	async inviteLink(@Body() body: InviteLinkDto, @Req() req: any) {
+		const tenantId = req.user?.tenantId || 'default'
+		const user = await this.prisma.user.findUnique({ where: { id: body.userId } })
+		if (!user || user.tenantId !== tenantId) {
+			throw new BadRequestException('User not found')
+		}
+		if (user.status !== UserStatus.INVITED) {
+			throw new BadRequestException('User is not invited')
+		}
+		const link = await this.createInviteLink(user.id, tenantId)
+		return { link }
 	}
 
 	@Post('accept-invite')
@@ -376,26 +392,57 @@ export class AuthController {
 		})
 	}
 
+	private async createInviteLink(userId: string, tenantId: string) {
+		await this.prisma.inviteToken.deleteMany({ where: { userId } })
+		const token = this.generateToken()
+		const tokenHash = this.hashToken(token)
+		const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
+		await this.prisma.inviteToken.create({
+			data: {
+				userId,
+				tokenHash,
+				expiresAt
+			}
+		})
+		return `${process.env.WEB_ORIGIN || 'http://localhost:8080'}/auth/accept-invite?token=${encodeURIComponent(token)}`
+	}
+
 	private async queueUserSignupNotifications(user: { id: string; email: string; name: string; tenantId: string }) {
 		const admins = await this.prisma.user.findMany({
 			where: { tenantId: user.tenantId, role: Role.ADMIN, status: UserStatus.ACTIVE, isActive: true },
-			select: { id: true, email: true, name: true }
+			select: { id: true }
 		})
 		const subject = 'New signup pending approval'
 		const body = `A new user has signed up and is awaiting approval:\n\n${user.name} (${user.email})`
-		for (const admin of admins) {
-			await this.queueEmail({ to: admin.email, subject, body }, admin, user.tenantId, 'auth.signup')
+		const formActionUrl = buildFrontendUrl('/admin/users')
+		const adminIds = admins.map(admin => admin.id)
+		if (adminIds.length) {
+			await this.notifications.dispatch({
+				activity: NotificationActivities.AUTH_SIGNUP,
+				tenantId: user.tenantId,
+				subject,
+				body,
+				userIds: adminIds,
+				channels: [NotificationChannel.EMAIL, NotificationChannel.IN_APP],
+				payload: {
+					actionUrl: formActionUrl,
+					actionLabel: 'Review access requests'
+				},
+				includeDefaults: true
+			})
 		}
-		await this.queueEmail(
-			{
-				to: user.email,
-				subject: 'Your BidOps account is pending approval',
-				body: 'Thanks for signing up. An administrator will review your request shortly.'
-			},
-			user,
-			user.tenantId,
-			'auth.signup.pending'
-		)
+		await this.notifications.dispatch({
+			activity: NotificationActivities.AUTH_SIGNUP_PENDING,
+			tenantId: user.tenantId,
+			subject: 'Your BidOps account is pending approval',
+			body: 'Thanks for signing up. An administrator will review your request shortly.',
+			userIds: [user.id],
+			channels: [NotificationChannel.EMAIL, NotificationChannel.IN_APP],
+			payload: {
+				actionUrl: buildFrontendUrl('/notifications'),
+				actionLabel: 'View application status'
+			}
+		})
 	}
 
 	private async assignBusinessRoles(userId: string, roleIds: string[], tenantId: string) {

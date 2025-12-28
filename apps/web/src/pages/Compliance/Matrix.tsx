@@ -116,29 +116,29 @@ export default function ComplianceMatrix() {
 							Export CSV
 						</Button>
 						{(importPdfMutation.isPending || importCsvMutation.isPending) && (
-							<span className="text-sm text-slate-600">Importing...</span>
+							<span className="text-sm text-muted-foreground">Importing...</span>
 						)}
 					</div>
 					<div className="mt-2 flex flex-wrap gap-3">
 						{importPdfMutation.error && (
-							<span className="text-sm text-red-600">{(importPdfMutation.error as Error).message}</span>
+							<span className="text-sm text-destructive">{(importPdfMutation.error as Error).message}</span>
 						)}
 						{importCsvMutation.error && (
-							<span className="text-sm text-red-600">{(importCsvMutation.error as Error).message}</span>
+							<span className="text-sm text-destructive">{(importCsvMutation.error as Error).message}</span>
 						)}
 					</div>
 				</Card>
 
 				{list.isLoading ? (
-					<p className="mt-4 text-sm text-gray-600">Loading...</p>
+					<p className="mt-4 text-sm text-muted-foreground">Loading...</p>
 				) : list.error ? (
-					<p className="mt-4 text-sm text-red-600">
+					<p className="mt-4 text-sm text-destructive">
 						{(list.error as Error).message || 'Failed to load clauses'}
 					</p>
 				) : (
-					<div className="mt-4 overflow-x-auto rounded border bg-white">
+					<div className="mt-4 overflow-x-auto rounded border bg-card">
 						<table className="min-w-full text-sm">
-							<thead className="bg-gray-100">
+							<thead className="bg-muted">
 								<tr>
 									<th className="px-3 py-2 text-left">No</th>
 									<th className="px-3 py-2 text-left">Mandatory</th>
@@ -165,7 +165,7 @@ export default function ComplianceMatrix() {
 										</td>
 										<td className="px-3 py-2">
 											<select
-												className="w-full rounded border border-slate-200 px-2 py-1 text-sm"
+												className="w-full rounded border border-border px-2 py-1 text-sm"
 												defaultValue={r.status || ''}
 												onChange={e => (r.status = e.target.value)}
 											>
@@ -199,7 +199,7 @@ export default function ComplianceMatrix() {
 								))}
 								{list.data?.length === 0 && (
 									<tr>
-										<td colSpan={8} className="px-3 py-4 text-center text-slate-500">
+										<td colSpan={8} className="px-3 py-4 text-center text-muted-foreground">
 											No clauses loaded. Import a PDF to begin.
 										</td>
 									</tr>

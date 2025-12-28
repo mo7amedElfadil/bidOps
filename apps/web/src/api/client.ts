@@ -911,9 +911,15 @@ export const api = {
 		})
 	},
 	inviteUser(input: { email: string; name?: string; role?: string; userType?: string; businessRoleIds?: string[] }) {
-		return request<{ userId: string }>(`/auth/invite`, {
+		return request<{ userId: string; link: string }>(`/auth/invite`, {
 			method: 'POST',
 			body: JSON.stringify(input)
+		})
+	},
+	generateInviteLink(userId: string) {
+		return request<{ link: string }>(`/auth/invite-link`, {
+			method: 'POST',
+			body: JSON.stringify({ userId })
 		})
 	},
 	acceptInvite(input: { token: string; name: string; password: string }) {

@@ -43,13 +43,13 @@ export default function AvailableTendersPage() {
 	const goNoGoMeta = (status?: string | null) => {
 		switch (status) {
 			case 'APPROVED':
-				return { label: 'Go/No-Go approved', className: 'bg-emerald-100 text-emerald-800' }
+				return { label: 'Go/No-Go approved', className: 'bg-green-500/10 text-green-600' }
 			case 'REJECTED':
 				return { label: 'Go/No-Go rejected', className: 'bg-rose-100 text-rose-800' }
 			case 'PENDING':
-				return { label: 'Awaiting Go/No-Go', className: 'bg-amber-100 text-amber-800' }
+				return { label: 'Awaiting Go/No-Go', className: 'bg-amber-500/10 text-amber-600' }
 			default:
-				return { label: 'Not requested', className: 'bg-slate-100 text-slate-600' }
+				return { label: 'Not requested', className: 'bg-muted text-muted-foreground' }
 		}
 	}
 
@@ -271,15 +271,15 @@ export default function AvailableTendersPage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-slate-50 text-slate-900">
+		<div className="min-h-screen bg-muted text-foreground">
 			<div className="w-full px-6 py-6">
 				<div className="flex items-center justify-between">
 					<div>
-						<Link to="/opportunities" className="text-sm text-blue-600 hover:underline">
+						<Link to="/opportunities" className="text-sm text-accent hover:underline">
 							← Back to Opportunities
 						</Link>
 						<h1 className="mt-1 text-xl font-semibold">Available Ministry Tenders</h1>
-						<p className="text-sm text-slate-600">Review tenders from Monaqasat and promote to opportunities.</p>
+						<p className="text-sm text-muted-foreground">Review tenders from Monaqasat and promote to opportunities.</p>
 					</div>
 					<div className="flex gap-2">
 						<Button variant="secondary" size="sm" onClick={() => load(pagination.page)} disabled={loading}>
@@ -323,7 +323,7 @@ export default function AvailableTendersPage() {
 				<Card className="mt-4">
 					<div className="flex flex-wrap items-end gap-4">
 						<div>
-							<label className="text-xs font-medium text-slate-600">From date (UTC+3, YYYY-MM-DD)</label>
+							<label className="text-xs font-medium text-muted-foreground">From date (UTC+3, YYYY-MM-DD)</label>
 							<input
 								type="date"
 								className="mt-1 block h-10 w-[180px] rounded border px-3 py-1.5 text-sm"
@@ -332,7 +332,7 @@ export default function AvailableTendersPage() {
 							/>
 						</div>
 						<div>
-							<label className="text-xs font-medium text-slate-600">To date (YYYY-MM-DD)</label>
+							<label className="text-xs font-medium text-muted-foreground">To date (YYYY-MM-DD)</label>
 							<input
 								type="date"
 								className="mt-1 block h-10 w-[180px] rounded border px-3 py-1.5 text-sm"
@@ -358,9 +358,9 @@ export default function AvailableTendersPage() {
 						>
 							Clear Filter
 						</Button>
-						<span className="text-xs text-slate-500">Filters apply to publish/close dates.</span>
+						<span className="text-xs text-muted-foreground">Filters apply to publish/close dates.</span>
 					</div>
-					{runError && <p className="mt-3 text-sm text-red-600">{runError}</p>}
+					{runError && <p className="mt-3 text-sm text-destructive">{runError}</p>}
 					{runSummary && <p className="mt-3 text-sm text-green-700">{runSummary}</p>}
 					{selectedRows.length > 0 && (
 						<div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
@@ -370,16 +370,16 @@ export default function AvailableTendersPage() {
 						</div>
 					)}
 				</Card>
-				{error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+				{error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 
 				{loading ? (
-					<p className="mt-4 text-sm text-slate-600">Loading...</p>
+					<p className="mt-4 text-sm text-muted-foreground">Loading...</p>
 				) : rows.length === 0 ? (
-					<p className="mt-4 text-sm text-slate-600">No tenders found.</p>
+					<p className="mt-4 text-sm text-muted-foreground">No tenders found.</p>
 				) : (
-					<div className="mt-4 overflow-x-auto rounded border bg-white shadow-sm">
+					<div className="mt-4 overflow-x-auto rounded border bg-card shadow-sm">
 						<table className="min-w-full text-sm">
-							<thead className="bg-slate-100">
+							<thead className="bg-muted">
 								<tr>
 									<th className="px-3 py-2 text-left">
 										<input
@@ -433,7 +433,7 @@ export default function AvailableTendersPage() {
 										<td className="px-3 py-2 text-xs">
 											{row.purchaseUrl ? (
 												<a
-													className="text-blue-600 hover:underline"
+													className="text-accent hover:underline"
 													href={row.purchaseUrl}
 													target="_blank"
 													rel="noreferrer"
@@ -445,7 +445,7 @@ export default function AvailableTendersPage() {
 											)}
 										</td>
 										<td className="px-3 py-2">
-											<span className="rounded bg-slate-100 px-2 py-0.5 text-xs">{row.status || 'new'}</span>
+											<span className="rounded bg-muted px-2 py-0.5 text-xs">{row.status || 'new'}</span>
 										</td>
 										<td className="px-3 py-2">
 											<span className={`rounded px-2 py-0.5 text-xs ${goNoGo.className}`}>{goNoGo.label}</span>
@@ -455,7 +455,7 @@ export default function AvailableTendersPage() {
 												{canReview && (
 													<>
 														<button
-															className="rounded bg-indigo-600 px-3 py-1 text-xs text-white hover:bg-indigo-700 disabled:opacity-50"
+															className="rounded bg-secondary px-3 py-1 text-xs text-secondary-foreground hover:bg-secondary/90 disabled:opacity-50"
 															onClick={() => {
 																setRequestTender(row)
 																setRequestComment('')
@@ -472,7 +472,7 @@ export default function AvailableTendersPage() {
 																		: 'Request Approval'}
 														</button>
 														<button
-															className="rounded bg-rose-600 px-3 py-1 text-xs text-white hover:bg-rose-700 disabled:opacity-50"
+															className="rounded bg-destructive px-3 py-1 text-xs text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
 															onClick={() => {
 																setRejectTender(row)
 																setRejectComment('')
@@ -486,21 +486,21 @@ export default function AvailableTendersPage() {
 												)}
 												{hasOpportunity && (
 													<button
-														className="rounded bg-slate-900 px-3 py-1 text-xs text-white hover:bg-slate-800"
+														className="rounded bg-card px-3 py-1 text-xs text-foreground hover:bg-card"
 														onClick={() => nav(`/opportunity/${row.opportunityId}`)}
 													>
 														Open Opportunity
 													</button>
 												)}
 												<button
-													className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700 disabled:opacity-50"
+													className="rounded bg-green-600 px-3 py-1 text-xs text-primary-foreground hover:bg-green-600/90 disabled:opacity-50"
 													onClick={() => promote(row.id)}
 													disabled={!canPromote || promoting === row.id || row.status === 'promoted' || hasOpportunity}
 												>
 													{promoting === row.id ? 'Promoting...' : 'Promote'}
 												</button>
 												<button
-													className="rounded bg-slate-200 px-3 py-1 text-xs hover:bg-slate-300"
+													className="rounded bg-muted px-3 py-1 text-xs hover:bg-muted/80"
 													onClick={() => openEditModal(row)}
 												>
 													Edit
@@ -528,16 +528,16 @@ export default function AvailableTendersPage() {
 			</div>
 			{requestTender && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-					<div className="w-full max-w-lg rounded border bg-white p-5 shadow-lg">
+					<div className="w-full max-w-lg rounded border bg-card p-5 shadow-lg">
 						<h2 className="text-lg font-semibold">Request Approval</h2>
-						<p className="mt-1 text-sm text-slate-600">
+						<p className="mt-1 text-sm text-muted-foreground">
 							Provide a brief rationale before sending this tender for managerial approval.
 						</p>
-						<div className="mt-4 rounded border bg-slate-50 p-3 text-sm">
+						<div className="mt-4 rounded border bg-muted p-3 text-sm">
 							<p className="font-medium">{requestTender.title || requestTender.tenderRef}</p>
-							<p className="text-slate-600">{requestTender.ministry || 'Unknown ministry'}</p>
+							<p className="text-muted-foreground">{requestTender.ministry || 'Unknown ministry'}</p>
 						</div>
-						<label className="mt-4 block text-xs font-medium text-slate-600">Rationale (optional)</label>
+						<label className="mt-4 block text-xs font-medium text-muted-foreground">Rationale (optional)</label>
 						<textarea
 							className="mt-1 w-full rounded border p-2 text-sm"
 							rows={4}
@@ -545,7 +545,7 @@ export default function AvailableTendersPage() {
 							onChange={e => setRequestComment(e.target.value)}
 							placeholder="Why should we pursue this tender?"
 						/>
-						<label className="mt-4 block text-xs font-medium text-slate-600">Reviewers (Users)</label>
+						<label className="mt-4 block text-xs font-medium text-muted-foreground">Reviewers (Users)</label>
 						<select
 							multiple
 							className="mt-1 w-full rounded border p-2 text-sm"
@@ -561,7 +561,7 @@ export default function AvailableTendersPage() {
 								</option>
 							))}
 						</select>
-						<label className="mt-4 block text-xs font-medium text-slate-600">Reviewers (Business Roles)</label>
+						<label className="mt-4 block text-xs font-medium text-muted-foreground">Reviewers (Business Roles)</label>
 						<select
 							multiple
 							className="mt-1 w-full rounded border p-2 text-sm"
@@ -577,17 +577,17 @@ export default function AvailableTendersPage() {
 								</option>
 							))}
 						</select>
-						{requestError && <p className="mt-2 text-sm text-red-600">{requestError}</p>}
+						{requestError && <p className="mt-2 text-sm text-destructive">{requestError}</p>}
 						<div className="mt-4 flex items-center justify-end gap-2">
 							<button
-								className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200"
+								className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
 								onClick={() => setRequestTender(null)}
 								disabled={requestingApproval}
 							>
 								Cancel
 							</button>
 							<button
-								className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700 disabled:opacity-50"
+								className="rounded bg-secondary px-3 py-1.5 text-sm text-secondary-foreground hover:bg-secondary/90 disabled:opacity-50"
 								onClick={submitWorkApproval}
 								disabled={requestingApproval}
 							>
@@ -599,16 +599,16 @@ export default function AvailableTendersPage() {
 			)}
 			{rejectTender && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-					<div className="w-full max-w-lg rounded border bg-white p-5 shadow-lg">
+					<div className="w-full max-w-lg rounded border bg-card p-5 shadow-lg">
 						<h2 className="text-lg font-semibold">Reject Tender</h2>
-						<p className="mt-1 text-sm text-slate-600">
+						<p className="mt-1 text-sm text-muted-foreground">
 							Provide a short note before rejecting this tender.
 						</p>
-						<div className="mt-4 rounded border bg-slate-50 p-3 text-sm">
+						<div className="mt-4 rounded border bg-muted p-3 text-sm">
 							<p className="font-medium">{rejectTender.title || rejectTender.tenderRef}</p>
-							<p className="text-slate-600">{rejectTender.ministry || 'Unknown ministry'}</p>
+							<p className="text-muted-foreground">{rejectTender.ministry || 'Unknown ministry'}</p>
 						</div>
-						<label className="mt-4 block text-xs font-medium text-slate-600">Reason (optional)</label>
+						<label className="mt-4 block text-xs font-medium text-muted-foreground">Reason (optional)</label>
 						<textarea
 							className="mt-1 w-full rounded border p-2 text-sm"
 							rows={4}
@@ -616,17 +616,17 @@ export default function AvailableTendersPage() {
 							onChange={e => setRejectComment(e.target.value)}
 							placeholder="Why are we rejecting this tender?"
 						/>
-						{rejectError && <p className="mt-2 text-sm text-red-600">{rejectError}</p>}
+						{rejectError && <p className="mt-2 text-sm text-destructive">{rejectError}</p>}
 						<div className="mt-4 flex items-center justify-end gap-2">
 							<button
-								className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200"
+								className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
 								onClick={() => setRejectTender(null)}
 								disabled={rejectingApproval}
 							>
 								Cancel
 							</button>
 							<button
-								className="rounded bg-rose-600 px-3 py-1.5 text-sm text-white hover:bg-rose-700 disabled:opacity-50"
+								className="rounded bg-destructive px-3 py-1.5 text-sm text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
 								onClick={submitRejectApproval}
 								disabled={rejectingApproval}
 							>
@@ -638,7 +638,7 @@ export default function AvailableTendersPage() {
 			)}
 			{editingTender && (
 				<div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4">
-					<div className="w-full max-w-lg space-y-3 rounded border bg-white p-5 shadow-lg">
+					<div className="w-full max-w-lg space-y-3 rounded border bg-card p-5 shadow-lg">
 						<h2 className="text-lg font-semibold">Edit Tender</h2>
 						<div className="grid gap-3">
 							<label className="text-sm">
@@ -718,17 +718,17 @@ export default function AvailableTendersPage() {
 								</select>
 							</label>
 						</div>
-						{editError && <p className="text-sm text-red-600">{editError}</p>}
+						{editError && <p className="text-sm text-destructive">{editError}</p>}
 						<div className="flex justify-end gap-2">
 							<button
-								className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
+								className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
 								onClick={() => setEditingTender(null)}
 								disabled={editSaving}
 							>
 								Cancel
 							</button>
 							<button
-								className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+								className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
 								onClick={saveEdit}
 								disabled={editSaving}
 							>

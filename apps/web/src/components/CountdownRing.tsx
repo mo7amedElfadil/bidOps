@@ -22,7 +22,7 @@ export default function CountdownRing({
 	submissionDate?: string
 	now: number
 }) {
-	if (!submissionDate) return <span className="text-xs text-slate-500">—</span>
+	if (!submissionDate) return <span className="text-xs text-muted-foreground">—</span>
 	const target = new Date(submissionDate).getTime()
 	const diff = target - now
 	const daysLeft = diff / (1000 * 60 * 60 * 24)
@@ -52,7 +52,7 @@ export default function CountdownRing({
 					strokeLinecap="round"
 				/>
 			</svg>
-			<span className="text-xs font-medium text-slate-700">{label}</span>
+			<span className="text-xs font-medium text-foreground">{label}</span>
 		</div>
 	)
 }

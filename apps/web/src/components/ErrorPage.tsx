@@ -11,16 +11,16 @@ export default function ErrorPage() {
 	const message = error?.message || error?.statusText || 'Something went wrong. Please try again.'
 
 	return (
-		<div className="min-h-screen bg-slate-50 text-slate-900">
+		<div className="min-h-screen bg-muted text-foreground">
 			<div className="mx-auto flex max-w-4xl flex-col items-start justify-center gap-4 p-6 text-base">
-				<span className="text-sm font-semibold uppercase tracking-wide text-slate-500">BidOps</span>
-				<h1 className="text-3xl font-semibold text-slate-900">{title}</h1>
-				<p className="text-slate-600">{message}</p>
+				<span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">BidOps</span>
+				<h1 className="text-3xl font-semibold text-foreground">{title}</h1>
+				<p className="text-muted-foreground">{message}</p>
 				<div className="flex flex-wrap gap-3">
-					<button className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700" onClick={() => window.location.reload()}>
+					<button className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90" onClick={() => window.location.reload()}>
 						Reload
 					</button>
-					<Link className="rounded border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-300" to="/dashboard">
+					<Link className="rounded border border-border px-4 py-2 text-sm font-medium text-foreground hover:border-border" to="/dashboard">
 						Go Home
 					</Link>
 				</div>

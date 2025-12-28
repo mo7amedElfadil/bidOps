@@ -260,14 +260,14 @@ export default function OnboardingPanel({ defaultRoleId }: { defaultRoleId?: str
 
 	if (hidden) {
 		return (
-			<div className="mt-4 rounded border border-dashed border-slate-300 bg-white/80 px-4 py-3 text-sm text-slate-600">
+			<div className="mt-4 rounded border border-dashed border-border bg-card 80 px-4 py-3 text-sm text-muted-foreground">
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div>
-						<span className="font-semibold text-slate-800">Start here:</span> Choose your role and follow the
+						<span className="font-semibold text-foreground">Start here:</span> Choose your role and follow the
 						bid workflow.
 					</div>
 					<button
-						className="rounded bg-blue-600 px-3 py-1.5 text-xs text-white hover:bg-blue-700"
+						className="rounded bg-primary px-3 py-1.5 text-xs text-primary-foreground hover:bg-primary/90"
 						onClick={() => {
 							setHidden(false)
 							writeStored('bidops.onboarding.hidden', false)
@@ -281,15 +281,15 @@ export default function OnboardingPanel({ defaultRoleId }: { defaultRoleId?: str
 	}
 
 	return (
-		<div className="mt-4 rounded border bg-white p-4 shadow-sm">
+		<div className="mt-4 rounded border bg-card p-4 shadow-sm">
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div>
-					<p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Getting started</p>
-					<h2 className="text-lg font-semibold text-slate-900">{flow.label} workflow</h2>
-					<p className="text-sm text-slate-600">{flow.summary}</p>
+					<p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Getting started</p>
+					<h2 className="text-lg font-semibold text-foreground">{flow.label} workflow</h2>
+					<p className="text-sm text-muted-foreground">{flow.summary}</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-2 text-sm">
-					<label className="text-xs font-semibold text-slate-500">Role</label>
+					<label className="text-xs font-semibold text-muted-foreground">Role</label>
 					<select
 						className="rounded border px-2 py-1 text-xs"
 						value={selectedRole}
@@ -301,9 +301,9 @@ export default function OnboardingPanel({ defaultRoleId }: { defaultRoleId?: str
 							</option>
 						))}
 					</select>
-					<span className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-600">Progress: {progress}</span>
+					<span className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground">Progress: {progress}</span>
 					<button
-						className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-600 hover:bg-slate-200"
+						className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80"
 						onClick={() => {
 							setHidden(true)
 							writeStored('bidops.onboarding.hidden', true)
@@ -322,9 +322,9 @@ export default function OnboardingPanel({ defaultRoleId }: { defaultRoleId?: str
 
 			<div className="mt-4 grid gap-3 md:grid-cols-3">
 				{flow.steps.map(step => (
-					<div key={step.id} className="rounded border border-slate-200 bg-slate-50 p-3">
+					<div key={step.id} className="rounded border border-border bg-muted p-3">
 						<div className="flex items-center justify-between">
-							<label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+							<label className="flex items-center gap-2 text-sm font-semibold text-foreground">
 								<input
 									type="checkbox"
 									checked={completed.includes(step.id)}
@@ -334,12 +334,12 @@ export default function OnboardingPanel({ defaultRoleId }: { defaultRoleId?: str
 							</label>
 							<Link
 								to={step.to}
-								className="text-xs font-semibold text-blue-600 hover:underline"
+								className="text-xs font-semibold text-accent hover:underline"
 							>
 								{step.cta}
 							</Link>
 						</div>
-						<p className="mt-2 text-xs text-slate-600">{step.description}</p>
+						<p className="mt-2 text-xs text-muted-foreground">{step.description}</p>
 					</div>
 				))}
 			</div>

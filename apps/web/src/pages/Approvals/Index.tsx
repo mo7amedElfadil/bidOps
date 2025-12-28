@@ -52,9 +52,9 @@ export default function ApprovalsPage() {
 			case 'RESUBMITTED':
 				return 'bg-sky-100 text-sky-800'
 			case 'IN_REVIEW':
-				return 'bg-blue-100 text-blue-800'
+				return 'bg-primary/10 text-primary'
 			default:
-				return 'bg-amber-100 text-amber-800'
+				return 'bg-amber-500/10 text-amber-600'
 		}
 	}
 
@@ -88,12 +88,12 @@ export default function ApprovalsPage() {
 		<OpportunityShell active="approvals">
 			<div className="p-4">
 				{pack.isLoading ? (
-					<p className="text-sm text-slate-600">Loading...</p>
+					<p className="text-sm text-muted-foreground">Loading...</p>
 				) : (
 					<>
 						{/* Pricing Pack Summary */}
 						{pack.data && (
-							<div className="rounded border bg-white p-4 shadow-sm">
+							<div className="rounded border bg-card p-4 shadow-sm">
 								<h2 className="font-medium">Pricing Pack v{pack.data.version}</h2>
 								<div className="mt-2 grid gap-2 text-sm sm:grid-cols-3">
 									<div>
@@ -113,7 +113,7 @@ export default function ApprovalsPage() {
 								<h2 className="font-semibold">Approval Chain</h2>
 								{(approvals.data?.length || 0) === 0 && pack.data?.id && (
 									<button
-										className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+										className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
 										onClick={() => bootstrap.mutate(pack.data.id)}
 										disabled={bootstrap.isPending}
 									>
@@ -123,11 +123,11 @@ export default function ApprovalsPage() {
 							</div>
 
 							{approvalRows.length > 0 && (
-								<div className="mt-4 rounded border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-600">
-									<p className="font-semibold text-slate-900">
+								<div className="mt-4 rounded border border-border bg-muted/60 p-4 text-sm text-muted-foreground">
+									<p className="font-semibold text-foreground">
 										{approvalsComplete ? 'All approvals complete — ready for submission' : `Awaiting ${getTypeLabel(nextApproval?.type || '')}`}
 									</p>
-									<p className="mt-1 text-xs text-slate-500">
+									<p className="mt-1 text-xs text-muted-foreground">
 										{nextApproval
 											? `Next action: ${getActionLabel(nextApproval.type)}${nextApproval.approverRole ? ` (${nextApproval.approverRole})` : ''}`
 											: 'No pending stages. Reviewers may finalize the submission.'}
@@ -136,9 +136,9 @@ export default function ApprovalsPage() {
 							)}
 
 							{approvals.isLoading ? (
-								<p className="mt-3 text-sm text-slate-600">Loading approvals...</p>
+								<p className="mt-3 text-sm text-muted-foreground">Loading approvals...</p>
 							) : (approvals.data?.length || 0) === 0 ? (
-								<div className="mt-4 rounded border bg-slate-100 p-4 text-center text-sm text-slate-600">
+								<div className="mt-4 rounded border bg-muted p-4 text-center text-sm text-muted-foreground">
 									No approval chain started yet. Click "Start Approval Process" to create the approval chain.
 								</div>
 							) : (
@@ -149,7 +149,7 @@ export default function ApprovalsPage() {
 											return (order[a.type] || 0) - (order[b.type] || 0)
 										})
 										.map(a => (
-											<div key={a.id} className="rounded border bg-white p-4 shadow-sm">
+											<div key={a.id} className="rounded border bg-card p-4 shadow-sm">
 												<div className="flex items-center justify-between">
 													<div>
 														<span className="font-medium">{getTypeLabel(a.type)}</span>
@@ -158,14 +158,14 @@ export default function ApprovalsPage() {
 														</span>
 													</div>
 													{a.signedOn && (
-														<span className="text-xs text-slate-500">
+														<span className="text-xs text-muted-foreground">
 															{new Date(a.signedOn).toLocaleDateString()}
 														</span>
 													)}
 												</div>
 
 												{(a.comment || a.remarks) && (
-													<p className="mt-2 text-sm text-slate-600">Remarks: {a.comment || a.remarks}</p>
+													<p className="mt-2 text-sm text-muted-foreground">Remarks: {a.comment || a.remarks}</p>
 												)}
 
 												{['PENDING', 'IN_REVIEW', 'RESUBMITTED', 'CHANGES_REQUESTED'].includes(a.status) && (
@@ -179,14 +179,14 @@ export default function ApprovalsPage() {
 														/>
 														<div className="flex gap-2">
 															<button
-																className="rounded bg-green-600 px-3 py-1 text-sm text-white hover:bg-green-700 disabled:opacity-50"
+																className="rounded bg-green-600 px-3 py-1 text-sm text-primary-foreground hover:bg-green-600/90 disabled:opacity-50"
 																onClick={() => submitDecision.mutate({ id: a.id, status: 'APPROVED' })}
 																disabled={submitDecision.isPending}
 															>
 																{getActionLabel(a.type)}
 															</button>
 															<button
-																className="rounded bg-amber-600 px-3 py-1 text-sm text-white hover:bg-amber-700 disabled:opacity-50"
+																className="rounded bg-amber-600 px-3 py-1 text-sm text-primary-foreground hover:bg-amber-600/90 disabled:opacity-50"
 																onClick={() => submitDecision.mutate({ id: a.id, status: 'CHANGES_REQUESTED' })}
 																disabled={submitDecision.isPending}
 															>
@@ -194,7 +194,7 @@ export default function ApprovalsPage() {
 															</button>
 															{a.status === 'CHANGES_REQUESTED' && (
 																<button
-																	className="rounded bg-sky-600 px-3 py-1 text-sm text-white hover:bg-sky-700 disabled:opacity-50"
+																	className="rounded bg-primary px-3 py-1 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
 																	onClick={() => submitDecision.mutate({ id: a.id, status: 'RESUBMITTED' })}
 																	disabled={submitDecision.isPending}
 																>
@@ -202,7 +202,7 @@ export default function ApprovalsPage() {
 																</button>
 															)}
 															<button
-																className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700 disabled:opacity-50"
+																className="rounded bg-destructive px-3 py-1 text-sm text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
 																onClick={() => submitDecision.mutate({ id: a.id, status: 'REJECTED' })}
 																disabled={submitDecision.isPending}
 															>
@@ -219,7 +219,7 @@ export default function ApprovalsPage() {
 
 						{/* Status Summary */}
 						{(approvals.data?.length || 0) > 0 && (
-							<div className="mt-6 rounded border bg-white p-4 shadow-sm">
+							<div className="mt-6 rounded border bg-card p-4 shadow-sm">
 								<h3 className="font-medium">Approval Status Summary</h3>
 								<div className="mt-2 text-sm">
 									{approvals.data?.every(a => ['APPROVED', 'APPROVED_WITH_CONDITIONS'].includes(a.status)) ? (
@@ -227,7 +227,7 @@ export default function ApprovalsPage() {
 									) : approvals.data?.some(a => a.status === 'REJECTED') ? (
 										<p className="font-medium text-red-700">✗ Approval rejected - Review and resubmit</p>
 									) : (
-										<p className="text-amber-700">
+										<p className="text-amber-600">
 											⏳ Awaiting approvals ({approvals.data?.filter(a => ['APPROVED', 'APPROVED_WITH_CONDITIONS'].includes(a.status)).length}/
 											{approvals.data?.length} complete)
 										</p>

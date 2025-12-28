@@ -61,10 +61,10 @@ export default function ChangePassword() {
 							required
 						/>
 					</label>
-					{error && <p className="text-sm text-red-600">{error}</p>}
+					{error && <p className="text-sm text-destructive">{error}</p>}
 					<button
 						type="submit"
-						className="mt-2 rounded bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+						className="mt-2 rounded bg-primary text-primary-foreground px-3 py-2 text-sm hover:bg-primary/90 disabled:opacity-50"
 						disabled={loading}
 					>
 						{loading ? 'Updating...' : 'Update password'}

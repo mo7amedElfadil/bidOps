@@ -16,15 +16,15 @@ export default function SubmissionPage() {
 	return (
 		<OpportunityShell active="submission">
 			<div className="p-6">
-				<div className="rounded border bg-white p-6 shadow-sm">
-					<p className="text-sm text-slate-600">
+				<div className="rounded border bg-card p-6 shadow-sm">
+					<p className="text-sm text-muted-foreground">
 						Generate a submission pack containing all attachments for this opportunity. The pack will
 						include a manifest file with checksums for verification.
 					</p>
 
 					<div className="mt-4">
 						<button
-							className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
+							className="rounded bg-green-600 px-4 py-2 text-primary-foreground hover:bg-green-600/90 disabled:opacity-50"
 							onClick={() => buildPack.mutate()}
 							disabled={buildPack.isPending}
 						>
@@ -58,7 +58,7 @@ export default function SubmissionPage() {
 									<div className="flex justify-between py-2">
 										<dt className="text-green-700">Download</dt>
 										<dd>
-											<a className="text-blue-600 hover:underline" href={manifestUrl} target="_blank" rel="noreferrer">
+											<a className="text-accent hover:underline" href={manifestUrl} target="_blank" rel="noreferrer">
 												Open pack
 											</a>
 										</dd>
@@ -70,17 +70,17 @@ export default function SubmissionPage() {
 
 					<div className="mt-6 border-t pt-4">
 						<h3 className="font-medium">What's included in the pack?</h3>
-						<ul className="mt-2 list-inside list-disc text-sm text-slate-600">
+						<ul className="mt-2 list-inside list-disc text-sm text-muted-foreground">
 							<li>All attachments uploaded to this opportunity</li>
 							<li>
-								A <code className="bg-slate-100 px-1">manifest.json</code> file with file metadata
+								A <code className="bg-muted px-1">manifest.json</code> file with file metadata
 							</li>
 							<li>SHA-256 checksums for each file</li>
 							<li>Use the checksum to verify integrity after download</li>
 						</ul>
 					</div>
 
-					<div className="mt-4 rounded bg-amber-50 p-4 text-sm text-amber-800">
+					<div className="mt-4 rounded bg-amber-50 p-4 text-sm text-amber-600">
 						<strong>Note:</strong> Ensure all approvals are complete before generating the final submission pack.
 					</div>
 				</div>

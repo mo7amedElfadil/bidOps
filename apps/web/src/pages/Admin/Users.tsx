@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api, BusinessRole, UserAccount } from '../../api/client'
 import { USER_TYPE_OPTIONS, getUserTypeLabel } from '../../constants/user-types'
 import PaginationControls from '../../components/PaginationControls'
+import { toast } from '../../utils/toast'
 
 export default function UsersPage() {
 	const [rows, setRows] = useState<UserAccount[]>([])
@@ -27,18 +28,19 @@ export default function UsersPage() {
 	const [saving, setSaving] = useState(false)
 	const [showCreate, setShowCreate] = useState(false)
 	const [selected, setSelected] = useState<Record<string, boolean>>({})
+	const [inviteLinks, setInviteLinks] = useState<Record<string, string>>({})
 	const [bulkDeleting, setBulkDeleting] = useState(false)
 	const statusLabel = (user: UserAccount) => {
 		const status = user.status || (user.isActive ? 'ACTIVE' : 'DISABLED')
 		switch (status) {
 			case 'ACTIVE':
-				return { label: 'active', className: 'bg-emerald-100 text-emerald-800' }
+				return { label: 'active', className: 'bg-green-500/10 text-green-600' }
 			case 'INVITED':
-				return { label: 'invited', className: 'bg-blue-100 text-blue-800' }
+				return { label: 'invited', className: 'bg-primary/10 text-primary' }
 			case 'PENDING':
-				return { label: 'pending', className: 'bg-amber-100 text-amber-800' }
+				return { label: 'pending', className: 'bg-amber-500/10 text-amber-600' }
 			default:
-				return { label: 'disabled', className: 'bg-slate-100 text-slate-600' }
+				return { label: 'disabled', className: 'bg-muted text-muted-foreground' }
 		}
 	}
 
@@ -123,13 +125,17 @@ export default function UsersPage() {
 		setError(null)
 		try {
 			if (inviteMode) {
-				await api.inviteUser({
+				const res = await api.inviteUser({
 					email: editForm.email,
 					name: editForm.name || undefined,
 					role: editForm.role as any,
 					userType: editForm.userType || undefined,
 					businessRoleIds: editForm.businessRoleIds
 				})
+				if (res.link && res.userId) {
+					setInviteLinks(prev => ({ ...prev, [res.userId]: res.link }))
+					toast.success('Invite link ready')
+				}
 			} else {
 				await api.createUser({
 					email: editForm.email || undefined,
@@ -189,15 +195,37 @@ export default function UsersPage() {
 	async function resendInvite(user: UserAccount) {
 		setError(null)
 		try {
-			await api.inviteUser({
+			const res = await api.inviteUser({
 				email: user.email,
 				name: user.name,
 				role: user.role,
 				userType: user.userType,
 				businessRoleIds: user.businessRoles?.map(role => role.id)
 			})
+			if (res.link) {
+				setInviteLinks(prev => ({ ...prev, [user.id]: res.link }))
+				toast.success('Invite resent and link refreshed')
+			} else {
+				toast.success('Invite resent')
+			}
 		} catch (e: any) {
 			setError(e.message || 'Failed to resend invite')
+		}
+	}
+
+	async function copyInviteLink(user: UserAccount) {
+		setError(null)
+		try {
+			const res = await api.generateInviteLink(user.id)
+			setInviteLinks(prev => ({ ...prev, [user.id]: res.link }))
+			if (navigator.clipboard?.writeText) {
+				await navigator.clipboard.writeText(res.link)
+				toast.success('Invite link copied')
+				return
+			}
+			window.prompt('Copy invite link', res.link)
+		} catch (e: any) {
+			setError(e.message || 'Failed to copy invite link')
 		}
 	}
 
@@ -229,23 +257,23 @@ export default function UsersPage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-slate-50 text-slate-900">
+		<div className="min-h-screen bg-muted text-foreground">
 			<div className="w-full px-6 py-6">
 				<div className="flex items-center justify-between">
 					<div>
 						<h1 className="text-xl font-semibold">User Management</h1>
-						<p className="text-sm text-slate-600">Create, edit roles, and disable accounts.</p>
+						<p className="text-sm text-muted-foreground">Create, edit roles, and disable accounts.</p>
 					</div>
 					<div className="flex gap-2 items-center">
 						<button
-							className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200"
+							className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
 							onClick={() => load(pagination.page)}
 							disabled={loading}
 						>
 							Refresh
 						</button>
 						<button
-							className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
+							className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
 							onClick={() => {
 								setEditForm({
 									email: '',
@@ -266,7 +294,7 @@ export default function UsersPage() {
 							New User
 						</button>
 						<button
-							className="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700 disabled:opacity-50"
+							className="rounded bg-destructive px-3 py-1.5 text-sm text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
 							onClick={removeSelectedUsers}
 							disabled={bulkDeleting || !Object.values(selected).some(Boolean)}
 						>
@@ -286,7 +314,7 @@ export default function UsersPage() {
 						}}
 					/>
 					<button
-						className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
+						className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
 						onClick={() => load(1)}
 						disabled={loading}
 					>
@@ -294,15 +322,15 @@ export default function UsersPage() {
 					</button>
 				</div>
 
-				{error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+				{error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 				{loading ? (
-					<p className="mt-4 text-sm text-slate-600">Loading...</p>
+					<p className="mt-4 text-sm text-muted-foreground">Loading...</p>
 				) : rows.length === 0 ? (
-					<p className="mt-4 text-sm text-slate-600">No users found.</p>
+					<p className="mt-4 text-sm text-muted-foreground">No users found.</p>
 				) : (
-					<div className="mt-4 overflow-x-auto rounded border bg-white shadow-sm">
+					<div className="mt-4 overflow-x-auto rounded border bg-card shadow-sm">
 						<table className="min-w-full text-sm">
-							<thead className="bg-slate-100">
+							<thead className="bg-muted">
 							<tr>
 								<th className="px-3 py-2 text-left">
 									<input
@@ -355,7 +383,7 @@ export default function UsersPage() {
 											<div className="flex justify-end gap-2">
 												{user.status === 'PENDING' && (
 													<button
-														className="rounded bg-emerald-600 px-2 py-1 text-xs text-white hover:bg-emerald-700"
+														className="rounded bg-green-600 px-2 py-1 text-xs text-primary-foreground hover:bg-green-600/90"
 														onClick={() => approveUser(user)}
 													>
 														Approve
@@ -363,33 +391,44 @@ export default function UsersPage() {
 												)}
 												{user.status === 'INVITED' && (
 													<button
-														className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700"
+														className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground hover:bg-primary/90"
 														onClick={() => resendInvite(user)}
 													>
 														Resend invite
 													</button>
 												)}
+												{user.status === 'INVITED' && (
+													<button
+														className="rounded bg-muted px-2 py-1 text-xs hover:bg-muted/80"
+														onClick={() => copyInviteLink(user)}
+													>
+														Copy invite link
+													</button>
+												)}
 												{user.status === 'ACTIVE' && (
 													<button
-														className="rounded bg-slate-100 px-2 py-1 text-xs hover:bg-slate-200"
+														className="rounded bg-muted px-2 py-1 text-xs hover:bg-muted/80"
 														onClick={() => resetPassword(user)}
 													>
 														Reset password
 													</button>
 												)}
 												<button
-													className="rounded bg-slate-200 px-2 py-1 text-xs hover:bg-slate-300"
+													className="rounded bg-muted px-2 py-1 text-xs hover:bg-muted/80"
 													onClick={() => openEdit(user)}
 												>
 													Edit
 												</button>
 												<button
-													className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700"
+													className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground hover:bg-destructive/90"
 													onClick={() => removeUser(user.id)}
 												>
 													Delete
 												</button>
 											</div>
+											{inviteLinks[user.id] && (
+												<p className="mt-1 text-[10px] text-muted-foreground">Link cached for sharing</p>
+											)}
 										</td>
 									</tr>
 								))}
@@ -413,10 +452,10 @@ export default function UsersPage() {
 
 			{(editing || showCreate) && (
 				<div className="fixed inset-0 z-10 flex items-center justify-center bg-black/30 p-4">
-					<div className="w-full max-w-xl rounded border bg-white p-5 shadow-lg">
+					<div className="w-full max-w-xl rounded border bg-card p-5 shadow-lg">
 						<h2 className="text-lg font-semibold">{showCreate ? 'Create User' : 'Edit User'}</h2>
 						{showCreate && (
-							<div className="mt-2 flex items-center gap-2 text-xs text-slate-600">
+							<div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
 								<input
 									type="checkbox"
 									checked={inviteMode}
@@ -434,7 +473,7 @@ export default function UsersPage() {
 									onChange={e => setEditForm({ ...editForm, email: e.target.value })}
 									placeholder={editForm.name ? `${editForm.name.split(' ')[0]?.toLowerCase() || 'user'}@it-serve.qa` : 'firstName@it-serve.qa'}
 								/>
-								<p className="mt-1 text-[11px] text-slate-500">
+								<p className="mt-1 text-[11px] text-muted-foreground">
 									Leave blank to use the default: firstName@it-serve.qa
 								</p>
 							</label>
@@ -500,7 +539,7 @@ export default function UsersPage() {
 										</option>
 									))}
 								</select>
-								<p className="mt-1 text-[11px] text-slate-500">Hold Ctrl/Cmd to select multiple.</p>
+								<p className="mt-1 text-[11px] text-muted-foreground">Hold Ctrl/Cmd to select multiple.</p>
 							</label>
 							{!inviteMode && (
 								<div className="grid gap-3 md:grid-cols-2">
@@ -550,7 +589,7 @@ export default function UsersPage() {
 						</div>
 						<div className="mt-4 flex justify-end gap-2">
 							<button
-								className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
+								className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
 								onClick={() => {
 									setEditing(null)
 									setShowCreate(false)
@@ -560,7 +599,7 @@ export default function UsersPage() {
 								Cancel
 							</button>
 							<button
-								className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+								className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
 								onClick={showCreate ? createUser : saveEdit}
 								disabled={saving || (!editForm.email && !editForm.name)}
 							>

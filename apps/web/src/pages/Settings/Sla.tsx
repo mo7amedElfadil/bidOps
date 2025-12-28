@@ -42,7 +42,7 @@ export default function SlaSettingsPage() {
 			subtitle="Warn/alert/urgent thresholds and holidays for deadline tracking."
 			actions={
 				<button
-					className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+					className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
 					onClick={() => mutation.mutate()}
 					disabled={mutation.isPending}
 				>
@@ -53,13 +53,13 @@ export default function SlaSettingsPage() {
 			<SettingsNav />
 
 			<div className="mt-4">
-				<h2 className="text-sm font-semibold text-slate-700">SLA configuration</h2>
-				<p className="text-xs text-slate-500">Thresholds and holidays that drive SLA badges and reminders.</p>
+				<h2 className="text-sm font-semibold text-foreground">SLA configuration</h2>
+				<p className="text-xs text-muted-foreground">Thresholds and holidays that drive SLA badges and reminders.</p>
 			</div>
 
-			<div className="mt-3 rounded border bg-white p-4 shadow-sm">
+			<div className="mt-3 rounded border bg-card p-4 shadow-sm">
 				{slaQuery.isLoading ? (
-					<p className="text-sm text-slate-600">Loading current settings...</p>
+					<p className="text-sm text-muted-foreground">Loading current settings...</p>
 				) : (
 					<div className="grid gap-4 sm:grid-cols-3">
 						<label className="text-sm">
@@ -96,28 +96,28 @@ export default function SlaSettingsPage() {
 				)}
 
 				{mutation.error && (
-					<p className="mt-3 text-sm text-red-600">
+					<p className="mt-3 text-sm text-destructive">
 						Failed to save: {(mutation.error as Error).message}
 					</p>
 				)}
 				{mutation.isSuccess && <p className="mt-3 text-sm text-green-700">Saved.</p>}
-				<p className="mt-3 text-xs text-slate-600">
+				<p className="mt-3 text-xs text-muted-foreground">
 					API: GET/PUT /settings/sla (role: MANAGER/ADMIN to edit).
 				</p>
 			</div>
 
-			<div className="mt-6 rounded border bg-white p-4 shadow-sm">
+			<div className="mt-6 rounded border bg-card p-4 shadow-sm">
 				<div className="flex items-center justify-between">
 					<h3 className="text-sm font-semibold">Holiday Calendar</h3>
 					<button
-						className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300 disabled:opacity-50"
+						className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80 disabled:opacity-50"
 						onClick={() => holidaysMutation.mutate()}
 						disabled={holidaysMutation.isPending}
 					>
 						{holidaysMutation.isPending ? 'Saving...' : 'Save'}
 					</button>
 				</div>
-				<p className="mt-2 text-xs text-slate-600">
+				<p className="mt-2 text-xs text-muted-foreground">
 					Add one date per line in YYYY-MM-DD format. These dates can be used in SLA calculations.
 				</p>
 				<textarea
@@ -127,12 +127,12 @@ export default function SlaSettingsPage() {
 					placeholder="2026-01-01&#10;2026-02-18"
 				/>
 				{holidaysMutation.error && (
-					<p className="mt-3 text-sm text-red-600">
+					<p className="mt-3 text-sm text-destructive">
 						Failed to save: {(holidaysMutation.error as Error).message}
 					</p>
 				)}
 				{holidaysMutation.isSuccess && <p className="mt-3 text-sm text-green-700">Saved.</p>}
-				<p className="mt-3 text-xs text-slate-600">
+				<p className="mt-3 text-xs text-muted-foreground">
 					API: GET/PUT /settings/holidays (role: MANAGER/ADMIN to edit).
 				</p>
 			</div>

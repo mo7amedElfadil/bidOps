@@ -134,9 +134,9 @@ export default function AttachmentsPage() {
 							if (file) upload.mutate(file)
 						}}
 					/>
-					{upload.isPending && <span className="text-sm text-slate-600">Uploading...</span>}
+					{upload.isPending && <span className="text-sm text-muted-foreground">Uploading...</span>}
 					{upload.error && (
-						<span className="text-sm text-red-600">
+						<span className="text-sm text-destructive">
 							{(upload.error as Error).message || 'Upload failed'}
 						</span>
 					)}
@@ -146,7 +146,7 @@ export default function AttachmentsPage() {
 					<div className="flex flex-wrap items-center justify-between gap-3">
 						<div>
 							<h3 className="text-sm font-semibold">AI Extraction</h3>
-							<p className="text-xs text-slate-600">
+							<p className="text-xs text-muted-foreground">
 								Select attachments, enter a prompt, and generate compliance, clarifications, or proposal sections.
 							</p>
 						</div>
@@ -158,7 +158,7 @@ export default function AttachmentsPage() {
 						<label className="text-xs font-medium">
 							Provider
 							<select
-								className="mt-1 w-full rounded border border-slate-200 p-2 text-sm"
+								className="mt-1 w-full rounded border border-border p-2 text-sm"
 								value={provider}
 								onChange={e => setProvider(e.target.value as 'openai' | 'gemini')}
 							>
@@ -169,7 +169,7 @@ export default function AttachmentsPage() {
 						<label className="text-xs font-medium md:col-span-2">
 							Prompt
 							<textarea
-								className="mt-1 min-h-[120px] w-full rounded border border-slate-200 p-2 text-sm"
+								className="mt-1 min-h-[120px] w-full rounded border border-border p-2 text-sm"
 								value={prompt}
 								onChange={e => setPrompt(e.target.value)}
 								placeholder="Provide detailed guidance for the AI extraction..."
@@ -201,23 +201,23 @@ export default function AttachmentsPage() {
 							/>
 							Proposal Sections
 						</label>
-						{result && <span className="text-xs text-emerald-700">{result}</span>}
+						{result && <span className="text-xs text-green-600">{result}</span>}
 					</div>
-					<p className="mt-2 text-xs text-slate-500">
+					<p className="mt-2 text-xs text-muted-foreground">
 						Supported parsing: PDF, TXT, MD, CSV. Other formats are stored but may be skipped.
 					</p>
 				</Card>
 
 				{list.isLoading ? (
-					<p className="mt-4 text-sm text-slate-600">Loading attachments...</p>
+					<p className="mt-4 text-sm text-muted-foreground">Loading attachments...</p>
 				) : list.error ? (
-					<p className="mt-4 text-sm text-red-600">
+					<p className="mt-4 text-sm text-destructive">
 						{(list.error as Error).message || 'Failed to load attachments'}
 					</p>
 				) : (
 					<div className="mt-4 overflow-x-auto">
 						<table className="min-w-full text-sm">
-							<thead className="bg-gray-100">
+							<thead className="bg-muted">
 								<tr>
 									<th className="px-3 py-2 text-left">Use</th>
 									<th className="px-3 py-2 text-left">File</th>
@@ -243,7 +243,7 @@ export default function AttachmentsPage() {
 										<td className="px-3 py-2 font-mono text-xs">{r.hash || '—'}</td>
 										<td className="px-3 py-2">
 											<button
-												className="text-xs text-blue-600 hover:underline"
+												className="text-xs text-accent hover:underline"
 												onClick={() => downloadAttachment(r)}
 											>
 												Download
@@ -253,7 +253,7 @@ export default function AttachmentsPage() {
 								))}
 								{list.data?.items?.length === 0 && (
 									<tr>
-										<td colSpan={6} className="px-3 py-3 text-center text-slate-500">
+										<td colSpan={6} className="px-3 py-3 text-center text-muted-foreground">
 											No attachments yet.
 										</td>
 									</tr>
@@ -274,23 +274,23 @@ export default function AttachmentsPage() {
 					</div>
 				)}
 
-				<div className="mt-6 rounded border bg-white p-4 shadow-sm">
+				<div className="mt-6 rounded border bg-card p-4 shadow-sm">
 					<h3 className="text-sm font-semibold">Proposal Draft Sections</h3>
 					{proposalSections.isLoading ? (
-						<p className="mt-2 text-xs text-slate-600">Loading proposal draft...</p>
+						<p className="mt-2 text-xs text-muted-foreground">Loading proposal draft...</p>
 					) : proposalSections.data?.length ? (
 						<div className="mt-3 space-y-3 text-sm">
 							{proposalSections.data.map(section => (
 								<div key={section.id} className="rounded border p-3">
-									<p className="text-xs text-slate-500">
+									<p className="text-xs text-muted-foreground">
 										{section.sectionNo ? `${section.sectionNo}. ` : ''}{section.title}
 									</p>
-									<p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{section.content}</p>
+									<p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{section.content}</p>
 								</div>
 							))}
 						</div>
 					) : (
-						<p className="mt-2 text-xs text-slate-600">No draft sections yet.</p>
+						<p className="mt-2 text-xs text-muted-foreground">No draft sections yet.</p>
 					)}
 				</div>
 			</div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
 	api,
@@ -9,6 +10,7 @@ import {
 } from '../../api/client'
 import { getUserRole } from '../../utils/auth'
 import { notificationActivities } from '../../constants/notification-activities'
+import { getNotificationLink } from '../../utils/notifications'
 
 function formatPayloadValue(value: unknown) {
 	if (value === null || value === undefined) {
@@ -33,6 +35,7 @@ function payloadEntries(payload: unknown): Array<[string, unknown]> {
 }
 
 export default function NotificationsPage() {
+	const nav = useNavigate()
 	const role = getUserRole()
 	const isAdmin = role === 'ADMIN'
 	const [notifications, setNotifications] = useState<NotificationItem[]>([])
@@ -114,6 +117,19 @@ export default function NotificationsPage() {
 		} catch (e: any) {
 			setError(e.message || 'Failed to update notification')
 		}
+	}
+
+	function openNotification(note: NotificationItem) {
+		const link = getNotificationLink(note)
+		if (!link) return
+		if (!note.readAt) {
+			void handleMarkRead(note.id)
+		}
+		if (link.external) {
+			window.open(link.href, '_blank', 'noopener,noreferrer')
+			return
+		}
+		nav(link.href)
 	}
 
 	async function handleMarkAllRead() {
@@ -198,20 +214,20 @@ export default function NotificationsPage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-slate-50 text-slate-900">
+		<div className="min-h-screen bg-muted text-foreground">
 			<div className="mx-auto max-w-6xl p-6">
 				<div>
 					<h1 className="text-xl font-semibold">Notifications</h1>
-					<p className="text-sm text-slate-600">Track alerts and manage your notification preferences.</p>
+					<p className="text-sm text-muted-foreground">Track alerts and manage your notification preferences.</p>
 				</div>
 
-				{error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+				{error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 
-				<div className="mt-4 rounded border bg-white p-4 shadow-sm">
+				<div className="mt-4 rounded border bg-card p-4 shadow-sm">
 					<div className="flex flex-wrap items-center justify-between gap-3">
 						<div>
 							<h2 className="text-sm font-semibold">Inbox</h2>
-							<p className="text-xs text-slate-500">In-app notifications sent to your account.</p>
+							<p className="text-xs text-muted-foreground">In-app notifications sent to your account.</p>
 						</div>
 						<div className="flex items-center gap-2">
 							<select
@@ -227,14 +243,14 @@ export default function NotificationsPage() {
 								<option value="all">All</option>
 							</select>
 							<button
-								className="rounded bg-slate-100 px-2 py-1 text-xs hover:bg-slate-200"
+								className="rounded bg-muted px-2 py-1 text-xs hover:bg-muted/80"
 								onClick={() => loadNotifications(pagination.page)}
 								disabled={loading}
 							>
 								Refresh
 							</button>
 							<button
-								className="rounded bg-slate-200 px-2 py-1 text-xs hover:bg-slate-300"
+								className="rounded bg-muted px-2 py-1 text-xs hover:bg-muted/80"
 								onClick={handleMarkAllRead}
 								disabled={loading}
 							>
@@ -243,47 +259,65 @@ export default function NotificationsPage() {
 						</div>
 					</div>
 					{loading ? (
-						<p className="mt-3 text-sm text-slate-600">Loading...</p>
+						<p className="mt-3 text-sm text-muted-foreground">Loading...</p>
 					) : notifications.length === 0 ? (
-						<p className="mt-3 text-sm text-slate-600">No notifications to show.</p>
+						<p className="mt-3 text-sm text-muted-foreground">No notifications to show.</p>
 					) : (
 						<div className="mt-3 space-y-2">
 							{notifications.map(note => (
-								<div key={note.id} className="rounded border border-slate-200 p-3">
+								<div
+									key={note.id}
+									role="button"
+									tabIndex={0}
+									className="cursor-pointer rounded border border-border p-3 transition hover:bg-muted/80"
+									onClick={() => openNotification(note)}
+									onKeyDown={event => {
+										if (event.key === 'Enter' || event.key === ' ') {
+											event.preventDefault()
+											openNotification(note)
+										}
+									}}
+								>
 									<div className="flex items-start justify-between gap-3">
 										<div>
 											<p className="text-sm font-medium">{note.subject || note.activity}</p>
-											{note.body && <p className="text-xs text-slate-600">{note.body}</p>}
+											{note.body && <p className="text-xs text-muted-foreground">{note.body}</p>}
 										</div>
 										<div className="flex gap-2">
 											{!note.readAt && (
 												<button
-													className="rounded bg-slate-100 px-2 py-1 text-xs hover:bg-slate-200"
-													onClick={() => handleMarkRead(note.id)}
+													className="rounded bg-muted px-2 py-1 text-xs hover:bg-muted/80"
+													onClick={event => {
+														event.stopPropagation()
+														handleMarkRead(note.id)
+													}}
 												>
 													Mark read
 												</button>
 											)}
 											{note.readAt && (
 												<button
-													className="rounded bg-slate-100 px-2 py-1 text-xs hover:bg-slate-200"
-													onClick={() => handleMarkUnread(note.id)}
+													className="rounded bg-muted px-2 py-1 text-xs hover:bg-muted/80"
+													onClick={event => {
+														event.stopPropagation()
+														handleMarkUnread(note.id)
+													}}
 												>
 													Mark unread
 												</button>
 											)}
 										</div>
 									</div>
-									<p className="mt-2 text-[11px] text-slate-500">
+									<p className="mt-2 text-[11px] text-muted-foreground">
 										{note.createdAt?.slice(0, 10)} · {note.activity}
 									</p>
 									{note.opportunityId && (
-										<p className="mt-1 text-[11px] text-slate-500">Opportunity: {note.opportunityId}</p>
+										<p className="mt-1 text-[11px] text-muted-foreground">Opportunity: {note.opportunityId}</p>
 									)}
 									{note.payload && (
-										<div className="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-500">
+										<div className="mt-2 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
 											{payloadEntries(note.payload).map(([key, value]) => (
-												<span key={key} className="rounded border border-slate-200 px-2 py-0.5">
+												<span key={key} className="rounded border border-border px-2 py-0.5">
 													{`${key}: ${formatPayloadValue(value)}`}
 												</span>
 											))}
@@ -298,21 +332,21 @@ export default function NotificationsPage() {
 				{/* Personal notification preferences now live under /account */}
 
 				{isAdmin && (
-					<div className="mt-6 rounded border bg-white p-4 shadow-sm">
+					<div className="mt-6 rounded border bg-card p-4 shadow-sm">
 						<div className="flex flex-wrap items-center justify-between gap-3">
 							<div>
 								<h2 className="text-sm font-semibold">Default Routing</h2>
-								<p className="text-xs text-slate-500">Set fallback recipients per activity and stage.</p>
+								<p className="text-xs text-muted-foreground">Set fallback recipients per activity and stage.</p>
 							</div>
 							<button
-								className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
+								className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
 								onClick={saveDefault}
 								disabled={savingDefaults}
 							>
 								{savingDefaults ? 'Saving...' : editingDefault ? 'Update default' : 'Save default'}
 							</button>
 						</div>
-						<div className="mt-3 rounded border border-slate-200 p-3 text-xs">
+						<div className="mt-3 rounded border border-border p-3 text-xs">
 							<div className="grid gap-3 md:grid-cols-3">
 								<label className="text-xs">
 									<span className="font-medium">Activity</span>
@@ -371,14 +405,14 @@ export default function NotificationsPage() {
 											</option>
 										))}
 									</select>
-									<p className="mt-1 text-[11px] text-slate-500">Hold Ctrl/Cmd to select multiple.</p>
+									<p className="mt-1 text-[11px] text-muted-foreground">Hold Ctrl/Cmd to select multiple.</p>
 								</label>
 							</div>
 							{editingDefault && (
-								<div className="mt-3 flex items-center justify-between text-[11px] text-slate-500">
+								<div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
 									<span>Editing existing default. Save will update or move this row.</span>
 									<button
-										className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-600 hover:bg-slate-200"
+										className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80"
 										onClick={() => {
 											setEditingDefault(null)
 											setDefaultDraft({
@@ -395,10 +429,10 @@ export default function NotificationsPage() {
 							)}
 						</div>
 						<div className="mt-4">
-							<h3 className="text-xs font-semibold text-slate-600">Existing defaults</h3>
+							<h3 className="text-xs font-semibold text-muted-foreground">Existing defaults</h3>
 							<div className="mt-2 overflow-x-auto">
 								<table className="min-w-full text-xs">
-									<thead className="bg-slate-100">
+									<thead className="bg-muted">
 										<tr>
 											<th className="px-2 py-2 text-left">Activity</th>
 											<th className="px-2 py-2 text-left">Stage</th>
@@ -410,7 +444,7 @@ export default function NotificationsPage() {
 									<tbody>
 										{defaults.length === 0 ? (
 											<tr className="border-t">
-												<td className="px-2 py-3 text-slate-500" colSpan={5}>
+												<td className="px-2 py-3 text-muted-foreground" colSpan={5}>
 													No defaults saved yet.
 												</td>
 											</tr>
@@ -441,7 +475,7 @@ export default function NotificationsPage() {
 													<td className="px-2 py-2">
 														<div className="flex flex-wrap gap-2">
 															<button
-																className="rounded bg-slate-100 px-2 py-1 text-xs hover:bg-slate-200"
+																className="rounded bg-muted px-2 py-1 text-xs hover:bg-muted/80"
 																onClick={() => startEditDefault(row)}
 															>
 																Edit

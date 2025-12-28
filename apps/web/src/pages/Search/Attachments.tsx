@@ -23,7 +23,7 @@ export default function AttachmentSearchPage() {
 			subtitle="Search across attachment filenames and metadata. Results link to the owning record."
 			actions={
 				<button
-					className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+					className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
 					onClick={() => refetch()}
 					disabled={!q.trim()}
 				>
@@ -31,7 +31,7 @@ export default function AttachmentSearchPage() {
 				</button>
 			}
 		>
-			<div className="mt-4 rounded border bg-white p-4 shadow-sm">
+			<div className="mt-4 rounded border bg-card p-4 shadow-sm">
 				<div className="flex flex-wrap items-center gap-3">
 					<input
 						className="w-full max-w-xl rounded border px-3 py-2 text-sm"
@@ -42,16 +42,16 @@ export default function AttachmentSearchPage() {
 							if (e.key === 'Enter') refetch()
 						}}
 					/>
-					<span className="text-xs text-slate-600">API: GET /search?q=...</span>
+					<span className="text-xs text-muted-foreground">API: GET /search?q=...</span>
 				</div>
 
-				{isFetching && <p className="mt-4 text-sm text-slate-600">Searching...</p>}
-				{isFetched && data?.length === 0 && <p className="mt-4 text-sm text-slate-600">No results.</p>}
+				{isFetching && <p className="mt-4 text-sm text-muted-foreground">Searching...</p>}
+				{isFetched && data?.length === 0 && <p className="mt-4 text-sm text-muted-foreground">No results.</p>}
 
 				{data && data.length > 0 && (
 					<div className="mt-4 overflow-x-auto">
 						<table className="min-w-full text-sm">
-							<thead className="bg-slate-100">
+							<thead className="bg-muted">
 								<tr>
 									<th className="px-3 py-2 text-left">File</th>
 									<th className="px-3 py-2 text-left">Entity</th>
@@ -72,7 +72,7 @@ export default function AttachmentSearchPage() {
 										<td className="px-3 py-2 text-right">
 											<Link
 												to={targetLink(row)}
-												className="text-blue-600 hover:underline disabled:opacity-50"
+												className="text-accent hover:underline disabled:opacity-50"
 											>
 												View
 											</Link>

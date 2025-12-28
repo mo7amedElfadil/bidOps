@@ -331,14 +331,14 @@ export default function OpportunityOverview() {
 					<div className="flex items-center justify-between">
 						<h2 className="text-lg font-semibold">Summary</h2>
 						<button
-							className="rounded border px-2 py-1 text-xs hover:bg-slate-100"
+							className="rounded border px-2 py-1 text-xs hover:bg-muted/80"
 							onClick={() => setIsEditing(v => !v)}
 							disabled={!data}
 						>
 							{isEditing ? 'Cancel' : 'Edit'}
 						</button>
 					</div>
-					<div ref={summaryRef} className="rounded border bg-slate-50 p-4 text-sm">
+					<div ref={summaryRef} className="rounded border bg-muted p-4 text-sm">
 						{isEditing ? (
 							<div className="grid gap-3">
 								<label className="grid gap-1 text-xs font-medium">
@@ -487,7 +487,7 @@ export default function OpportunityOverview() {
 										<span>Bid Owners</span>
 										<button
 											type="button"
-											className="rounded border border-slate-300 px-2 py-0.5 text-[11px] text-slate-600 hover:border-blue-600 hover:text-blue-700"
+											className="rounded border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:border-blue-600 hover:text-blue-700"
 											onClick={() => setShowAddUserModal(true)}
 										>
 											Add user
@@ -514,14 +514,14 @@ export default function OpportunityOverview() {
 								</label>
 								<div className="flex items-center gap-2">
 									<button
-										className="rounded bg-blue-600 px-3 py-1.5 text-xs text-white"
+										className="rounded bg-primary px-3 py-1.5 text-xs text-primary-foreground"
 										onClick={() => updateMutation.mutate()}
 										disabled={updateMutation.isPending}
 									>
 										{updateMutation.isPending ? 'Saving...' : 'Save'}
 									</button>
 									{updateMutation.error && (
-										<span className="text-xs text-red-600">
+										<span className="text-xs text-destructive">
 											{(updateMutation.error as Error).message}
 										</span>
 									)}
@@ -561,33 +561,33 @@ export default function OpportunityOverview() {
 					{(issuesQuery.data?.length ?? 0) > 0 && (
 						<div className="rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
 							<p className="font-medium">Import issues</p>
-							<p className="mt-1 text-amber-800">
+							<p className="mt-1 text-amber-600">
 								These came from the tracker CSV. Fix the field in Summary (Edit) to clear the warning.
 							</p>
 							<ul className="mt-2 space-y-2">
 								{issuesQuery.data?.map(issue => {
 									const fixTarget = issueFixTargets[issue.fieldName]
 									return (
-										<li key={issue.id} className="rounded border border-amber-200 bg-white p-2">
+										<li key={issue.id} className="rounded border border-amber-200 bg-card p-2">
 											<div className="flex items-center justify-between gap-2">
 												<div>
 													<p className="font-medium">
 														Tracker row {issue.rowIndex} • {issue.columnName || issue.fieldName}
 													</p>
-													<p className="text-amber-800">
+													<p className="text-amber-600">
 														{issue.message} {issue.rawValue ? `(${issue.rawValue})` : ''}
 													</p>
 													{fixTarget ? (
-															<p className="text-amber-700">
+															<p className="text-amber-600">
 																Fix in Summary {'>'} {fixTarget.label}
 																{fixTarget.hint ? ` (${fixTarget.hint})` : ''}
 															</p>
 													) : (
-														<p className="text-amber-700">Fix in Summary (Edit) or re-import after correction.</p>
+														<p className="text-amber-600">Fix in Summary (Edit) or re-import after correction.</p>
 													)}
 												</div>
 												<button
-													className="rounded border px-2 py-1 text-[11px] hover:bg-amber-100"
+													className="rounded border px-2 py-1 text-[11px] hover:bg-amber-500/10"
 													onClick={() => handleFixIssue(issue)}
 												>
 													Fix
@@ -599,7 +599,7 @@ export default function OpportunityOverview() {
 							</ul>
 						</div>
 					)}
-					<div className="rounded border bg-white p-3 text-xs text-slate-600">
+					<div className="rounded border bg-card p-3 text-xs text-muted-foreground">
 						<p>Stage progression</p>
 						<div className="mt-2 flex flex-wrap gap-2">
 							{stageOptions.map((stage, index) => (
@@ -607,10 +607,10 @@ export default function OpportunityOverview() {
 									key={stage}
 									className={`rounded-full px-2 py-0.5 ${
 										stageIndex === index
-											? 'bg-blue-600 text-white'
+											? 'bg-primary text-primary-foreground'
 											: stageIndex > index
-												? 'bg-emerald-100 text-emerald-800'
-												: 'bg-slate-100 text-slate-600'
+												? 'bg-green-500/10 text-green-600'
+												: 'bg-muted text-muted-foreground'
 									}`}
 								>
 									{stage}
@@ -623,25 +623,25 @@ export default function OpportunityOverview() {
 					{showBondReminder && (
 						<div className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
 							<p className="font-medium">Tender bond reminder</p>
-							<p className="mt-1 text-amber-800">
+							<p className="mt-1 text-amber-600">
 								The submission deadline is within 7 days. Please purchase and upload the tender bond receipt.
 							</p>
 						</div>
 					)}
-					<div className="rounded border bg-white p-4 shadow-sm">
+					<div className="rounded border bg-card p-4 shadow-sm">
 						<div className="flex items-center justify-between">
 							<h2 className="text-lg font-semibold">Submission Checklist</h2>
-							{checklistQuery.isLoading && <span className="text-xs text-slate-500">Loading…</span>}
+							{checklistQuery.isLoading && <span className="text-xs text-muted-foreground">Loading…</span>}
 						</div>
 						<div className="mt-3 space-y-3 text-sm">
 							{checklistItems.map(item => {
 								const checked = Boolean((checklistQuery.data as any)?.[item.key])
 								return (
-									<div key={item.key} className="rounded border border-slate-200 p-3">
+									<div key={item.key} className="rounded border border-border p-3">
 										<label className="flex items-start justify-between gap-2">
 											<div>
 												<p className="font-medium">{item.label}</p>
-												<p className="text-xs text-slate-500">{item.help}</p>
+												<p className="text-xs text-muted-foreground">{item.help}</p>
 											</div>
 											<input
 												type="checkbox"
@@ -666,7 +666,7 @@ export default function OpportunityOverview() {
 												}
 											/>
 											<button
-												className="rounded border px-2 py-1 text-[11px] hover:bg-slate-50"
+												className="rounded border px-2 py-1 text-[11px] hover:bg-muted/80"
 												onClick={() =>
 													updateChecklistMutation.mutate({
 														[item.key]: { notes: checklistNotes[item.key as string] }
@@ -681,14 +681,14 @@ export default function OpportunityOverview() {
 							})}
 						</div>
 					</div>
-					<div className="rounded border bg-white p-4 shadow-sm">
+					<div className="rounded border bg-card p-4 shadow-sm">
 						<div className="flex items-center justify-between">
 							<h2 className="text-lg font-semibold">Change Requests</h2>
-							{changeRequestsQuery.isLoading && <span className="text-xs text-slate-500">Loading…</span>}
+							{changeRequestsQuery.isLoading && <span className="text-xs text-muted-foreground">Loading…</span>}
 						</div>
 						<div className="mt-3 space-y-3 text-sm">
-							<div className="rounded border border-slate-200 p-3">
-								<label className="block text-xs font-medium text-slate-600">Changes required</label>
+							<div className="rounded border border-border p-3">
+								<label className="block text-xs font-medium text-muted-foreground">Changes required</label>
 								<textarea
 									className="mt-1 w-full rounded border p-2 text-sm"
 									rows={3}
@@ -696,7 +696,7 @@ export default function OpportunityOverview() {
 									value={changeRequestForm.changes}
 									onChange={e => setChangeRequestForm({ ...changeRequestForm, changes: e.target.value })}
 								/>
-								<label className="mt-3 block text-xs font-medium text-slate-600">Impact (optional)</label>
+								<label className="mt-3 block text-xs font-medium text-muted-foreground">Impact (optional)</label>
 								<input
 									className="mt-1 w-full rounded border px-2 py-1 text-sm"
 									placeholder="Cost, schedule, compliance impact"
@@ -705,7 +705,7 @@ export default function OpportunityOverview() {
 								/>
 								<div className="mt-3 flex justify-end">
 									<button
-										className="rounded bg-indigo-600 px-3 py-1.5 text-xs text-white hover:bg-indigo-700 disabled:opacity-50"
+										className="rounded bg-secondary px-3 py-1.5 text-xs text-secondary-foreground hover:bg-secondary/90 disabled:opacity-50"
 										onClick={() => createChangeRequestMutation.mutate()}
 										disabled={createChangeRequestMutation.isPending || !changeRequestForm.changes.trim()}
 									>
@@ -716,11 +716,11 @@ export default function OpportunityOverview() {
 							{changeRequestsQuery.data?.length ? (
 								<div className="space-y-2">
 									{changeRequestsQuery.data.map(req => (
-										<div key={req.id} className="rounded border border-slate-200 p-3">
+										<div key={req.id} className="rounded border border-border p-3">
 											<div className="flex flex-wrap items-center justify-between gap-2">
 												<div>
 													<p className="font-medium">{req.changes}</p>
-													{req.impact && <p className="text-xs text-slate-500">Impact: {req.impact}</p>}
+													{req.impact && <p className="text-xs text-muted-foreground">Impact: {req.impact}</p>}
 												</div>
 												<select
 													className="rounded border px-2 py-1 text-xs"
@@ -746,7 +746,7 @@ export default function OpportunityOverview() {
 									))}
 								</div>
 							) : (
-								<p className="text-xs text-slate-500">No change requests yet.</p>
+								<p className="text-xs text-muted-foreground">No change requests yet.</p>
 							)}
 						</div>
 					</div>
@@ -764,25 +764,25 @@ export default function OpportunityOverview() {
 							<Link
 								key={link.href}
 								to={link.href}
-								className="rounded border bg-white px-3 py-2 text-sm font-medium shadow-sm hover:border-blue-300 hover:text-blue-700"
+								className="rounded border bg-card px-3 py-2 text-sm font-medium shadow-sm hover:border-blue-300 hover:text-blue-700"
 							>
 								{link.label}
 							</Link>
 						))}
 					</div>
-					{isLoading && <p className="text-sm text-slate-600">Loading quick stats...</p>}
-					<div className="rounded border bg-white p-3 text-xs text-slate-600">
+					{isLoading && <p className="text-sm text-muted-foreground">Loading quick stats...</p>}
+					<div className="rounded border bg-card p-3 text-xs text-muted-foreground">
 						<p>Use this overview to confirm key dates and jump into detailed workspaces.</p>
 					</div>
 				</div>
 			</div>
 			{showAddUserModal && (
 				<div className="fixed inset-0 z-20 flex items-center justify-center bg-black/40 p-4">
-					<div className="w-full max-w-md rounded border bg-white p-5 shadow-lg">
+					<div className="w-full max-w-md rounded border bg-card p-5 shadow-lg">
 						<div className="flex items-center justify-between">
 							<h2 className="text-lg font-semibold">New user</h2>
 							<button
-								className="text-xs text-slate-500 hover:text-slate-700"
+								className="text-xs text-muted-foreground hover:text-foreground"
 								onClick={() => setShowAddUserModal(false)}
 							>
 								Close
@@ -855,14 +855,14 @@ export default function OpportunityOverview() {
 						</div>
 						<div className="mt-4 flex justify-end gap-2">
 							<button
-								className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
+								className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
 								onClick={() => setShowAddUserModal(false)}
 								disabled={createUserMutation.isPending}
 							>
 								Cancel
 							</button>
 							<button
-								className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+								className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
 								onClick={() => createUserMutation.mutate()}
 								disabled={!newUserForm.email || !newUserForm.name || createUserMutation.isPending}
 							>

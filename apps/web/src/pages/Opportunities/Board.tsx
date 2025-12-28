@@ -135,19 +135,19 @@ export default function Board() {
 			title="Kanban"
 			subtitle="Opportunities grouped by stage with SLA indicators. Drag cards to move them through the lifecycle."
 			actions={
-				<Link to="/opportunities" className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200">
+				<Link to="/opportunities" className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80">
 					Table
 				</Link>
 			}
 		>
 			{isLoading ? (
-				<p className="text-sm text-slate-600">Loading...</p>
+				<p className="text-sm text-muted-foreground">Loading...</p>
 			) : (
 				<div ref={boardRef} className="mt-4 flex gap-4 overflow-x-auto pb-2">
 					{orderedStages.map(stage => (
 						<div
 							key={stage}
-							className={`min-w-[260px] rounded border bg-white transition ${dragOverStage === stage ? 'border-blue-500 shadow-md' : ''}`}
+							className={`min-w-[260px] rounded border bg-card transition ${dragOverStage === stage ? 'border-blue-500 shadow-md' : ''}`}
 							ref={el => {
 								columnRefs.current[stage] = el
 							}}
@@ -155,7 +155,7 @@ export default function Board() {
 							onDragLeave={() => setDragOverStage(null)}
 							onDrop={event => handleDrop(stage, event)}
 						>
-								<div className="border-b bg-gray-100 px-3 py-2 font-medium">{stage}</div>
+								<div className="border-b bg-muted px-3 py-2 font-medium">{stage}</div>
 								<div
 									className="space-y-2 p-3 overflow-y-auto"
 									style={{ maxHeight: 'calc(100vh - 220px)' }}
@@ -183,7 +183,7 @@ export default function Board() {
 									</div>
 								))}
 								{(groupedByStage[stage] || []).length === 0 && (
-									<p className="text-xs text-slate-500">No items in this stage.</p>
+									<p className="text-xs text-muted-foreground">No items in this stage.</p>
 								)}
 							</div>
 						</div>

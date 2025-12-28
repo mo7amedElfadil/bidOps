@@ -128,7 +128,7 @@ export default function AccountPage() {
 	if (loading) {
 		return (
 			<Page title="Account settings" subtitle="Manage your profile, security, and notifications">
-				<p className="text-sm text-slate-600">Loading account settings...</p>
+				<p className="text-sm text-muted-foreground">Loading account settings...</p>
 			</Page>
 		)
 	}
@@ -143,14 +143,14 @@ export default function AccountPage() {
 				</Button>
 			}
 		>
-			{error && <p className="text-sm text-red-600">{error}</p>}
+			{error && <p className="text-sm text-destructive">{error}</p>}
 			<div className="mt-4 grid gap-4 lg:grid-cols-2">
-				<div className="rounded border border-slate-200 bg-white p-4 shadow-sm">
-					<h2 className="text-sm font-semibold text-slate-600">Personal information</h2>
-					<p className="text-xs text-slate-500">Update your name and email for this tenant.</p>
+				<div className="rounded border border-border bg-card p-4 shadow-sm">
+					<h2 className="text-sm font-semibold text-muted-foreground">Personal information</h2>
+					<p className="text-xs text-muted-foreground">Update your name and email for this tenant.</p>
 					<div className="mt-3 space-y-3 text-xs">
 						<label className="block">
-							<span className="font-medium text-slate-600">Full name</span>
+							<span className="font-medium text-muted-foreground">Full name</span>
 							<input
 								className="mt-1 w-full rounded border px-3 py-2 text-sm"
 								value={profile.name}
@@ -158,22 +158,22 @@ export default function AccountPage() {
 							/>
 						</label>
 						<label className="block">
-							<span className="font-medium text-slate-600">Email</span>
+							<span className="font-medium text-muted-foreground">Email</span>
 							<input
 								className="mt-1 w-full rounded border px-3 py-2 text-sm"
 								value={profile.email}
 								onChange={e => setProfile(prev => ({ ...prev, email: e.target.value }))}
 							/>
 						</label>
-						<div className="flex flex-wrap gap-4 text-[11px] text-slate-500">
+						<div className="flex flex-wrap gap-4 text-[11px] text-muted-foreground">
 							<div>
-								<span className="font-semibold text-slate-700">Role:</span> {user?.role || '—'}
+								<span className="font-semibold text-foreground">Role:</span> {user?.role || '—'}
 							</div>
 							<div>
-								<span className="font-semibold text-slate-700">Status:</span> {user?.status || '—'}
+								<span className="font-semibold text-foreground">Status:</span> {user?.status || '—'}
 							</div>
 							<div>
-								<span className="font-semibold text-slate-700">Tenant:</span> {user?.tenantId}
+								<span className="font-semibold text-foreground">Tenant:</span> {user?.tenantId}
 							</div>
 						</div>
 						<div className="flex justify-end">
@@ -183,12 +183,12 @@ export default function AccountPage() {
 						</div>
 					</div>
 				</div>
-				<div className="rounded border border-slate-200 bg-white p-4 shadow-sm">
-					<h2 className="text-sm font-semibold text-slate-600">Notification preferences</h2>
-					<p className="text-xs text-slate-500">Personalize how you receive alerts.</p>
+				<div className="rounded border border-border bg-card p-4 shadow-sm">
+					<h2 className="text-sm font-semibold text-muted-foreground">Notification preferences</h2>
+					<p className="text-xs text-muted-foreground">Personalize how you receive alerts.</p>
 					<div className="mt-3 overflow-x-auto">
 						<table className="min-w-full text-xs">
-							<thead className="bg-slate-100">
+							<thead className="bg-muted">
 								<tr>
 									<th className="px-2 py-2 text-left">Activity</th>
 									<th className="px-2 py-2 text-left">Email</th>

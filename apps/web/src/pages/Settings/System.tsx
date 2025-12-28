@@ -66,18 +66,18 @@ export default function SystemSettingsPage() {
 		>
 			<SettingsNav />
 
-			<div className="mt-4 rounded border bg-white p-4 shadow-sm">
+			<div className="mt-4 rounded border bg-card p-4 shadow-sm">
 				<div className="flex items-center justify-between">
 					<h3 className="text-sm font-semibold">Data Retention</h3>
 					<button
-						className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300 disabled:opacity-50"
+						className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80 disabled:opacity-50"
 						onClick={() => retentionMutation.mutate()}
 						disabled={retentionMutation.isPending}
 					>
 						{retentionMutation.isPending ? 'Saving...' : 'Save'}
 					</button>
 				</div>
-				<p className="mt-2 text-xs text-slate-600">
+				<p className="mt-2 text-xs text-muted-foreground">
 					Default retention is 5 years with external backups. Update if policy changes.
 				</p>
 				<input
@@ -88,28 +88,28 @@ export default function SystemSettingsPage() {
 					onChange={e => setRetentionYears(Number(e.target.value))}
 				/>
 				{retentionMutation.error && (
-					<p className="mt-3 text-sm text-red-600">
+					<p className="mt-3 text-sm text-destructive">
 						Failed to save: {(retentionMutation.error as Error).message}
 					</p>
 				)}
 				{retentionMutation.isSuccess && <p className="mt-3 text-sm text-green-700">Saved.</p>}
-				<p className="mt-3 text-xs text-slate-600">
+				<p className="mt-3 text-xs text-muted-foreground">
 					API: GET/PUT /settings/retention (role: ADMIN to edit).
 				</p>
 			</div>
 
-			<div className="mt-6 rounded border bg-white p-4 shadow-sm">
+			<div className="mt-6 rounded border bg-card p-4 shadow-sm">
 				<div className="flex items-center justify-between">
 					<h3 className="text-sm font-semibold">Timezone Offset</h3>
 					<button
-						className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300 disabled:opacity-50"
+						className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80 disabled:opacity-50"
 						onClick={() => timezoneMutation.mutate()}
 						disabled={timezoneMutation.isPending}
 					>
 						{timezoneMutation.isPending ? 'Saving...' : 'Save'}
 					</button>
 				</div>
-				<p className="mt-2 text-xs text-slate-600">
+				<p className="mt-2 text-xs text-muted-foreground">
 					Default is UTC+3 (Qatar). Update the offset hours if your operating timezone changes.
 				</p>
 				<input
@@ -119,28 +119,28 @@ export default function SystemSettingsPage() {
 					onChange={e => setOffsetHours(Number(e.target.value))}
 				/>
 				{timezoneMutation.error && (
-					<p className="mt-3 text-sm text-red-600">
+					<p className="mt-3 text-sm text-destructive">
 						Failed to save: {(timezoneMutation.error as Error).message}
 					</p>
 				)}
 				{timezoneMutation.isSuccess && <p className="mt-3 text-sm text-green-700">Saved.</p>}
-				<p className="mt-3 text-xs text-slate-600">
+				<p className="mt-3 text-xs text-muted-foreground">
 					API: GET/PUT /settings/timezone (role: ADMIN to edit).
 				</p>
 			</div>
 
-			<div className="mt-6 rounded border bg-white p-4 shadow-sm">
+			<div className="mt-6 rounded border bg-card p-4 shadow-sm">
 				<div className="flex items-center justify-between">
 					<h3 className="text-sm font-semibold">Import Date Format</h3>
 					<button
-						className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300 disabled:opacity-50"
+						className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80 disabled:opacity-50"
 						onClick={() => importDateMutation.mutate()}
 						disabled={importDateMutation.isPending}
 					>
 						{importDateMutation.isPending ? 'Saving...' : 'Save'}
 					</button>
 				</div>
-				<p className="mt-2 text-xs text-slate-600">
+				<p className="mt-2 text-xs text-muted-foreground">
 					Lock how tracker dates are parsed. Use MDY for 11/23/2025 or DMY for 23/11/2025.
 				</p>
 				<select
@@ -153,28 +153,28 @@ export default function SystemSettingsPage() {
 					<option value="AUTO">AUTO (best effort)</option>
 				</select>
 				{importDateMutation.error && (
-					<p className="mt-3 text-sm text-red-600">
+					<p className="mt-3 text-sm text-destructive">
 						Failed to save: {(importDateMutation.error as Error).message}
 					</p>
 				)}
 				{importDateMutation.isSuccess && <p className="mt-3 text-sm text-green-700">Saved.</p>}
-				<p className="mt-3 text-xs text-slate-600">
+				<p className="mt-3 text-xs text-muted-foreground">
 					API: GET/PUT /settings/import-date-format (role: ADMIN to edit).
 				</p>
 			</div>
 
-			<div className="mt-6 rounded border bg-white p-4 shadow-sm">
+			<div className="mt-6 rounded border bg-card p-4 shadow-sm">
 				<div className="flex items-center justify-between">
 					<h3 className="text-sm font-semibold">FX Rates (Base QAR)</h3>
 					<button
-						className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300 disabled:opacity-50"
+						className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80 disabled:opacity-50"
 						onClick={() => fxUpsert.mutate()}
 						disabled={fxUpsert.isPending || !newFx.currency || !newFx.rateToQar}
 					>
 						{fxUpsert.isPending ? 'Saving...' : 'Add/Update'}
 					</button>
 				</div>
-				<p className="mt-2 text-xs text-slate-600">
+				<p className="mt-2 text-xs text-muted-foreground">
 					Add latest conversion rates to QAR. These drive live pricing conversions.
 				</p>
 				<div className="mt-3 grid gap-3 sm:grid-cols-3">
@@ -201,7 +201,7 @@ export default function SystemSettingsPage() {
 				</div>
 				<div className="mt-4 overflow-x-auto rounded border">
 					<table className="min-w-full text-sm">
-						<thead className="bg-slate-100">
+						<thead className="bg-muted">
 							<tr>
 								<th className="px-3 py-2 text-left">Currency</th>
 								<th className="px-3 py-2 text-left">Rate to QAR</th>
@@ -223,7 +223,7 @@ export default function SystemSettingsPage() {
 									</td>
 									<td className="px-3 py-2">
 										<button
-											className="text-xs text-red-600 hover:underline"
+											className="text-xs text-destructive hover:underline"
 											onClick={() => fxDelete.mutate(rate.id)}
 											disabled={fxDelete.isPending}
 										>
@@ -234,7 +234,7 @@ export default function SystemSettingsPage() {
 							))}
 							{!fxQuery.isLoading && fxQuery.data?.length === 0 && (
 								<tr>
-									<td colSpan={3} className="px-3 py-3 text-center text-slate-500">
+									<td colSpan={3} className="px-3 py-3 text-center text-muted-foreground">
 										No FX rates configured.
 									</td>
 								</tr>
@@ -243,11 +243,11 @@ export default function SystemSettingsPage() {
 					</table>
 				</div>
 				{(fxUpsert.error || fxUpdate.error || fxDelete.error) && (
-					<p className="mt-3 text-sm text-red-600">
+					<p className="mt-3 text-sm text-destructive">
 						Failed to update FX rates. Check your inputs and try again.
 					</p>
 				)}
-				<p className="mt-3 text-xs text-slate-600">
+				<p className="mt-3 text-xs text-muted-foreground">
 					API: GET/POST/PATCH/DELETE /settings/fx-rates (role: ADMIN to edit).
 				</p>
 			</div>

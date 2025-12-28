@@ -30,9 +30,11 @@ If no recipients are resolved, log the notification as `no_recipients` and skip 
 ## Activities & Triggers (v1)
 Event-driven (no 60s spam). Examples:
 - Opportunity created:
-  - Recipients: bid owners, business owner, and users with business roles: Executive + Sales Manager + Bid Manager.
+- Recipients: bid owners, business owner, and users with business roles: Executive + Sales Manager + Bid Manager.
 - Review requested:
-  - Recipients: explicit user(s) or business roles on the approval request.
+- Recipients: explicit user(s) or business roles on the approval request.
+- Access request submitted:
+- Recipients: admin users; email + in-app, honors notification preferences per admin role/tag.
 - SLA thresholds:
   - Daily digest by default (configurable), not per-minute.
   - Immediate alerts only when entering a new SLA band (warn/alert/urgent).

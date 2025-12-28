@@ -100,25 +100,25 @@ export default function AwardsEventsPage() {
 	}, [])
 
 	return (
-		<div className="min-h-screen bg-slate-50 text-slate-900">
+		<div className="min-h-screen bg-muted text-foreground">
 			<div className="w-full px-6 py-6">
 				<div className="flex items-center justify-between">
 					<div>
-						<Link to="/opportunities" className="text-sm text-blue-600 hover:underline">
+						<Link to="/opportunities" className="text-sm text-accent hover:underline">
 							← Back to Opportunities
 						</Link>
 						<h1 className="mt-1 text-xl font-semibold">Curated Awards</h1>
-						<p className="text-sm text-slate-600">Awards promoted from staging and ready for analytics.</p>
+						<p className="text-sm text-muted-foreground">Awards promoted from staging and ready for analytics.</p>
 					</div>
 					<div className="flex gap-2">
 						<Link
 							to="/awards/staging"
-							className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
+							className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
 						>
 							View Staging
 						</Link>
 						<button
-							className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200 flex items-center"
+							className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80 flex items-center"
 							onClick={() =>
 								downloadWithAuth(
 									`${import.meta.env.VITE_API_URL}/analytics/export/awards.csv`,
@@ -129,7 +129,7 @@ export default function AwardsEventsPage() {
 							Export CSV
 						</button>
 						<button
-							className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200"
+							className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
 							onClick={() => load(pagination.page)}
 							disabled={loading}
 						>
@@ -154,7 +154,7 @@ export default function AwardsEventsPage() {
 						}}
 					/>
 					<button
-						className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200 disabled:opacity-50"
+						className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80 disabled:opacity-50"
 						onClick={handleSearch}
 						disabled={loading}
 					>
@@ -162,15 +162,15 @@ export default function AwardsEventsPage() {
 					</button>
 				</div>
 
-				{error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+				{error && <p className="mt-4 text-sm text-destructive">{error}</p>}
 				{loading ? (
-					<p className="mt-4 text-sm text-slate-600">Loading...</p>
+					<p className="mt-4 text-sm text-muted-foreground">Loading...</p>
 				) : rows.length === 0 ? (
-					<p className="mt-4 text-sm text-slate-600">No curated awards yet.</p>
+					<p className="mt-4 text-sm text-muted-foreground">No curated awards yet.</p>
 				) : (
-					<div className="mt-4 overflow-x-auto rounded border bg-white shadow-sm">
+					<div className="mt-4 overflow-x-auto rounded border bg-card shadow-sm">
 						<table className="min-w-full text-sm">
-							<thead className="bg-slate-100">
+							<thead className="bg-muted">
 								<tr>
 									<th className="px-3 py-2 text-left">Portal</th>
 									<th className="px-3 py-2 text-left">Tender Ref</th>
@@ -198,7 +198,7 @@ export default function AwardsEventsPage() {
 										<td className="px-3 py-2 text-xs">
 											{r.sourceUrl ? (
 												<a
-													className="text-blue-600 hover:underline"
+													className="text-accent hover:underline"
 													href={r.sourceUrl}
 													target="_blank"
 													rel="noreferrer"
@@ -212,13 +212,13 @@ export default function AwardsEventsPage() {
 										<td className="px-3 py-2 text-right">
 											<div className="flex justify-end gap-2">
 												<button
-													className="rounded bg-slate-200 px-2 py-1 text-xs hover:bg-slate-300"
+													className="rounded bg-muted px-2 py-1 text-xs hover:bg-muted/80"
 													onClick={() => openEdit(r)}
 												>
 													Edit
 												</button>
 												<button
-													className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700"
+													className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground hover:bg-destructive/90"
 													onClick={() => removeRow(r.id)}
 												>
 													Delete
@@ -233,7 +233,7 @@ export default function AwardsEventsPage() {
 				)}
 				{editing && (
 					<div className="fixed inset-0 z-10 flex items-center justify-center bg-black/30 p-4">
-						<div className="w-full max-w-xl rounded border bg-white p-5 shadow-lg">
+						<div className="w-full max-w-xl rounded border bg-card p-5 shadow-lg">
 							<h2 className="text-lg font-semibold">Edit Award Event</h2>
 							<div className="mt-3 grid gap-3">
 								<label className="text-sm">
@@ -306,14 +306,14 @@ export default function AwardsEventsPage() {
 							</div>
 							<div className="mt-4 flex justify-end gap-2">
 								<button
-									className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
+									className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
 									onClick={() => setEditing(null)}
 									disabled={saving}
 								>
 									Cancel
 								</button>
 								<button
-									className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+									className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
 									onClick={saveEdit}
 									disabled={saving}
 								>

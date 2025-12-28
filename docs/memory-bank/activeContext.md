@@ -34,6 +34,10 @@
   - Web: Tenders/Awards filter UI now reuses Button/Input/Card primitives and tender search placement matches awards
   - Web: Navigation includes a User group for personal settings; Settings page now separates SLA vs general configuration
   - Web: Settings split into `/settings/sla`, `/settings/lifecycle`, and `/settings/system` with a shared navigation strip
+  - Web: Notifications now navigate to action targets (payload actionUrl or opportunity fallback) from inbox + list
+  - Web: Timeline dark theme override now darkens gantt SVG row backgrounds and grid
+  - Web: Access requests now trigger admin email + in-app alerts that respect admin notification preferences
+  - Web: Admin user management supports copying invite links directly for sharing
   - Tenders: Monaqasat available-tender adapter now walks pages until the requested date window (or `MONAQASAT_TENDER_MAX_PAGES`) so date-range filtering works like the award collector
   - Collectors: Monaqasat award + available adapters now force English locale via headers, culture cookie, and ChangeLang
   - Approvals: Added decision DTO (supports changes requested/resubmitted), stage gating, and Go/No-Go request updates

@@ -5,14 +5,28 @@ type CardProps = {
 	className?: string
 	header?: React.ReactNode
 	footer?: React.ReactNode
+	titlebar?: boolean
 }
 
-export default function Card({ children, header, footer, className }: CardProps) {
+export default function Card({ children, header, footer, className, titlebar = false }: CardProps) {
 	return (
-		<div className={clsx('rounded-lg border border-slate-200 bg-white shadow-sm', className)}>
-			{header && <div className="border-b border-slate-100 px-4 py-3 text-sm font-semibold text-slate-800">{header}</div>}
+		<div className={clsx(
+			'rounded-lg border bg-card text-card-foreground shadow-sm',
+			'data-[theme="hyprdark"]:bg-[rgb(var(--panel-bg))] data-[theme="hyprdark"]:border-[rgb(var(--panel-border))]',
+			className
+		)}>
+			{header && (
+				<div className={clsx(
+					'px-4 py-3 text-sm font-semibold',
+					titlebar
+						? 'data-[theme="hyprdark"]:bg-[rgb(var(--panel-titlebar-bg))] data-[theme="hyprdark"]:border-b data-[theme="hyprdark"]:border-[rgb(var(--panel-border))]'
+						: 'border-b border-border'
+				)}>
+					{header}
+				</div>
+			)}
 			<div className="p-4">{children}</div>
-			{footer && <div className="border-t border-slate-100 px-4 py-3 text-sm text-slate-600">{footer}</div>}
+			{footer && <div className="border-t border-border px-4 py-3 text-sm text-muted-foreground">{footer}</div>}
 		</div>
 	)
 }

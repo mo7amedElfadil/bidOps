@@ -15,7 +15,7 @@ export default function SettingsNav() {
 					to={item.to}
 					className={({ isActive }) =>
 						`rounded border px-3 py-1.5 font-semibold ${
-							isActive ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+							isActive ? 'border-blue-600 bg-primary text-primary-foreground' : 'border-border text-muted-foreground hover:bg-muted/80'
 						}`
 					}
 				>

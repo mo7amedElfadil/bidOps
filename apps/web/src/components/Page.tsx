@@ -16,7 +16,7 @@ export function Page({
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-xl font-semibold">{title}</h1>
-					{subtitle && <p className="text-sm text-slate-600">{subtitle}</p>}
+					{subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
 				</div>
 				{actions && <div className="flex gap-2">{actions}</div>}
 			</div>

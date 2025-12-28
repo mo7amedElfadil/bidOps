@@ -84,21 +84,21 @@ export default function TrackerWizard() {
 		<Page title="Tracker Import Wizard" subtitle="Upload CSV, confirm headers, and submit to import opportunities.">
 			{step === 'upload' && (
 				<div className="mt-4">
-					<div className="flex items-center gap-3 text-sm text-slate-600">
+					<div className="flex items-center gap-3 text-sm text-muted-foreground">
 						<UploadButton accept=".csv" label="Upload tracker CSV" onFile={handleUpload} />
 					</div>
 				</div>
 			)}
 			{step === 'map' && (
 				<div className="mt-4">
-					<p className="text-sm text-gray-600">Detected columns:</p>
+					<p className="text-sm text-muted-foreground">Detected columns:</p>
 					<ul className="mt-2 list-inside list-disc text-sm">
 						{headers.map(h => (
 							<li key={h}>{h}</li>
 						))}
 					</ul>
 					<button
-						className="mt-4 rounded bg-blue-600 px-3 py-1.5 text-white"
+						className="mt-4 rounded bg-primary px-3 py-1.5 text-primary-foreground"
 						onClick={() => setStep('preview')}
 					>
 						Next: Preview
@@ -106,9 +106,9 @@ export default function TrackerWizard() {
 				</div>
 			)}
 			{step === 'preview' && (
-				<div className="mt-4 overflow-x-auto rounded border bg-white">
+				<div className="mt-4 overflow-x-auto rounded border bg-card">
 					<table className="min-w-full text-sm">
-						<thead className="bg-gray-100">
+						<thead className="bg-muted">
 							<tr>
 								{headers.map(h => (
 									<th key={h} className="px-3 py-2 text-left">
@@ -130,23 +130,23 @@ export default function TrackerWizard() {
 						</tbody>
 					</table>
 					<div className="p-3">
-						<button className="rounded bg-blue-600 px-3 py-1.5 text-white" onClick={submitImport}>
+						<button className="rounded bg-primary px-3 py-1.5 text-primary-foreground" onClick={submitImport}>
 							Import
 						</button>
 						{message && <p className="mt-2 text-sm text-green-700">{message}</p>}
 						{issues.length > 0 && (
 							<div className="mt-4 rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
 								<p className="font-medium">Fields needing attention</p>
-								<p className="mt-1 text-amber-800">
+								<p className="mt-1 text-amber-600">
 									Fix these in the opportunity details. They will disappear once updated.
 								</p>
 								<ul className="mt-2 space-y-2">
 									{issues.map(issue => (
-										<li key={issue.id} className="rounded border border-amber-200 bg-white p-2">
+										<li key={issue.id} className="rounded border border-amber-200 bg-card p-2">
 											<p className="font-medium">
 												Row {issue.rowIndex} • {issue.columnName || issue.fieldName}
 											</p>
-											<p className="text-amber-800">
+											<p className="text-amber-600">
 												{issue.message} {issue.rawValue ? `(${issue.rawValue})` : ''}
 											</p>
 										</li>
@@ -155,7 +155,7 @@ export default function TrackerWizard() {
 							</div>
 						)}
 						<span
-							className="cursor-help rounded-full border px-2 py-0.5 text-xs text-slate-600"
+							className="cursor-help rounded-full border px-2 py-0.5 text-xs text-muted-foreground"
 							title={`Expected headers (from the example CSV): ${requiredColumns.join(', ')}`}
 						>
 							?

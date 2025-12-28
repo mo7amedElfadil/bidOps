@@ -212,20 +212,20 @@ export default function AwardsStagingPage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-slate-50 text-slate-900">
+		<div className="min-h-screen bg-muted text-foreground">
 			<div className="w-full px-6 py-6">
 				<div className="flex items-center justify-between">
 					<div>
-						<Link to="/opportunities" className="text-sm text-blue-600 hover:underline">
+						<Link to="/opportunities" className="text-sm text-accent hover:underline">
 							← Back to Opportunities
 						</Link>
 						<h1 className="mt-1 text-xl font-semibold">Award Staging</h1>
-						<p className="text-sm text-slate-600">Review and curate collected awards before promotion.</p>
+						<p className="text-sm text-muted-foreground">Review and curate collected awards before promotion.</p>
 					</div>
 					<div className="flex gap-2">
 						<Link
 							to="/awards/events"
-							className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
+							className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
 						>
 							View Curated
 						</Link>
@@ -263,13 +263,13 @@ export default function AwardsStagingPage() {
 						<option value="parsed">parsed</option>
 						<option value="curated">curated</option>
 					</select>
-					<span className="text-sm text-slate-600">Curated: {rows.filter(r => r.status === 'curated').length}</span>
+					<span className="text-sm text-muted-foreground">Curated: {rows.filter(r => r.status === 'curated').length}</span>
 				</div>
 
 				<Card className="mt-4">
 					<div className="flex flex-wrap items-end gap-3">
 						<div>
-							<label className="text-xs font-medium text-slate-600">From date (YYYY-MM-DD)</label>
+							<label className="text-xs font-medium text-muted-foreground">From date (YYYY-MM-DD)</label>
 							<input
 								type="date"
 								className="mt-1 block w-[160px] rounded border px-3 py-1.5 text-sm"
@@ -278,7 +278,7 @@ export default function AwardsStagingPage() {
 							/>
 						</div>
 						<div>
-							<label className="text-xs font-medium text-slate-600">To date (YYYY-MM-DD)</label>
+							<label className="text-xs font-medium text-muted-foreground">To date (YYYY-MM-DD)</label>
 							<input
 								type="date"
 								className="mt-1 block w-[160px] rounded border px-3 py-1.5 text-sm"
@@ -308,17 +308,17 @@ export default function AwardsStagingPage() {
 						>
 							Clear Filter
 						</Button>
-						<span className="text-xs text-slate-500">
+						<span className="text-xs text-muted-foreground">
 							Filters apply to award date. Use Filter List to apply to staging view.
 						</span>
 					</div>
-				{runError && <p className="mt-3 text-sm text-red-600">{runError}</p>}
+				{runError && <p className="mt-3 text-sm text-destructive">{runError}</p>}
 				{runSummary && <p className="mt-3 text-sm text-green-700">{runSummary}</p>}
 				{rows.length > 0 && (
 					<div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
 						<Button
 							size="sm"
-							className="bg-emerald-600 text-white hover:bg-emerald-700"
+							className="bg-green-600 text-primary-foreground hover:bg-green-600/90"
 							onClick={curateSelected}
 							disabled={curating === 'bulk' || runSummary === 'No staging records yet.'}
 						>
@@ -327,22 +327,22 @@ export default function AwardsStagingPage() {
 						<Button variant="danger" size="sm" onClick={deleteSelected} disabled={curating === 'bulk'}>
 							Delete selected
 						</Button>
-						<span className="text-slate-500">
+						<span className="text-muted-foreground">
 							{getSelectedIds().length} selected
 						</span>
 					</div>
 				)}
 				</Card>
 
-				{error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+				{error && <p className="mt-4 text-sm text-destructive">{error}</p>}
 				{loading ? (
-					<p className="mt-4 text-sm text-slate-600">Loading...</p>
+					<p className="mt-4 text-sm text-muted-foreground">Loading...</p>
 				) : rows.length === 0 ? (
-					<p className="mt-4 text-sm text-slate-600">No staging records found.</p>
+					<p className="mt-4 text-sm text-muted-foreground">No staging records found.</p>
 				) : (
-					<div className="mt-4 overflow-x-auto rounded border bg-white shadow-sm">
+					<div className="mt-4 overflow-x-auto rounded border bg-card shadow-sm">
 						<table className="min-w-full text-sm">
-							<thead className="bg-slate-100">
+							<thead className="bg-muted">
 								<tr>
 									<th className="px-3 py-2 text-left">
 										<input
@@ -387,7 +387,7 @@ export default function AwardsStagingPage() {
 										<td className="px-3 py-2 text-xs">
 											{r.sourceUrl ? (
 												<a
-													className="text-blue-600 hover:underline"
+													className="text-accent hover:underline"
 													href={r.sourceUrl}
 													target="_blank"
 													rel="noreferrer"
@@ -399,25 +399,25 @@ export default function AwardsStagingPage() {
 											)}
 										</td>
 										<td className="px-3 py-2">
-											<span className="rounded bg-slate-100 px-2 py-0.5 text-xs">{r.status || 'new'}</span>
+											<span className="rounded bg-muted px-2 py-0.5 text-xs">{r.status || 'new'}</span>
 										</td>
 										<td className="px-3 py-2 text-right">
 											<div className="flex justify-end gap-2">
 												<button
-													className="rounded bg-slate-200 px-2 py-1 text-xs hover:bg-slate-300"
+													className="rounded bg-muted px-2 py-1 text-xs hover:bg-muted/80"
 													onClick={() => openEdit(r)}
 												>
 													Edit
 												</button>
 												<button
-													className="rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-700 disabled:opacity-50"
+													className="rounded bg-green-600 px-2 py-1 text-xs text-primary-foreground hover:bg-green-600/90 disabled:opacity-50"
 													onClick={() => curate(r.id)}
 													disabled={curating === r.id}
 												>
 													{curating === r.id ? 'Curating...' : 'Curate'}
 												</button>
 												<button
-													className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700"
+													className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground hover:bg-destructive/90"
 													onClick={() => removeRow(r.id)}
 												>
 													Delete
@@ -444,7 +444,7 @@ export default function AwardsStagingPage() {
 			</div>
 			{editing && (
 				<div className="fixed inset-0 z-10 flex items-center justify-center bg-black/30 p-4">
-					<div className="w-full max-w-xl rounded border bg-white p-5 shadow-lg">
+					<div className="w-full max-w-xl rounded border bg-card p-5 shadow-lg">
 						<h2 className="text-lg font-semibold">Edit Staging Record</h2>
 						<div className="mt-3 grid gap-3">
 							<label className="text-sm">
@@ -529,14 +529,14 @@ export default function AwardsStagingPage() {
 						</div>
 						<div className="mt-4 flex justify-end gap-2">
 							<button
-								className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
+								className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
 								onClick={() => setEditing(null)}
 								disabled={saving}
 							>
 								Cancel
 							</button>
 							<button
-								className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+								className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
 								onClick={saveEdit}
 								disabled={saving}
 							>

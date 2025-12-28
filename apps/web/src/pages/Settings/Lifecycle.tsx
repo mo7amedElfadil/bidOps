@@ -83,22 +83,22 @@ export default function LifecycleSettingsPage() {
 		>
 			<SettingsNav />
 
-			<div className="mt-4 rounded border bg-white p-4 shadow-sm">
+			<div className="mt-4 rounded border bg-card p-4 shadow-sm">
 				<h3 className="text-sm font-semibold">Opportunity stages</h3>
-				<p className="mt-2 text-xs text-slate-600">
+				<p className="mt-2 text-xs text-muted-foreground">
 					Define the dropdown values you'll use when moving opportunities through the lifecycle.
 				</p>
 				<div className="mt-3 space-y-2">
 					{stageList.map((stage, index) => (
 						<div
 							key={stage}
-							className="flex items-center justify-between gap-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
+							className="flex items-center justify-between gap-2 rounded border border-border bg-muted px-3 py-2 text-xs"
 						>
 							<div className="font-medium">{stage}</div>
 							<div className="flex gap-1">
 								<button
 									type="button"
-									className="rounded border border-slate-300 px-1 text-xs hover:bg-slate-100 disabled:text-slate-300"
+									className="rounded border border-border px-1 text-xs hover:bg-muted/80 disabled:text-slate-300"
 									onClick={() => reorderStages(index, -1)}
 									disabled={stageMutation.isPending || index === 0}
 								>
@@ -106,7 +106,7 @@ export default function LifecycleSettingsPage() {
 								</button>
 								<button
 									type="button"
-									className="rounded border border-slate-300 px-1 text-xs hover:bg-slate-100 disabled:text-slate-300"
+									className="rounded border border-border px-1 text-xs hover:bg-muted/80 disabled:text-slate-300"
 									onClick={() => reorderStages(index, 1)}
 									disabled={stageMutation.isPending || index === stageList.length - 1}
 								>
@@ -132,7 +132,7 @@ export default function LifecycleSettingsPage() {
 						onChange={e => setStageInput(e.target.value)}
 					/>
 					<button
-						className="rounded bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+						className="rounded bg-primary text-primary-foreground px-3 py-2 text-sm hover:bg-primary/90 disabled:opacity-50"
 						onClick={addStage}
 						disabled={!stageInput.trim() || stageMutation.isPending}
 					>
@@ -140,24 +140,24 @@ export default function LifecycleSettingsPage() {
 					</button>
 				</div>
 				{stageMutation.isError && (
-					<p className="mt-2 text-xs text-red-600">Failed to save stages. Try again.</p>
+					<p className="mt-2 text-xs text-destructive">Failed to save stages. Try again.</p>
 				)}
 			</div>
 
-			<div className="mt-6 rounded border bg-white p-4 shadow-sm">
+			<div className="mt-6 rounded border bg-card p-4 shadow-sm">
 				<h3 className="text-sm font-semibold">Opportunity statuses</h3>
-				<p className="mt-2 text-xs text-slate-600">Statuses show in the dropdown while editing opportunities.</p>
+				<p className="mt-2 text-xs text-muted-foreground">Statuses show in the dropdown while editing opportunities.</p>
 				<div className="mt-3 space-y-2">
 					{statusList.map((status, index) => (
 						<div
 							key={status}
-							className="flex items-center justify-between gap-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
+							className="flex items-center justify-between gap-2 rounded border border-border bg-muted px-3 py-2 text-xs"
 						>
 							<div className="font-medium">{status}</div>
 							<div className="flex gap-1">
 								<button
 									type="button"
-									className="rounded border border-slate-300 px-1 text-xs hover:bg-slate-100 disabled:text-slate-300"
+									className="rounded border border-border px-1 text-xs hover:bg-muted/80 disabled:text-slate-300"
 									onClick={() => reorderStatuses(index, -1)}
 									disabled={statusMutation.isPending || index === 0}
 								>
@@ -165,7 +165,7 @@ export default function LifecycleSettingsPage() {
 								</button>
 								<button
 									type="button"
-									className="rounded border border-slate-300 px-1 text-xs hover:bg-slate-100 disabled:text-slate-300"
+									className="rounded border border-border px-1 text-xs hover:bg-muted/80 disabled:text-slate-300"
 									onClick={() => reorderStatuses(index, 1)}
 									disabled={statusMutation.isPending || index === statusList.length - 1}
 								>
@@ -191,7 +191,7 @@ export default function LifecycleSettingsPage() {
 						onChange={e => setStatusInput(e.target.value)}
 					/>
 					<button
-						className="rounded bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+						className="rounded bg-primary text-primary-foreground px-3 py-2 text-sm hover:bg-primary/90 disabled:opacity-50"
 						onClick={addStatus}
 						disabled={!statusInput.trim() || statusMutation.isPending}
 					>
@@ -199,7 +199,7 @@ export default function LifecycleSettingsPage() {
 					</button>
 				</div>
 				{statusMutation.isError && (
-					<p className="mt-2 text-xs text-red-600">Failed to save statuses. Try again.</p>
+					<p className="mt-2 text-xs text-destructive">Failed to save statuses. Try again.</p>
 				)}
 			</div>
 		</Page>

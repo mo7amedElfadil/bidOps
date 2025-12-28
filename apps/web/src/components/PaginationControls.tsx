@@ -42,13 +42,13 @@ export default function PaginationControls({
 	}
 
 	return (
-		<div className={`flex flex-wrap items-center gap-3 text-sm text-slate-600 ${className || ''}`}>
-			{label && <span className="font-semibold text-slate-700">{label}</span>}
+		<div className={`flex flex-wrap items-center gap-3 text-sm text-muted-foreground ${className || ''}`}>
+			{label && <span className="font-semibold text-foreground">{label}</span>}
 			<span>
 				Page {page} of {maxPage} ({total.toLocaleString()} items)
 			</span>
 			<div className="flex items-center gap-2">
-				<span className="text-xs text-slate-500">Go to</span>
+				<span className="text-xs text-muted-foreground">Go to</span>
 				<input
 					type="number"
 					min={1}
@@ -60,7 +60,7 @@ export default function PaginationControls({
 					disabled={disabled}
 				/>
 				<button
-					className="rounded bg-slate-100 px-2 py-1 text-xs hover:bg-slate-200 disabled:opacity-50"
+					className="rounded bg-muted px-2 py-1 text-xs hover:bg-muted/80 disabled:opacity-50"
 					onClick={handleGo}
 					disabled={disabled}
 				>
@@ -69,14 +69,14 @@ export default function PaginationControls({
 			</div>
 			<div className="flex gap-2">
 				<button
-					className="rounded bg-slate-100 px-3 py-1.5 text-xs hover:bg-slate-200 disabled:opacity-50"
+					className="rounded bg-muted px-3 py-1.5 text-xs hover:bg-muted/80 disabled:opacity-50"
 					onClick={() => onPageChange(clampPage(page - 1))}
 					disabled={disabled || page <= 1}
 				>
 					Prev
 				</button>
 				<button
-					className="rounded bg-slate-100 px-3 py-1.5 text-xs hover:bg-slate-200 disabled:opacity-50"
+					className="rounded bg-muted px-3 py-1.5 text-xs hover:bg-muted/80 disabled:opacity-50"
 					onClick={() => onPageChange(clampPage(page + 1))}
 					disabled={disabled || page >= maxPage}
 				>

@@ -9,6 +9,7 @@ export default function Signup() {
 	const [error, setError] = useState<string | null>(null)
 	const [success, setSuccess] = useState(false)
 	const [loading, setLoading] = useState(false)
+	const [showPassword, setShowPassword] = useState(false)
 
 	async function submit(e: React.FormEvent) {
 		e.preventDefault()
@@ -29,7 +30,7 @@ export default function Signup() {
 			title="Request access"
 			subtitle="Create an account request. An admin will approve access."
 			footer={
-				<a className="text-blue-600 hover:underline" href="/auth/login">
+				<a className="text-accent hover:underline" href="/auth/login">
 					Back to sign in
 				</a>
 			}
@@ -61,18 +62,27 @@ export default function Signup() {
 					</label>
 					<label className="text-sm">
 						<span className="font-medium">Password</span>
-						<input
-							type="password"
-							className="mt-1 w-full rounded border px-3 py-2"
-							value={password}
-							onChange={e => setPassword(e.target.value)}
-							required
-						/>
+						<div className="relative mt-1">
+							<input
+								type={showPassword ? 'text' : 'password'}
+								className="w-full rounded border px-3 py-2"
+								value={password}
+								onChange={e => setPassword(e.target.value)}
+								required
+							/>
+							<button
+								type="button"
+								className="absolute inset-y-0 right-2 flex items-center text-xs font-semibold text-slate-500 hover:text-slate-700"
+								onClick={() => setShowPassword(show => !show)}
+							>
+								{showPassword ? 'Hide' : 'Show'}
+							</button>
+						</div>
 					</label>
-					{error && <p className="text-sm text-red-600">{error}</p>}
+					{error && <p className="text-sm text-destructive">{error}</p>}
 					<button
 						type="submit"
-						className="mt-2 rounded bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+						className="mt-2 rounded bg-primary text-primary-foreground px-3 py-2 text-sm hover:bg-primary/90 disabled:opacity-50"
 						disabled={loading}
 					>
 						{loading ? 'Submitting...' : 'Submit request'}

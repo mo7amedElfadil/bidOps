@@ -24,7 +24,7 @@ export default function UploadButton({
 
 	return (
 		<label
-			className={`flex cursor-pointer items-center rounded border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-800 shadow-sm hover:border-slate-400 ${className}`}
+			className={`flex cursor-pointer items-center rounded border border-border bg-card px-3 py-1.5 text-sm font-semibold text-foreground shadow-sm hover:border-slate-400 ${className}`}
 			data-testid={testId}
 		>
 			<input

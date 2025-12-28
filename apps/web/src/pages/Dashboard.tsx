@@ -179,7 +179,7 @@ export default function Dashboard() {
 				{needsAdminSetup && (
 					<div className="mt-6">
 						<Card header="Admin setup checklist">
-							<p className="text-sm text-slate-600">
+							<p className="text-sm text-muted-foreground">
 								Complete these steps so the rest of the team can follow the workflow smoothly.
 							</p>
 							<div className="mt-3 flex flex-wrap items-center gap-2">
@@ -195,52 +195,52 @@ export default function Dashboard() {
 								</Button>
 							</div>
 							<div className="mt-4 space-y-3 text-sm">
-								<div className="flex items-center justify-between gap-3 rounded border border-slate-100 bg-slate-50 px-3 py-2">
+								<div className="flex items-center justify-between gap-3 rounded border border-border bg-muted px-3 py-2">
 									<div>
-										<p className="font-semibold text-slate-900">Create users</p>
-										<p className="text-xs text-slate-600">Add at least one more user beyond the default admin.</p>
+										<p className="font-semibold text-foreground">Create users</p>
+										<p className="text-xs text-muted-foreground">Add at least one more user beyond the default admin.</p>
 									</div>
 									<div className="flex items-center gap-3">
-										<span className={`rounded-full px-2 py-0.5 text-xs ${usersCount > 1 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+										<span className={`rounded-full px-2 py-0.5 text-xs ${usersCount > 1 ? 'bg-green-500/10 text-green-600' : 'bg-amber-500/10 text-amber-600'}`}>
 											{usersCount > 1 ? 'Done' : 'Pending'}
 										</span>
-										<Link to="/admin/users" className="text-xs font-semibold text-blue-600 hover:underline">
+										<Link to="/admin/users" className="text-xs font-semibold text-accent hover:underline">
 											Manage users
 										</Link>
 									</div>
 								</div>
-								<div className="flex items-center justify-between gap-3 rounded border border-slate-100 bg-slate-50 px-3 py-2">
+								<div className="flex items-center justify-between gap-3 rounded border border-border bg-muted px-3 py-2">
 									<div>
-										<p className="font-semibold text-slate-900">Define business roles</p>
-										<p className="text-xs text-slate-600">Roles power approvals and notification routing.</p>
+										<p className="font-semibold text-foreground">Define business roles</p>
+										<p className="text-xs text-muted-foreground">Roles power approvals and notification routing.</p>
 									</div>
 									<div className="flex items-center gap-3">
-										<span className={`rounded-full px-2 py-0.5 text-xs ${rolesCount > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+										<span className={`rounded-full px-2 py-0.5 text-xs ${rolesCount > 0 ? 'bg-green-500/10 text-green-600' : 'bg-amber-500/10 text-amber-600'}`}>
 											{rolesCount > 0 ? 'Done' : 'Pending'}
 										</span>
-										<Link to="/admin/business-roles" className="text-xs font-semibold text-blue-600 hover:underline">
+										<Link to="/admin/business-roles" className="text-xs font-semibold text-accent hover:underline">
 											Manage roles
 										</Link>
 									</div>
 								</div>
-								<div className="flex items-center justify-between gap-3 rounded border border-slate-100 bg-slate-50 px-3 py-2">
+								<div className="flex items-center justify-between gap-3 rounded border border-border bg-muted px-3 py-2">
 									<div>
-										<p className="font-semibold text-slate-900">Set notification defaults</p>
-										<p className="text-xs text-slate-600">Define who gets notified when approvals are requested.</p>
+										<p className="font-semibold text-foreground">Set notification defaults</p>
+										<p className="text-xs text-muted-foreground">Define who gets notified when approvals are requested.</p>
 									</div>
 									<div className="flex items-center gap-3">
-										<span className={`rounded-full px-2 py-0.5 text-xs ${defaultsCount > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+										<span className={`rounded-full px-2 py-0.5 text-xs ${defaultsCount > 0 ? 'bg-green-500/10 text-green-600' : 'bg-amber-500/10 text-amber-600'}`}>
 											{defaultsCount > 0 ? 'Done' : 'Pending'}
 										</span>
-										<Link to="/notifications" className="text-xs font-semibold text-blue-600 hover:underline">
+										<Link to="/notifications" className="text-xs font-semibold text-accent hover:underline">
 											Configure notifications
 										</Link>
 									</div>
 								</div>
 							</div>
 							{metrics && (
-								<div className="mt-4 rounded border border-slate-200 bg-white p-3 text-xs text-slate-600">
-									<p className="font-semibold text-slate-800">Telemetry</p>
+								<div className="mt-4 rounded border border-border bg-card p-3 text-xs text-muted-foreground">
+									<p className="font-semibold text-foreground">Telemetry</p>
 									<div className="mt-2 grid gap-2 sm:grid-cols-2">
 										<div>
 											<p>
@@ -289,26 +289,26 @@ export default function Dashboard() {
 				<div className="mt-6 grid gap-4 lg:grid-cols-3">
 				<Card header="My approvals">
 					{approvalsQuery.isLoading ? (
-						<p className="text-sm text-slate-600">Loading approvals...</p>
+						<p className="text-sm text-muted-foreground">Loading approvals...</p>
 					) : approvals.length === 0 ? (
-						<p className="text-sm text-slate-600">No approvals waiting for you right now.</p>
+						<p className="text-sm text-muted-foreground">No approvals waiting for you right now.</p>
 					) : (
 						<div className="space-y-3">
 							{approvals.slice(0, 5).map(pack => (
-								<div key={pack.id} className="rounded border border-slate-100 bg-slate-50 p-3 text-sm">
-									<p className="font-semibold text-slate-900">{pack.opportunity.title}</p>
-									<p className="text-xs text-slate-600">
+								<div key={pack.id} className="rounded border border-border bg-muted p-3 text-sm">
+									<p className="font-semibold text-foreground">{pack.opportunity.title}</p>
+									<p className="text-xs text-muted-foreground">
 										{pack.nextStageLabel || 'Next step'} • {pack.nextActionLabel || 'Review required'}
 									</p>
-									<div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+									<div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
 										<span>Due: {formatDate(pack.opportunity.submissionDate)}</span>
-										<Link to={`/opportunity/${pack.opportunity.id}`} className="text-blue-600 hover:underline">
+										<Link to={`/opportunity/${pack.opportunity.id}`} className="text-accent hover:underline">
 											Open opportunity
 										</Link>
 									</div>
 								</div>
 							))}
-							<Link to="/approvals/review" className="text-xs font-semibold text-blue-600 hover:underline">
+							<Link to="/approvals/review" className="text-xs font-semibold text-accent hover:underline">
 								Open approvals queue
 							</Link>
 						</div>
@@ -319,45 +319,45 @@ export default function Dashboard() {
 					{onboardingRole === 'sales-manager' ? (
 						<div className="space-y-3 text-sm">
 							{tendersQuery.isLoading ? (
-								<p className="text-sm text-slate-600">Loading tenders...</p>
+								<p className="text-sm text-muted-foreground">Loading tenders...</p>
 							) : pendingTenders.length === 0 ? (
-								<p className="text-sm text-slate-600">No new tenders awaiting Go/No-Go.</p>
+								<p className="text-sm text-muted-foreground">No new tenders awaiting Go/No-Go.</p>
 							) : (
 								<>
 									{pendingTenders.slice(0, 5).map(tender => (
-										<div key={tender.id} className="rounded border border-slate-100 bg-slate-50 p-3">
-											<p className="font-semibold text-slate-900">{tender.title}</p>
-											<p className="text-xs text-slate-600">{tender.tenderRef || 'No ref'}</p>
+										<div key={tender.id} className="rounded border border-border bg-muted p-3">
+											<p className="font-semibold text-foreground">{tender.title}</p>
+											<p className="text-xs text-muted-foreground">{tender.tenderRef || 'No ref'}</p>
 											<Link
 												to="/tenders/available"
-												className="mt-2 inline-flex text-xs font-semibold text-blue-600 hover:underline"
+												className="mt-2 inline-flex text-xs font-semibold text-accent hover:underline"
 											>
 												Request approval
 											</Link>
 										</div>
 									))}
-									<Link to="/tenders/available" className="text-xs font-semibold text-blue-600 hover:underline">
+									<Link to="/tenders/available" className="text-xs font-semibold text-accent hover:underline">
 										View all tenders
 									</Link>
 								</>
 							)}
 						</div>
 					) : onboardingRole === 'executive' || onboardingRole === 'admin' ? (
-						<div className="space-y-3 text-sm text-slate-600">
+						<div className="space-y-3 text-sm text-muted-foreground">
 							{readyToFinalize.length === 0 ? (
 								<p>No bids are ready for final sign-off.</p>
 							) : (
 								<>
 									{readyToFinalize.slice(0, 5).map(pack => (
-										<div key={pack.id} className="rounded border border-slate-100 bg-slate-50 p-3">
-											<p className="font-semibold text-slate-900">{pack.opportunity.title}</p>
-											<p className="text-xs text-slate-600">Ready to finalize.</p>
-											<Link to="/approvals/review" className="mt-2 inline-flex text-xs font-semibold text-blue-600 hover:underline">
+										<div key={pack.id} className="rounded border border-border bg-muted p-3">
+											<p className="font-semibold text-foreground">{pack.opportunity.title}</p>
+											<p className="text-xs text-muted-foreground">Ready to finalize.</p>
+											<Link to="/approvals/review" className="mt-2 inline-flex text-xs font-semibold text-accent hover:underline">
 												Finalize bid
 											</Link>
 										</div>
 									))}
-									<Link to="/approvals/review" className="text-xs font-semibold text-blue-600 hover:underline">
+									<Link to="/approvals/review" className="text-xs font-semibold text-accent hover:underline">
 										Open approvals queue
 									</Link>
 								</>
@@ -366,19 +366,19 @@ export default function Dashboard() {
 					) : (
 						<div className="space-y-3 text-sm">
 							{assignedOpportunities.length === 0 ? (
-								<p className="text-sm text-slate-600">No opportunities assigned yet.</p>
+								<p className="text-sm text-muted-foreground">No opportunities assigned yet.</p>
 							) : (
 								<>
 									{assignedOpportunities.slice(0, 5).map(item => (
-										<div key={item.id} className="rounded border border-slate-100 bg-slate-50 p-3">
-											<p className="font-semibold text-slate-900">{item.title}</p>
-											<p className="text-xs text-slate-600">{item.clientName || 'Unknown client'}</p>
-											<Link to={`/opportunity/${item.id}`} className="mt-2 inline-flex text-xs font-semibold text-blue-600 hover:underline">
+										<div key={item.id} className="rounded border border-border bg-muted p-3">
+											<p className="font-semibold text-foreground">{item.title}</p>
+											<p className="text-xs text-muted-foreground">{item.clientName || 'Unknown client'}</p>
+											<Link to={`/opportunity/${item.id}`} className="mt-2 inline-flex text-xs font-semibold text-accent hover:underline">
 												Open workspace
 											</Link>
 										</div>
 									))}
-									<Link to="/opportunities" className="text-xs font-semibold text-blue-600 hover:underline">
+									<Link to="/opportunities" className="text-xs font-semibold text-accent hover:underline">
 										View all opportunities
 									</Link>
 								</>
@@ -389,27 +389,27 @@ export default function Dashboard() {
 
 				<Card header="Upcoming deadlines">
 					{opportunitiesQuery.isLoading ? (
-						<p className="text-sm text-slate-600">Loading deadlines...</p>
+						<p className="text-sm text-muted-foreground">Loading deadlines...</p>
 					) : upcoming.length === 0 ? (
-						<p className="text-sm text-slate-600">No deadlines in the next 14 days.</p>
+						<p className="text-sm text-muted-foreground">No deadlines in the next 14 days.</p>
 					) : (
 						<div className="space-y-3">
 							{upcoming.map(item => (
 								<div key={item.id} className="flex items-start justify-between gap-3 text-sm">
 									<div>
-										<p className="font-semibold text-slate-900">{item.title}</p>
-										<p className="text-xs text-slate-600">{item.clientName || 'Unknown client'}</p>
-										<p className="text-xs text-slate-500">{item.stage || '—'} • {item.status || '—'}</p>
+										<p className="font-semibold text-foreground">{item.title}</p>
+										<p className="text-xs text-muted-foreground">{item.clientName || 'Unknown client'}</p>
+										<p className="text-xs text-muted-foreground">{item.stage || '—'} • {item.status || '—'}</p>
 									</div>
-									<div className="text-right text-xs text-slate-500">
+									<div className="text-right text-xs text-muted-foreground">
 										<div>{formatDate(item.submissionDate)}</div>
-										<div className="font-semibold text-slate-700">
+										<div className="font-semibold text-foreground">
 											{daysUntil(item.submissionDate)}d left
 										</div>
 									</div>
 								</div>
 							))}
-							<Link to="/opportunities" className="text-xs font-semibold text-blue-600 hover:underline">
+							<Link to="/opportunities" className="text-xs font-semibold text-accent hover:underline">
 								View full pipeline
 							</Link>
 						</div>
@@ -417,32 +417,32 @@ export default function Dashboard() {
 				</Card>
 
 				<Card header="Quick actions">
-					<div className="space-y-3 text-sm text-slate-600">
-						<div className="rounded border border-slate-100 bg-slate-50 p-3">
-							<p className="font-semibold text-slate-900">Run collector</p>
-							<p className="text-xs text-slate-600">Pull new tenders with a date range.</p>
-							<Link to="/tenders/available" className="mt-2 inline-flex text-xs font-semibold text-blue-600 hover:underline">
+					<div className="space-y-3 text-sm text-muted-foreground">
+						<div className="rounded border border-border bg-muted p-3">
+							<p className="font-semibold text-foreground">Run collector</p>
+							<p className="text-xs text-muted-foreground">Pull new tenders with a date range.</p>
+							<Link to="/tenders/available" className="mt-2 inline-flex text-xs font-semibold text-accent hover:underline">
 								Open tenders
 							</Link>
 						</div>
-						<div className="rounded border border-slate-100 bg-slate-50 p-3">
-							<p className="font-semibold text-slate-900">Import tracker</p>
-							<p className="text-xs text-slate-600">Bulk import opportunities and owners.</p>
-							<Link to="/import/tracker" className="mt-2 inline-flex text-xs font-semibold text-blue-600 hover:underline">
+						<div className="rounded border border-border bg-muted p-3">
+							<p className="font-semibold text-foreground">Import tracker</p>
+							<p className="text-xs text-muted-foreground">Bulk import opportunities and owners.</p>
+							<Link to="/import/tracker" className="mt-2 inline-flex text-xs font-semibold text-accent hover:underline">
 								Start import
 							</Link>
 						</div>
-						<div className="rounded border border-slate-100 bg-slate-50 p-3">
-							<p className="font-semibold text-slate-900">Create opportunity</p>
-							<p className="text-xs text-slate-600">Add a new bid manually.</p>
-							<Link to="/opportunities" className="mt-2 inline-flex text-xs font-semibold text-blue-600 hover:underline">
+						<div className="rounded border border-border bg-muted p-3">
+							<p className="font-semibold text-foreground">Create opportunity</p>
+							<p className="text-xs text-muted-foreground">Add a new bid manually.</p>
+							<Link to="/opportunities" className="mt-2 inline-flex text-xs font-semibold text-accent hover:underline">
 								Go to opportunities
 							</Link>
 						</div>
-						<div className="rounded border border-slate-100 bg-slate-50 p-3">
-							<p className="font-semibold text-slate-900">My queue</p>
-							<p className="text-xs text-slate-600">See opportunities assigned to you.</p>
-							<Link to="/opportunities?mine=true" className="mt-2 inline-flex text-xs font-semibold text-blue-600 hover:underline">
+						<div className="rounded border border-border bg-muted p-3">
+							<p className="font-semibold text-foreground">My queue</p>
+							<p className="text-xs text-muted-foreground">See opportunities assigned to you.</p>
+							<Link to="/opportunities?mine=true" className="mt-2 inline-flex text-xs font-semibold text-accent hover:underline">
 								View my queue
 							</Link>
 						</div>
@@ -453,27 +453,27 @@ export default function Dashboard() {
 
 			{wizardOpen && currentWizard && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
-					<div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-lg">
+					<div className="w-full max-w-lg rounded-lg bg-card p-6 shadow-lg">
 						<div className="flex items-center justify-between">
-							<p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Setup wizard</p>
+							<p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Setup wizard</p>
 							<button
-								className="text-xs text-slate-500 hover:text-slate-700"
+								className="text-xs text-muted-foreground hover:text-foreground"
 								onClick={() => setWizardOpen(false)}
 							>
 								Close
 							</button>
 						</div>
-						<h3 className="mt-2 text-lg font-semibold text-slate-900">
+						<h3 className="mt-2 text-lg font-semibold text-foreground">
 							Step {wizardStep + 1} of {wizardSteps.length}: {currentWizard.title}
 						</h3>
-						<p className="mt-2 text-sm text-slate-600">{currentWizard.description}</p>
+						<p className="mt-2 text-sm text-muted-foreground">{currentWizard.description}</p>
 						<div className="mt-3 flex items-center gap-2 text-xs">
-							<span className={`rounded-full px-2 py-0.5 ${currentWizard.completed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+							<span className={`rounded-full px-2 py-0.5 ${currentWizard.completed ? 'bg-green-500/10 text-green-600' : 'bg-amber-500/10 text-amber-600'}`}>
 								{currentWizard.completed ? 'Done' : 'Pending'}
 							</span>
 							<Link
 								to={currentWizard.actionTo}
-								className="text-xs font-semibold text-blue-600 hover:underline"
+								className="text-xs font-semibold text-accent hover:underline"
 								onClick={() => setWizardOpen(false)}
 							>
 								{currentWizard.actionLabel}

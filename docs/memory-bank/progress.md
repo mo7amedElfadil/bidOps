@@ -111,6 +111,10 @@
   * Web: Standardized tenders/awards filters with shared Button/Input/Card components; tender search placement aligned with awards
   * Web: Navigation now includes a User group for personal settings; Settings page separates SLA vs general configuration
   * Web: Settings split into separate routes for SLA, opportunity lists, and system defaults with a shared settings nav
+  * Web: Notifications now link to the action target (payload actionUrl or opportunity fallback) from inbox and list views
+  * Web: Access requests now dispatch to admins (email + in-app) and record notification preferences per admin roles
+  * Web: Admin user grid exposes copyable invite link (via new endpoint) so admins can share invites out-of-band
+  * Web: Timeline dark theme override now forces gantt SVG row backgrounds/grid to use theme card colors
 * Next:
   * Rate limiting defaults + security headers docs (hardening sweep)
   * Validate Monaqasat adapter against live pages; add edge-case handling

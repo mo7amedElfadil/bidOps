@@ -473,7 +473,7 @@ export default function PricingPage() {
 		const templateName = workspace === 'BOQ' ? boqTemplateName : packTemplateName
 
 		return (
-			<div className="mt-3 rounded border bg-white p-3 text-sm">
+			<div className="mt-3 rounded border bg-card p-3 text-sm">
 				<div className="flex flex-wrap items-center gap-2">
 					<select
 						className="rounded border px-2 py-1 text-sm"
@@ -509,7 +509,7 @@ export default function PricingPage() {
 						}
 					/>
 					<button
-						className="rounded bg-slate-200 px-2 py-1 text-xs disabled:opacity-50"
+						className="rounded bg-muted px-2 py-1 text-xs disabled:opacity-50"
 						onClick={() =>
 							saveTemplate.mutate({
 								workspace,
@@ -523,7 +523,7 @@ export default function PricingPage() {
 						Save Global Template
 					</button>
 					<button
-						className="rounded bg-slate-200 px-2 py-1 text-xs disabled:opacity-50"
+						className="rounded bg-muted px-2 py-1 text-xs disabled:opacity-50"
 						onClick={() =>
 							saveTemplate.mutate({
 								workspace,
@@ -538,7 +538,7 @@ export default function PricingPage() {
 					</button>
 					{selectedTemplate && (
 						<button
-							className="rounded bg-blue-600 px-2 py-1 text-xs text-white"
+							className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground"
 							onClick={() => updateTemplate.mutate({ id: selectedTemplate.id, name: selectedTemplate.name, columns })}
 							disabled={updateTemplate.isPending}
 						>
@@ -583,13 +583,13 @@ export default function PricingPage() {
 								placeholder="=C2*D2"
 								disabled={column.type !== 'formula'}
 							/>
-							<span className="text-xs text-slate-500">
+							<span className="text-xs text-muted-foreground">
 								Key: {column.key} ({columnLabelFromIndex(index)})
 							</span>
 						</div>
 					))}
 					<button
-						className="w-fit rounded bg-slate-200 px-2 py-1 text-xs"
+						className="w-fit rounded bg-muted px-2 py-1 text-xs"
 						onClick={() =>
 							setColumns([
 								...columns,
@@ -615,7 +615,7 @@ export default function PricingPage() {
 					<div className="flex items-center justify-between">
 						<h2 className="font-semibold">Bill of Quantities</h2>
 						<button
-							className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
+							className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
 							onClick={() => setShowAddBoq(true)}
 						>
 							+ Add Item
@@ -625,7 +625,7 @@ export default function PricingPage() {
 					{renderColumnManager(boqColumns, setBoqColumns, 'BOQ')}
 
 					{showAddBoq && (
-						<div className="mt-3 rounded border bg-white p-4 shadow-sm">
+						<div className="mt-3 rounded border bg-card p-4 shadow-sm">
 							<div className="grid gap-3 sm:grid-cols-6">
 								<label className="text-xs font-medium">
 									Line #
@@ -707,14 +707,14 @@ export default function PricingPage() {
 							</div>
 							<div className="mt-3 flex gap-2">
 								<button
-									className="rounded bg-green-600 px-3 py-1.5 text-sm text-white"
+									className="rounded bg-green-600 px-3 py-1.5 text-sm text-primary-foreground"
 									onClick={() => addBoq.mutate()}
 									disabled={!newBoq.description || addBoq.isPending}
 								>
 									{addBoq.isPending ? 'Saving...' : 'Save'}
 								</button>
 								<button
-									className="rounded bg-slate-200 px-3 py-1.5 text-sm"
+									className="rounded bg-muted px-3 py-1.5 text-sm"
 									onClick={() => setShowAddBoq(false)}
 									disabled={addBoq.isPending}
 								>
@@ -725,11 +725,11 @@ export default function PricingPage() {
 					)}
 
 					{boq.isLoading ? (
-						<p className="mt-3 text-sm text-slate-600">Loading...</p>
+						<p className="mt-3 text-sm text-muted-foreground">Loading...</p>
 					) : (
-						<div className="mt-3 overflow-x-auto rounded border bg-white shadow-sm">
+						<div className="mt-3 overflow-x-auto rounded border bg-card shadow-sm">
 							<table className="min-w-full text-sm">
-								<thead className="bg-slate-100">
+								<thead className="bg-muted">
 									<tr>
 										{boqColumns.map(col => (
 											<th key={col.key} className="px-3 py-2 text-left">
@@ -750,13 +750,13 @@ export default function PricingPage() {
 											<td className="px-3 py-2">
 												<div className="flex gap-2">
 													<button
-														className="text-xs text-blue-600 hover:underline"
+														className="text-xs text-accent hover:underline"
 														onClick={() => setEditingBoq(row)}
 													>
 														Edit
 													</button>
 													<button
-														className="text-xs text-red-600 hover:underline"
+														className="text-xs text-destructive hover:underline"
 														onClick={() => {
 															if (confirm('Delete this BoQ item?')) deleteBoq.mutate(row.id)
 														}}
@@ -768,7 +768,7 @@ export default function PricingPage() {
 											</td>
 										</tr>
 									))}
-									<tr className="border-t bg-slate-50 font-semibold">
+									<tr className="border-t bg-muted font-semibold">
 										<td colSpan={boqColumns.length - 1} className="px-3 py-2 text-right">
 											Total BoQ ({BASE_CURRENCY})
 										</td>
@@ -782,7 +782,7 @@ export default function PricingPage() {
 				</div>
 
 				{editingBoq && (
-					<div className="rounded border bg-white p-4 shadow-sm">
+					<div className="rounded border bg-card p-4 shadow-sm">
 						<h3 className="text-sm font-medium">Edit BoQ Item</h3>
 						<div className="mt-2 grid gap-3 sm:grid-cols-6">
 							<label className="text-xs font-medium">
@@ -868,14 +868,14 @@ export default function PricingPage() {
 						</div>
 						<div className="mt-3 flex gap-2">
 							<button
-								className="rounded bg-green-600 px-3 py-1.5 text-sm text-white"
+								className="rounded bg-green-600 px-3 py-1.5 text-sm text-primary-foreground"
 								onClick={() => updateBoq.mutate(editingBoq)}
 								disabled={updateBoq.isPending}
 							>
 								Save
 							</button>
 							<button
-								className="rounded bg-slate-200 px-3 py-1.5 text-sm"
+								className="rounded bg-muted px-3 py-1.5 text-sm"
 								onClick={() => setEditingBoq(null)}
 							>
 								Cancel
@@ -888,7 +888,7 @@ export default function PricingPage() {
 					<div className="flex items-center justify-between">
 						<h2 className="font-semibold">Pricing Pack Worksheet</h2>
 						<button
-							className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
+							className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
 							onClick={() => setShowAddPack(true)}
 						>
 							+ Add Row
@@ -898,7 +898,7 @@ export default function PricingPage() {
 					{renderColumnManager(packColumns, setPackColumns, 'PACK')}
 
 					{showAddPack && (
-						<div className="mt-3 rounded border bg-white p-4 shadow-sm">
+						<div className="mt-3 rounded border bg-card p-4 shadow-sm">
 							<div className="grid gap-3 sm:grid-cols-5">
 								<label className="text-xs font-medium">
 									Line #
@@ -969,14 +969,14 @@ export default function PricingPage() {
 							</div>
 							<div className="mt-3 flex gap-2">
 								<button
-									className="rounded bg-green-600 px-3 py-1.5 text-sm text-white"
+									className="rounded bg-green-600 px-3 py-1.5 text-sm text-primary-foreground"
 									onClick={() => addPackRow.mutate()}
 									disabled={!newPack.description || addPackRow.isPending}
 								>
 									{addPackRow.isPending ? 'Saving...' : 'Save'}
 								</button>
 								<button
-									className="rounded bg-slate-200 px-3 py-1.5 text-sm"
+									className="rounded bg-muted px-3 py-1.5 text-sm"
 									onClick={() => setShowAddPack(false)}
 									disabled={addPackRow.isPending}
 								>
@@ -987,11 +987,11 @@ export default function PricingPage() {
 					)}
 
 					{packRows.isLoading ? (
-						<p className="mt-3 text-sm text-slate-600">Loading...</p>
+						<p className="mt-3 text-sm text-muted-foreground">Loading...</p>
 					) : (
-						<div className="mt-3 overflow-x-auto rounded border bg-white shadow-sm">
+						<div className="mt-3 overflow-x-auto rounded border bg-card shadow-sm">
 							<table className="min-w-full text-sm">
-								<thead className="bg-slate-100">
+								<thead className="bg-muted">
 									<tr>
 										{packColumns.map(col => (
 											<th key={col.key} className="px-3 py-2 text-left">
@@ -1012,13 +1012,13 @@ export default function PricingPage() {
 											<td className="px-3 py-2">
 												<div className="flex gap-2">
 													<button
-														className="text-xs text-blue-600 hover:underline"
+														className="text-xs text-accent hover:underline"
 														onClick={() => setEditingPack(row)}
 													>
 														Edit
 													</button>
 													<button
-														className="text-xs text-red-600 hover:underline"
+														className="text-xs text-destructive hover:underline"
 														onClick={() => {
 															if (confirm('Delete this pack row?')) deletePackRow.mutate(row.id)
 														}}
@@ -1037,7 +1037,7 @@ export default function PricingPage() {
 				</div>
 
 				{editingPack && (
-					<div className="rounded border bg-white p-4 shadow-sm">
+					<div className="rounded border bg-card p-4 shadow-sm">
 						<h3 className="text-sm font-medium">Edit Pack Row</h3>
 						<div className="mt-2 grid gap-3 sm:grid-cols-5">
 							<label className="text-xs font-medium">
@@ -1112,14 +1112,14 @@ export default function PricingPage() {
 						</div>
 						<div className="mt-3 flex gap-2">
 							<button
-								className="rounded bg-green-600 px-3 py-1.5 text-sm text-white"
+								className="rounded bg-green-600 px-3 py-1.5 text-sm text-primary-foreground"
 								onClick={() => updatePack.mutate(editingPack)}
 								disabled={updatePack.isPending}
 							>
 								Save
 							</button>
 							<button
-								className="rounded bg-slate-200 px-3 py-1.5 text-sm"
+								className="rounded bg-muted px-3 py-1.5 text-sm"
 								onClick={() => setEditingPack(null)}
 							>
 								Cancel
@@ -1132,7 +1132,7 @@ export default function PricingPage() {
 					<div className="flex items-center justify-between">
 						<h2 className="font-semibold">Vendor Quotes</h2>
 						<button
-							className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
+							className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
 							onClick={() => setShowAddQuote(true)}
 						>
 							+ Add Quote
@@ -1140,7 +1140,7 @@ export default function PricingPage() {
 					</div>
 
 					{showAddQuote && (
-						<div className="mt-3 rounded border bg-white p-4 shadow-sm">
+						<div className="mt-3 rounded border bg-card p-4 shadow-sm">
 							<div className="grid gap-3 sm:grid-cols-3">
 								<label className="block text-xs font-medium">
 									Vendor
@@ -1169,14 +1169,14 @@ export default function PricingPage() {
 							</div>
 							<div className="mt-3 flex gap-2">
 								<button
-									className="rounded bg-green-600 px-3 py-1.5 text-sm text-white"
+									className="rounded bg-green-600 px-3 py-1.5 text-sm text-primary-foreground"
 									onClick={() => addQuote.mutate()}
 									disabled={!newQuote.vendor || addQuote.isPending}
 								>
 									{addQuote.isPending ? 'Saving...' : 'Save'}
 								</button>
 								<button
-									className="rounded bg-slate-200 px-3 py-1.5 text-sm"
+									className="rounded bg-muted px-3 py-1.5 text-sm"
 									onClick={() => setShowAddQuote(false)}
 									disabled={addQuote.isPending}
 								>
@@ -1187,11 +1187,11 @@ export default function PricingPage() {
 					)}
 
 					{quotes.isLoading ? (
-						<p className="mt-3 text-sm text-slate-600">Loading...</p>
+						<p className="mt-3 text-sm text-muted-foreground">Loading...</p>
 					) : (
-						<div className="mt-3 overflow-x-auto rounded border bg-white shadow-sm">
+						<div className="mt-3 overflow-x-auto rounded border bg-card shadow-sm">
 							<table className="min-w-full text-sm">
-								<thead className="bg-slate-100">
+								<thead className="bg-muted">
 									<tr>
 										<th className="px-3 py-2 text-left">Vendor</th>
 										<th className="px-3 py-2 text-left">Quote No</th>
@@ -1212,7 +1212,7 @@ export default function PricingPage() {
 					)}
 				</div>
 
-				<div className="mt-8 rounded border bg-white p-4 shadow-sm">
+				<div className="mt-8 rounded border bg-card p-4 shadow-sm">
 					<h2 className="font-semibold">Pricing Pack</h2>
 					<div className="mt-3 grid gap-4 sm:grid-cols-4">
 						<label className="text-sm">
@@ -1258,16 +1258,16 @@ export default function PricingPage() {
 					</div>
 					<div className="mt-3 flex items-center gap-2">
 						<button
-							className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white"
+							className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground"
 							onClick={() => recalc.mutate()}
 							disabled={recalc.isPending}
 						>
 							{recalc.isPending ? 'Calculating...' : 'Recalculate Pack'}
 						</button>
-						{error && <span className="text-sm text-red-600">{error}</span>}
+						{error && <span className="text-sm text-destructive">{error}</span>}
 					</div>
 					{pack && (
-						<div className="mt-4 text-sm text-slate-700">
+						<div className="mt-4 text-sm text-foreground">
 							<p>Base Cost ({BASE_CURRENCY}): {pack.baseCost.toFixed(2)}</p>
 							<p>Total Price ({BASE_CURRENCY}): {pack.totalPrice.toFixed(2)}</p>
 						</div>

@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service'
 import { JwtStrategy } from './jwt.strategy'
 import { AuthController } from './auth.controller'
 import { AuthBootstrapService } from './auth.bootstrap'
+import { NotificationsModule } from '../modules/notifications/notifications.module'
 
 // Conditionally load OIDC strategy only when configured
 const providers: any[] = [JwtStrategy, PrismaService, AuthBootstrapService]
@@ -20,7 +21,8 @@ if (process.env.AUTH_PROVIDER === 'oidc' && process.env.OIDC_ISSUER) {
 		JwtModule.register({
 			secret: process.env.JWT_SECRET || 'dev-secret',
 			signOptions: { expiresIn: '12h' }
-		})
+		}),
+		NotificationsModule
 	],
 	controllers: [AuthController],
 	providers,

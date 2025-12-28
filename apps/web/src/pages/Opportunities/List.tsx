@@ -133,7 +133,7 @@ export default function List() {
 			actions={
 				<div className="flex flex-wrap gap-2">
 					<button
-						className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200 flex items-center"
+						className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80 flex items-center"
 						onClick={() =>
 							downloadWithAuth(
 								`${import.meta.env.VITE_API_URL}/analytics/export/opportunities.csv`,
@@ -144,14 +144,14 @@ export default function List() {
 						Export CSV
 					</button>
 					<button
-						className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
+						className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
 						onClick={() => setShowCreate(true)}
 					>
 						+ New
 					</button>
 					<Link
 						to="/import/tracker"
-						className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
+						className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
 					>
 						Import Tracker
 					</Link>
@@ -192,34 +192,34 @@ export default function List() {
 						</option>
 					))}
 				</select>
-				<div className="flex items-center gap-1 rounded border border-slate-200 bg-white p-1 text-xs">
-					<span className="px-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">View</span>
+				<div className="flex items-center gap-1 rounded border border-border bg-card p-1 text-xs">
+					<span className="px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">View</span>
 					<Link
 						to="/opportunities"
-						className="rounded px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+						className="rounded px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted/80"
 					>
 						Table
 					</Link>
 					<Link
 						to="/board"
-						className="rounded px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+						className="rounded px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted/80"
 					>
 						Kanban
 					</Link>
 					<Link
 						to="/timeline"
-						className="rounded px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+						className="rounded px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted/80"
 					>
 						Timeline
 					</Link>
 					<Link
 						to="/post-submission"
-						className="rounded px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+						className="rounded px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted/80"
 					>
 						Post Submission
 					</Link>
 				</div>
-				<label className="flex items-center gap-2 text-xs text-slate-600">
+				<label className="flex items-center gap-2 text-xs text-muted-foreground">
 					<input
 						type="checkbox"
 						checked={showPostSubmission}
@@ -227,7 +227,7 @@ export default function List() {
 					/>
 					Show post-submission section
 				</label>
-				<label className="flex items-center gap-2 text-xs text-slate-600">
+				<label className="flex items-center gap-2 text-xs text-muted-foreground">
 					<input
 						type="checkbox"
 						checked={mineOnly}
@@ -240,16 +240,16 @@ export default function List() {
 				</label>
 			</div>
 
-			{opportunities.isLoading && <p className="mt-4 text-sm text-slate-600">Loading...</p>}
+			{opportunities.isLoading && <p className="mt-4 text-sm text-muted-foreground">Loading...</p>}
 			{opportunities.error && (
-				<p className="mt-4 text-sm text-red-600">
+				<p className="mt-4 text-sm text-destructive">
 					{(opportunities.error as Error).message || 'Failed to load opportunities'}
 				</p>
 			)}
 
-			<div className="mt-4 overflow-x-auto rounded border bg-white shadow-sm">
+			<div className="mt-4 overflow-x-auto rounded border bg-card shadow-sm">
 				<table className="min-w-full text-sm">
-					<thead className="bg-slate-100">
+					<thead className="bg-muted">
 						<tr>
 							<th className="px-3 py-2 text-left">Title</th>
 							<th className="px-3 py-2 text-left">Client</th>
@@ -265,7 +265,7 @@ export default function List() {
 					</thead>
 					<tbody>
 						{activeRows.map(o => (
-							<tr key={o.id} className="border-t hover:bg-slate-50">
+							<tr key={o.id} className="border-t hover:bg-muted/80">
 								<td className="px-3 py-2 font-medium">
 									<Link to={`/opportunity/${o.id}`} className="hover:underline">
 										{o.title}
@@ -297,43 +297,43 @@ export default function List() {
 									<div className="flex flex-wrap gap-1">
 										<Link
 											to={`/opportunity/${o.id}/attachments`}
-											className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+											className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 										>
 											Docs
 										</Link>
 										<Link
 											to={`/opportunity/${o.id}/compliance`}
-											className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+											className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 										>
 											Compliance
 										</Link>
 										<Link
 											to={`/opportunity/${o.id}/clarifications`}
-											className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+											className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 										>
 											Q&A
 										</Link>
 										<Link
 											to={`/opportunity/${o.id}/pricing`}
-											className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+											className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 										>
 											Pricing
 										</Link>
 										<Link
 											to={`/opportunity/${o.id}/approvals`}
-											className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+											className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 										>
 											Approvals
 										</Link>
 										<Link
 											to={`/opportunity/${o.id}/submission`}
-											className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+											className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 										>
 											Submit
 										</Link>
 										<Link
 											to={`/opportunity/${o.id}/outcome`}
-											className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+											className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 										>
 											Outcome
 										</Link>
@@ -343,9 +343,9 @@ export default function List() {
 						))}
 						{activeRows.length === 0 && !opportunities.isLoading && (
 							<tr>
-								<td colSpan={9} className="px-3 py-4 text-center text-slate-500">
+								<td colSpan={9} className="px-3 py-4 text-center text-muted-foreground">
 									No opportunities yet.{' '}
-									<Link to="/import/tracker" className="text-blue-600 hover:underline">
+									<Link to="/import/tracker" className="text-accent hover:underline">
 										Import your tracker
 									</Link>{' '}
 									or create a new record.
@@ -358,14 +358,14 @@ export default function List() {
 			{showPostSubmission && (
 				<div className="mt-6">
 					<div className="flex items-center justify-between">
-						<h3 className="text-sm font-semibold text-slate-700">Post Submission</h3>
-						<Link to="/post-submission" className="text-xs text-blue-600 hover:underline">
+						<h3 className="text-sm font-semibold text-foreground">Post Submission</h3>
+						<Link to="/post-submission" className="text-xs text-accent hover:underline">
 							Open full list
 						</Link>
 					</div>
-					<div className="mt-2 overflow-x-auto rounded border bg-white shadow-sm">
+					<div className="mt-2 overflow-x-auto rounded border bg-card shadow-sm">
 						<table className="min-w-full text-sm">
-							<thead className="bg-slate-100">
+							<thead className="bg-muted">
 								<tr>
 									<th className="px-3 py-2 text-left">Title</th>
 									<th className="px-3 py-2 text-left">Client</th>
@@ -377,7 +377,7 @@ export default function List() {
 							</thead>
 							<tbody>
 								{postRows.map(o => (
-									<tr key={o.id} className="border-t hover:bg-slate-50">
+									<tr key={o.id} className="border-t hover:bg-muted/80">
 										<td className="px-3 py-2 font-medium">
 											<Link to={`/opportunity/${o.id}`} className="hover:underline">
 												{o.title}
@@ -395,19 +395,19 @@ export default function List() {
 											<div className="flex flex-wrap gap-1">
 												<Link
 													to={`/opportunity/${o.id}/approvals`}
-													className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+													className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 												>
 													Approvals
 												</Link>
 												<Link
 													to={`/opportunity/${o.id}/submission`}
-													className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+													className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 												>
 													Submit
 												</Link>
 												<Link
 													to={`/opportunity/${o.id}/outcome`}
-													className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+													className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 												>
 													Outcome
 												</Link>
@@ -417,7 +417,7 @@ export default function List() {
 								))}
 								{postRows.length === 0 && (
 									<tr>
-										<td colSpan={6} className="px-3 py-4 text-center text-slate-500">
+										<td colSpan={6} className="px-3 py-4 text-center text-muted-foreground">
 											No post-submission opportunities in this page.
 										</td>
 									</tr>
@@ -428,7 +428,7 @@ export default function List() {
 				</div>
 			)}
 			{opportunities.data && (
-				<div className="mt-4 flex flex-col gap-2 text-sm text-slate-600">
+				<div className="mt-4 flex flex-col gap-2 text-sm text-muted-foreground">
 					<PaginationControls
 						page={opportunities.data.page}
 						pageSize={opportunities.data.pageSize}
@@ -441,7 +441,7 @@ export default function List() {
 
 			{showCreate && (
 				<div className="fixed inset-0 z-10 flex items-center justify-center bg-black/30 p-4">
-					<div className="w-full max-w-lg rounded border bg-white p-5 shadow-lg">
+					<div className="w-full max-w-lg rounded border bg-card p-5 shadow-lg">
 						<h2 className="text-lg font-semibold">Create Opportunity</h2>
 						<div className="mt-3 grid gap-3">
 							<label className="text-sm">
@@ -511,14 +511,14 @@ export default function List() {
 						</div>
 						<div className="mt-4 flex justify-end gap-2">
 							<button
-								className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
+								className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
 								onClick={() => setShowCreate(false)}
 								disabled={createMutation.isPending}
 							>
 								Cancel
 							</button>
 							<button
-								className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+								className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
 								onClick={() => createMutation.mutate()}
 								disabled={!form.title || !form.clientInput.trim() || createMutation.isPending}
 							>
@@ -526,7 +526,7 @@ export default function List() {
 							</button>
 						</div>
 						{createMutation.error && (
-							<p className="mt-2 text-sm text-red-600">
+							<p className="mt-2 text-sm text-destructive">
 								{(createMutation.error as Error).message || 'Failed to create'}
 							</p>
 						)}
