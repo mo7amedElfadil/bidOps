@@ -27,6 +27,13 @@ export class OpportunitiesService {
 		return Math.ceil(diffMs / (1000 * 60 * 60 * 24))
 	}
 
+	private formatDateForEmail(value?: Date | string | null) {
+		if (!value) return 'TBD'
+		const date = value instanceof Date ? value : new Date(value)
+		if (Number.isNaN(date.getTime())) return 'TBD'
+		return date.toISOString().split('T')[0]
+	}
+
 	async list(query: QueryOpportunityDto, tenantId: string, userId?: string) {
 		const where: Prisma.OpportunityWhereInput = { tenantId }
 		if (query.clientId) where.clientId = query.clientId
@@ -148,7 +155,10 @@ export class OpportunitiesService {
 			dataOwner: input.dataOwner ?? undefined,
 			tenantId
 		}
-		const created = await this.prisma.opportunity.create({ data: createData })
+		const created = await this.prisma.opportunity.create({
+			data: createData,
+			include: { client: true, owner: true }
+		})
 		const subject = `New opportunity created: ${created.title}`
 		const body = `Opportunity "${created.title}" has been created.`
 		const bidOwnerLinks = await this.prisma.opportunityBidOwner.findMany({
@@ -159,6 +169,27 @@ export class OpportunitiesService {
 			...(created.ownerId ? [created.ownerId] : []),
 			...bidOwnerLinks.map(link => link.userId)
 		]
+		const opportunityUrl = buildFrontendUrl(`/opportunity/${created.id}`)
+		const templateData: Record<string, string> = {
+			HERO_KICKER: 'Opportunity alert',
+			HERO_HEADLINE: created.title,
+			HERO_SUBTEXT: created.description ?? 'A new opportunity just entered the pipeline.',
+			CTA_URL: opportunityUrl,
+			CTA_TEXT: 'Open opportunity',
+			BODY_INTRO_PARAGRAPH: created.client?.name
+				? `Client: ${created.client.name}`
+				: 'A new opportunity just entered the pipeline.',
+			BODY_DETAILS: created.description ?? 'No additional details have been provided yet.',
+			OPPORTUNITY_TITLE: created.title,
+			CLIENT_NAME: created.client?.name ?? 'Client',
+			SUBMISSION_DATE: this.formatDateForEmail(created.submissionDate),
+			DAYS_LEFT:
+				created.daysLeft !== null && created.daysLeft !== undefined
+					? String(created.daysLeft)
+					: 'TBD',
+			BUSINESS_OWNER: created.owner?.name ?? created.dataOwner ?? 'Unassigned',
+			SUMMARY_URL: opportunityUrl
+		}
 		try {
 			await this.notifications.dispatch({
 				activity: NotificationActivities.OPPORTUNITY_CREATED,
@@ -171,7 +202,9 @@ export class OpportunitiesService {
 				opportunityId: created.id,
 				payload: {
 					actionUrl: buildFrontendUrl(`/opportunity/${created.id}`),
-					actionLabel: 'View opportunity'
+					actionLabel: 'View opportunity',
+					templateName: 'opportunity-created',
+					templateData
 				}
 			})
 		} catch (err) {

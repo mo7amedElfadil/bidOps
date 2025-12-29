@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>{{SUBJECT}}</title>
+  <style>
+    body { margin:0; font-family: 'Segoe UI', system-ui, sans-serif; background:#F3F5F7; color:#0f172a; }
+    .container { width:100%; max-width:720px; margin:0 auto; padding:24px; }
+    .hero { background:#0f172a; color:#fff; border-radius:18px; padding:24px; }
+    .hero h1 { margin:8px 0 6px; font-size:26px; line-height:32px; }
+    .hero p { margin:0; color:#CBD5F5; }
+    .panel { background:#FFFFFF; border-radius:18px; padding:24px; margin-top:18px; box-shadow:0 20px 45px rgba(15,23,42,0.08); }
+    .summary { font-size:14px; color:#475569; margin-bottom:16px; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th, td { text-align:left; padding:10px 8px; border-bottom:1px solid #E2E8F0; vertical-align:top; }
+    th { font-size:12px; text-transform:uppercase; letter-spacing:0.4px; color:#64748B; }
+    a { color:#2563eb; text-decoration:none; }
+    .cta { display:inline-flex; align-items:center; justify-content:center; background:#FCD34D; color:#0F172A; border-radius:999px; padding:10px 18px; font-weight:700; text-decoration:none; margin-top:16px; font-size:14px; }
+    .footer { font-size:12px; color:#64748B; margin-top:16px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <div style="font-size:12px; text-transform:uppercase; letter-spacing:0.4px; color:#94a3b8;">Tender intelligence</div>
+      <h1>{{HERO_HEADLINE}}</h1>
+      <p>{{HERO_SUBTEXT}}</p>
+    </div>
+
+    <div class="panel">
+      <div class="summary">{{SUMMARY_TEXT}}</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Tender Ref</th>
+            <th>Title</th>
+            <th>Ministry</th>
+            <th>Close</th>
+            <th>Score</th>
+            <th>Matches</th>
+            <th>Purchase</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{TABLE_ROWS}}
+        </tbody>
+      </table>
+      <a class="cta" href="{{CTA_URL}}">{{CTA_TEXT}}</a>
+    </div>
+
+    <div class="footer">
+      Sent by <strong>BidOps</strong>. Need help? Contact <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a>.
+    </div>
+  </div>
+</body>
+</html>

@@ -46,12 +46,22 @@ AI extraction:
 - GEMINI_API_KEY
 - GEMINI_MODEL
 
+Embeddings (semantic tender filters):
+- EMBEDDINGS_PROVIDER (openai|gemini; defaults to AI_PROVIDER)
+- OPENAI_EMBEDDING_MODEL (default text-embedding-3-small)
+- GEMINI_EMBEDDING_MODEL (default text-embedding-004)
+- EMBEDDING_DIM (default 1536; must match the DB vector column)
+- EMBEDDING_BATCH_SIZE (default 50)
+- TENDER_RECOMMENDATION_LIMIT (default 10)
+
+Translation (API backfill):
+- TRANSLATION_BATCH_SIZE (default 20)
+
 Auth defaults:
 - DEFAULT_ADMIN_EMAIL (default elfadil@it-serve.qa)
 - DEFAULT_ADMIN_PASSWORD (default P@ssword1)
 
 Collectors translation:
-- COLLECTOR_TRANSLATE_TITLES (default true; set to false to disable)
 - COLLECTOR_TRANSLATION_PROVIDER (openai|gemini, defaults to AI_PROVIDER)
 - OPENAI_API_KEY / OPENAI_MODEL (required if using OpenAI)
 - GEMINI_API_KEY / GEMINI_MODEL (required if using Gemini)

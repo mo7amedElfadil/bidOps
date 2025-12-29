@@ -92,6 +92,8 @@ make up
 | `collectors` | (internal) | Award collectors server (Playwright) |
 | `workers` | (internal) | BullMQ worker for SLA ticks, notification/email batches, and queued collector jobs |
 
+Postgres runs with pgvector enabled for semantic tender filtering.
+
 Mail delivery uses `SMTP_*` variables from the root `.env`. For local dev you can point SMTP to `mailhog`; for production wire it to an external SMTP provider (Office 365, SES, etc.).
 
 ### Job queue

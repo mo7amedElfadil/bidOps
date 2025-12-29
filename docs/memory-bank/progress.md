@@ -115,6 +115,16 @@
   * Web: Access requests now dispatch to admins (email + in-app) and record notification preferences per admin roles
   * Web: Admin user grid exposes copyable invite link (via new endpoint) so admins can share invites out-of-band
   * Web: Timeline dark theme override now forces gantt SVG row backgrounds/grid to use theme card colors
+  * Tenders: Smart filter models (activities/classifications), classification engine, and UI filter badges added
+  * Collectors: Available tenders classify on ingest; API exposes smart filter activities, classification, and reprocess endpoints
+  * Tenders: Added seed script for default ITSQ/IoT activities and adjusted "New" filter to use tender timestamps
+  * Web: Admin Tender Activities page (CRUD + translate + reprocess)
+  * Tenders: Seed script now merges Arabic keyword variants
+  * Collectors: Arabic titles enforced to translate; untranslated Arabic is skipped and stored only when English translation succeeds
+  * Tenders API: Arabic titles auto-translate on create/update with originals stored in `titleOriginal`; added `/tenders/translate` admin backfill endpoint
+  * Tenders: Smart filtering now uses semantic embeddings stored in pgvector with similarity scoring and updated classification
+  * Tenders: Batch embedding/translation backfills to reduce per-tender API calls during reprocess
+  * Tenders: Recommendation notifications default to new tenders; manual send endpoint/UI for Sales/Executive/Admin with scope/threshold criteria
 * Next:
   * Rate limiting defaults + security headers docs (hardening sweep)
   * Validate Monaqasat adapter against live pages; add edge-case handling

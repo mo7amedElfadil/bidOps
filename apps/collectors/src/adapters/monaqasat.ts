@@ -136,13 +136,20 @@ export class MonaqasatAdapter extends BaseAdapter {
 						}
 					}
 
-					const translated = await translateIfArabic(summary.title)
+					let translated
+					try {
+						translated = await translateIfArabic(summary.title)
+					} catch (err: any) {
+						console.warn(`[${this.id}] Translation failed for award "${summary.title}": ${err?.message || err}`)
+						await this.delay(perRowDelay)
+						continue
+					}
 
 					records.push({
 						portal: this.id,
 						tenderRef: summary.tenderRef || summary.title,
 						client: summary.client || 'Unknown',
-						title: translated.translated || summary.title,
+						title: translated.translated,
 						titleOriginal: translated.original,
 						awardDate: awardDate ?? undefined,
 						winners,

@@ -10,6 +10,7 @@ const TIMEZONE_KEY = 'time.offsetHours'
 const IMPORT_DATE_KEY = 'import.dateFormat'
 const STAGE_KEY = 'opportunity.stages'
 const STATUS_KEY = 'opportunity.statuses'
+const SOCIAL_KEYS = ['social.linkedin', 'social.x', 'social.instagram', 'social.youtube']
 const DEFAULT_STAGES = [
 	'Sourcing',
 	'Qualification',
@@ -198,6 +199,47 @@ export class SettingsController {
 			create: { key: IMPORT_DATE_KEY, value: format }
 		})
 		return { format }
+	}
+
+	@Get('socials')
+	@Roles('ADMIN')
+	async getSocials() {
+		const rows = await this.prisma.appSetting.findMany({
+			where: { key: { in: SOCIAL_KEYS } }
+		})
+		const map = Object.fromEntries(rows.map(r => [r.key, r.value]))
+		return {
+			linkedin: map['social.linkedin'] ?? '',
+			x: map['social.x'] ?? '',
+			instagram: map['social.instagram'] ?? '',
+			youtube: map['social.youtube'] ?? ''
+		}
+	}
+
+	@Put('socials')
+	@Roles('ADMIN')
+	async setSocials(@Body() body: { linkedin?: string; x?: string; instagram?: string; youtube?: string }) {
+		const entries = [
+			{ key: 'social.linkedin', value: (body.linkedin || '').trim() },
+			{ key: 'social.x', value: (body.x || '').trim() },
+			{ key: 'social.instagram', value: (body.instagram || '').trim() },
+			{ key: 'social.youtube', value: (body.youtube || '').trim() }
+		]
+		await this.prisma.$transaction(
+			entries.map(entry =>
+				this.prisma.appSetting.upsert({
+					where: { key: entry.key },
+					update: { value: entry.value },
+					create: { key: entry.key, value: entry.value }
+				})
+			)
+		)
+		return {
+			linkedin: entries[0].value,
+			x: entries[1].value,
+			instagram: entries[2].value,
+			youtube: entries[3].value
+		}
 	}
 
 	@Get('fx-rates')

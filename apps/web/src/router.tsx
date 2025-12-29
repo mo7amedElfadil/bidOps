@@ -17,6 +17,7 @@ import AwardsEventsPage from './pages/Awards/Events'
 import AvailableTendersPage from './pages/Tenders/Available'
 import UsersPage from './pages/Admin/Users'
 import BusinessRolesPage from './pages/Admin/BusinessRoles'
+import TenderActivitiesPage from './pages/Admin/TenderActivities'
 import ApprovalReviewPage from './pages/Approvals/Review'
 import Callback from './pages/Auth/Callback'
 import DevLogin from './pages/Auth/DevLogin'
@@ -84,7 +85,8 @@ const router = createBrowserRouter([
 					{ path: '/settings/lifecycle', element: <LifecycleSettingsPage /> },
 					{ path: '/settings/system', element: <SystemSettingsPage /> },
 					{ path: '/admin/users', element: <UsersPage /> },
-					{ path: '/admin/business-roles', element: <BusinessRolesPage /> }
+					{ path: '/admin/business-roles', element: <BusinessRolesPage /> },
+					{ path: '/admin/tender-activities', element: <TenderActivitiesPage /> }
 				]
 			}
 		]

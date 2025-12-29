@@ -14,6 +14,7 @@ UI scope and behaviors:
 - Navigation collapsed into a grouped mega menu dropdown so the header stays streamlined
 - Account settings page now manages your profile, password link, and personal notification preferences (tenant defaults still in Notifications admin)
 - Change request submissions now trigger change-request notifications for the bid owner so they see the next step immediately
+- Tender collector/reprocess runs now send a recommendations summary to notification recipients (defaults to all team members; admins can edit the list). Sales/Executive/Admin can manually send recommendations with scope/min-score criteria from the Available Tenders page.
 - Bid review dashboard (`/approvals/review`) summarizes pricing packs, approval chains, and lets the assigned reviewer finalize bids once every signature is captured
 - Opportunity pages include a submission checklist (tender bond submitted, mandatory forms completed, final combined PDF ready, compliance created, clarifications sent or N/A, pricing approved) with per-item notes and attachments
 - Post submission view (`/post-submission`) groups completed proposals or passed deadlines away from the active pipeline; board adds a “Post Submission” lane
@@ -35,8 +36,9 @@ UI scope and behaviors:
 - English and Arabic content support
 - Award staging can trigger Monaqasat collector with date range (from/to)
 - Available ministry tenders view with request Go/No-Go approval CTA, promote-to-opportunity action, and purchase links
+- Admin tender activities page with translate + reprocess controls for smart filters
 - Navigation streamlined into Pipeline/Market/User/Admin groups with admin-only visibility
-- Future: AI/smart filtering for potential opportunities so only ITSQ-relevant tenders are surfaced
+- Smart filtering for potential opportunities using semantic matching (see `docs/smartFilter.md`)
 - User management for ADMIN (create/edit/disable)
 - Tracker import issues list (invalid values left empty, resolved on update)
 

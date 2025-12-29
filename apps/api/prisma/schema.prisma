@@ -340,6 +340,17 @@ enum ApprovalStatus {
   REJECTED
 }
 
+enum TenderScope {
+  ITSQ
+  IOT_SHABAKA
+  OTHER
+}
+
+enum TenderClassificationRunType {
+  COLLECTOR
+  REPROCESS
+}
+
 enum NotificationChannel {
   EMAIL
   IN_APP
@@ -538,6 +549,7 @@ model MinistryTender {
   tenderRef           String?
   title               String?
   titleOriginal       String?
+  embedding           Unsupported("vector")?
   ministry            String?
   publishDate         DateTime?
   closeDate           DateTime?
@@ -551,11 +563,68 @@ model MinistryTender {
   tenantId            String   @default("default")
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+  classification      TenderClassification?
 
   @@index([portal])
   @@index([tenderRef])
   @@unique([portal, tenderRef])
   @@unique([portal, sourceUrl])
+}
+
+model TenderActivity {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  scope           TenderScope
+  keywords        String[] @default([])
+  negativeKeywords String[] @default([])
+  embedding       Unsupported("vector")?
+  weight          Float?
+  isHighPriority  Boolean @default(false)
+  isActive        Boolean @default(true)
+  tenantId        String  @default("default")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId])
+  @@unique([tenantId, name])
+}
+
+model TenderClassification {
+  id                   String   @id @default(uuid())
+  tenderId             String   @unique
+  classificationVersion Int     @default(1)
+  score                Int
+  scoreItsq            Int     @default(0)
+  scoreIotShabaka      Int     @default(0)
+  scoreOther           Int     @default(0)
+  isNew                Boolean @default(false)
+  matchedActivityIds   String[] @default([])
+  matchedScopes        TenderScope[] @default([])
+  matchedKeywords      String[] @default([])
+  reasons              String[] @default([])
+  tenantId             String  @default("default")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  tender MinistryTender @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model TenderClassificationRun {
+  id                   String   @id @default(uuid())
+  runType              TenderClassificationRunType
+  classificationVersion Int
+  rangeFrom            DateTime?
+  rangeTo              DateTime?
+  startedAt            DateTime @default(now())
+  finishedAt           DateTime?
+  stats                Json?
+  triggeredBy          String?
+  tenantId             String  @default("default")
+
+  @@index([tenantId])
 }
 
 model Attachment {

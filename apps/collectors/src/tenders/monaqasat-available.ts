@@ -140,12 +140,19 @@ export class MonaqasatAvailableAdapter extends BaseTenderAdapter {
 						}
 					}
 
-					const translated = await translateIfArabic(summary.title)
+					let translated
+					try {
+						translated = await translateIfArabic(summary.title)
+					} catch (err: any) {
+						console.warn(`[${this.id}] Translation failed for tender "${summary.title}": ${err?.message || err}`)
+						await this.delay(perRowDelay)
+						continue
+					}
 
 					records.push({
 						portal: 'monaqasat',
 						tenderRef: summary.tenderRef || summary.title,
-						title: translated.translated || summary.title,
+						title: translated.translated,
 						titleOriginal: translated.original,
 						ministry: summary.ministry || undefined,
 						publishDate,

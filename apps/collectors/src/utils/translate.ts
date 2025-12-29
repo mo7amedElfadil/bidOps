@@ -10,24 +10,15 @@ export async function translateIfArabic(text?: string): Promise<TranslateResult>
 	if (!trimmed) return { translated: text }
 	const cached = cache.get(trimmed)
 	if (cached) return { translated: cached, original: trimmed }
-	if (process.env.COLLECTOR_TRANSLATE_TITLES === 'false') {
-		return { translated: trimmed, original: trimmed }
-	}
 	const provider = (process.env.COLLECTOR_TRANSLATION_PROVIDER || process.env.AI_PROVIDER || 'openai').toLowerCase()
-	let translated: string | null = null
-	try {
-		if (provider === 'gemini') {
-			translated = await translateWithGemini(trimmed)
-		} else {
-			translated = await translateWithOpenAI(trimmed)
-		}
-	} catch (err: any) {
-		console.warn(`[translator] Failed to translate title: ${err?.message || err}`)
-	}
+	const translated = provider === 'gemini' ? await translateWithGemini(trimmed) : await translateWithOpenAI(trimmed)
 	if (!translated) {
-		return { translated: trimmed, original: trimmed }
+		throw new Error('Arabic translation failed')
 	}
 	const cleaned = translated.replace(/^["'`]+|["'`]+$/g, '').trim()
+	if (!cleaned) {
+		throw new Error('Arabic translation returned empty text')
+	}
 	cache.set(trimmed, cleaned)
 	return { translated: cleaned, original: trimmed }
 }
@@ -35,8 +26,7 @@ export async function translateIfArabic(text?: string): Promise<TranslateResult>
 async function translateWithOpenAI(text: string): Promise<string | null> {
 	const key = process.env.OPENAI_API_KEY
 	if (!key) {
-		console.warn('[translator] OPENAI_API_KEY missing; skipping translation')
-		return null
+		throw new Error('OPENAI_API_KEY missing')
 	}
 	const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
 	const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -61,8 +51,7 @@ async function translateWithOpenAI(text: string): Promise<string | null> {
 	})
 	if (!res.ok) {
 		const msg = await res.text()
-		console.warn(`[translator] OpenAI error ${res.status}: ${msg}`)
-		return null
+		throw new Error(`OpenAI error ${res.status}: ${msg}`)
 	}
 	const data = await res.json()
 	const content = data?.choices?.[0]?.message?.content
@@ -72,8 +61,7 @@ async function translateWithOpenAI(text: string): Promise<string | null> {
 async function translateWithGemini(text: string): Promise<string | null> {
 	const key = process.env.GEMINI_API_KEY
 	if (!key) {
-		console.warn('[translator] GEMINI_API_KEY missing; skipping translation')
-		return null
+		throw new Error('GEMINI_API_KEY missing')
 	}
 	const model = process.env.GEMINI_MODEL || 'gemini-1.5-flash'
 	const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`
@@ -91,8 +79,7 @@ async function translateWithGemini(text: string): Promise<string | null> {
 	})
 	if (!res.ok) {
 		const msg = await res.text()
-		console.warn(`[translator] Gemini error ${res.status}: ${msg}`)
-		return null
+		throw new Error(`Gemini error ${res.status}: ${msg}`)
 	}
 	const data = await res.json()
 	const content = data?.candidates?.[0]?.content?.parts?.[0]?.text

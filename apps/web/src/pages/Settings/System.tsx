@@ -13,6 +13,7 @@ export default function SystemSettingsPage() {
 	const [offsetHours, setOffsetHours] = useState(3)
 	const [importDateFormat, setImportDateFormat] = useState<'MDY' | 'DMY' | 'AUTO'>('MDY')
 	const [newFx, setNewFx] = useState({ currency: '', rateToQar: '' })
+	const [socials, setSocials] = useState({ linkedin: '', x: '', instagram: '', youtube: '' })
 
 	useEffect(() => {
 		if (retentionQuery.data) setRetentionYears(retentionQuery.data.years)
@@ -25,6 +26,13 @@ export default function SystemSettingsPage() {
 	useEffect(() => {
 		if (importDateQuery.data) setImportDateFormat(importDateQuery.data.format)
 	}, [importDateQuery.data])
+
+	const socialQuery = useQuery({ queryKey: ['socials'], queryFn: api.getSocialSettings })
+	useEffect(() => {
+		if (socialQuery.data) {
+			setSocials(socialQuery.data)
+		}
+	}, [socialQuery.data])
 
 	const retentionMutation = useMutation({
 		mutationFn: () => api.setRetentionPolicy({ years: retentionYears }),
@@ -58,6 +66,18 @@ export default function SystemSettingsPage() {
 		mutationFn: (id: string) => api.deleteFxRate(id),
 		onSuccess: () => fxQuery.refetch()
 	})
+
+	const socialMutation = useMutation({
+		mutationFn: () => api.saveSocialSettings(socials),
+		onSuccess: data => setSocials(data)
+	})
+
+	const socialFields: Array<{ label: string; key: keyof typeof socials }> = [
+		{ label: 'LinkedIn', key: 'linkedin' },
+		{ label: 'X (formerly Twitter)', key: 'x' },
+		{ label: 'Instagram', key: 'instagram' },
+		{ label: 'YouTube', key: 'youtube' }
+	]
 
 	return (
 		<Page
@@ -249,6 +269,46 @@ export default function SystemSettingsPage() {
 				)}
 				<p className="mt-3 text-xs text-muted-foreground">
 					API: GET/POST/PATCH/DELETE /settings/fx-rates (role: ADMIN to edit).
+				</p>
+			</div>
+
+			<div className="mt-6 rounded border bg-card p-4 shadow-sm">
+				<div className="flex items-center justify-between">
+					<h3 className="text-sm font-semibold">Social links</h3>
+					<button
+						className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80 disabled:opacity-50"
+						onClick={() => socialMutation.mutate()}
+						disabled={socialMutation.isPending}
+					>
+						{socialMutation.isPending ? 'Saving...' : 'Save'}
+					</button>
+				</div>
+				<p className="mt-2 text-xs text-muted-foreground">
+					These links appear in email templates and help people find ITSQ online.
+				</p>
+				<div className="mt-3 grid gap-3 sm:grid-cols-2">
+					{socialFields.map(field => (
+						<label key={field.key} className="text-sm">
+							<span className="font-medium">{field.label}</span>
+							<input
+								type="url"
+								className="mt-1 w-full rounded border px-3 py-2 text-sm"
+								value={socials[field.key]}
+								onChange={e =>
+									setSocials(prev => ({ ...prev, [field.key]: e.target.value }))
+								}
+							/>
+						</label>
+					))}
+				</div>
+				{socialMutation.error && (
+					<p className="mt-3 text-sm text-destructive">
+						Failed to save: {(socialMutation.error as Error).message}
+					</p>
+				)}
+				{socialMutation.isSuccess && <p className="mt-3 text-sm text-green-700">Saved.</p>}
+				<p className="mt-3 text-xs text-muted-foreground">
+					API: GET/PUT /settings/socials (role: ADMIN to edit).
 				</p>
 			</div>
 		</Page>

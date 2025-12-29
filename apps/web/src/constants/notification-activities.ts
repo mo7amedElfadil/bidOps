@@ -6,6 +6,8 @@ export const notificationActivities = [
 	{ value: 'change-request.created', label: 'Change request submitted' },
 	{ value: 'approval.decision', label: 'Approval decisions' },
 	{ value: 'approval.finalized', label: 'Bid finalized' },
+	{ value: 'tenders.recommended', label: 'Tender recommendations' },
+	{ value: 'auth.invite', label: 'Invite sent' },
 	{ value: 'auth.signup', label: 'Access requests' },
 	{ value: 'auth.signup.pending', label: 'Signup pending' },
 	{ value: 'sla', label: 'SLA reminders' }

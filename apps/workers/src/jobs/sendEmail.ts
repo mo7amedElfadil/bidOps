@@ -1,6 +1,14 @@
 import nodemailer from 'nodemailer'
 import { Notification } from '@prisma/client'
 import { prisma } from '../prisma'
+import { renderEmailTemplate } from '../emailTemplate'
+import {
+	getAppBaseUrl,
+	getAppLogoUrl,
+	getSupportEmail
+} from '../branding'
+
+const SOCIAL_KEYS = ['social.linkedin', 'social.x', 'social.instagram', 'social.youtube']
 
 function escapeHtml(value?: string) {
 	if (!value) return ''
@@ -50,6 +58,62 @@ function buildNotificationHtml(note: Notification) {
 	`
 }
 
+function stripHtml(html: string) {
+	return html
+		.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+		.replace(/<[^>]+>/g, '')
+		.replace(/\\s+/g, ' ')
+		.trim()
+}
+
+async function loadSocialLinks() {
+	const rows = await prisma.appSetting.findMany({
+		where: { key: { in: SOCIAL_KEYS } }
+	})
+	const map = Object.fromEntries(
+		rows.map((row: { key: string; value: string | null }) => [
+			row.key,
+			row.value
+		])
+	)
+	return {
+		linkedin: map['social.linkedin'] ?? '',
+		x: map['social.x'] ?? '',
+		instagram: map['social.instagram'] ?? '',
+		youtube: map['social.youtube'] ?? ''
+	}
+}
+
+async function buildEmailContent(
+	note: Notification,
+	appUrl: string,
+	supportEmail: string,
+	socialLinks: { linkedin: string; x: string; instagram: string; youtube: string }
+) {
+	const payload = note.payload as Record<string, any> | undefined
+	const templateName = payload?.templateName
+	if (templateName) {
+		const templateData: Record<string, string> = {
+			APP_URL: appUrl,
+			APP_BASE_URL: appUrl,
+			SUPPORT_EMAIL: supportEmail,
+			SOCIAL_LINK_LINKEDIN: socialLinks.linkedin,
+			SOCIAL_LINK_X: socialLinks.x,
+			SOCIAL_LINK_INSTAGRAM: socialLinks.instagram,
+			SOCIAL_LINK_YOUTUBE: socialLinks.youtube,
+			APP_LOGO_URL: getAppLogoUrl(),
+			...(payload?.templateData || {})
+		}
+		if (payload?.actionUrl) {
+			templateData.CTA_URL = payload.actionUrl
+			templateData.CTA_TEXT = payload.actionLabel || ''
+		}
+		const html = await renderEmailTemplate(templateName, templateData)
+		return { html, text: stripHtml(html) }
+	}
+	return { html: buildNotificationHtml(note), text: buildNotificationText(note) }
+}
+
 export async function processEmailBatch(limit = 20) {
 	const host = process.env.SMTP_HOST || 'localhost'
 	const port = Number(process.env.SMTP_PORT || 1025)
@@ -65,6 +129,10 @@ export async function processEmailBatch(limit = 20) {
 		tls: process.env.SMTP_TLS_REJECT_UNAUTHORIZED === 'false' ? { rejectUnauthorized: false } : undefined
 	})
 
+	const socialLinks = await loadSocialLinks()
+	const appUrl = getAppBaseUrl()
+	const supportEmail = getSupportEmail()
+
 	const pending = await prisma.notification.findMany({
 		where: { status: 'pending', channel: 'EMAIL' },
 		orderBy: { createdAt: 'asc' },
@@ -75,13 +143,19 @@ export async function processEmailBatch(limit = 20) {
 			if (!n.to) {
 				throw new Error('Missing recipient')
 			}
-			const text = buildNotificationText(n)
+			const payload = n.payload as Record<string, any> | undefined
+			const subject =
+				n.subject ||
+				payload?.templateData?.SUBJECT ||
+				payload?.templateData?.subject ||
+				'BidOps notification'
+			const content = await buildEmailContent(n, appUrl, supportEmail, socialLinks)
 			await transporter.sendMail({
 				from: process.env.SMTP_FROM || 'bidops@example.com',
 				to: n.to,
-				subject: n.subject || 'BidOps notification',
-				text,
-				html: buildNotificationHtml(n)
+				subject,
+				text: content.text,
+				html: content.html
 			})
 			await prisma.notification.update({
 				where: { id: n.id },

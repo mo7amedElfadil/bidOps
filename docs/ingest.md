@@ -123,8 +123,11 @@ Deduplication:
 | `MONAQASAT_MAX_PAGES` | `10` | Max pages to scan when collecting awards |
 | `MONAQASAT_TENDER_MAX_PAGES` | `10` | Max pages to scan when collecting available tenders |
 | `MONAQASAT_DELAY_MS` | `800` | Per-row delay for Monaqasat |
-| `COLLECTOR_TRANSLATE_TITLES` | `true` | Translate Arabic titles to English (stores original separately) |
 | `COLLECTOR_TRANSLATION_PROVIDER` | `openai` | Translation provider (openai or gemini) |
+| `EMBEDDINGS_PROVIDER` | `openai` | Embedding provider (openai or gemini) |
+| `OPENAI_EMBEDDING_MODEL` | `text-embedding-3-small` | OpenAI embedding model |
+| `GEMINI_EMBEDDING_MODEL` | `text-embedding-004` | Gemini embedding model |
+| `EMBEDDING_DIM` | `1536` | Embedding dimension (must match DB vector column) |
 
 ## API Endpoints
 
@@ -153,7 +156,8 @@ Deduplication:
 - Date filtering uses `MONAQASAT_TENDER_FROM_DATE`/`MONAQASAT_TENDER_TO_DATE` (YYYY-MM-DD). The collector filters each card as it goes and stops when earlier pages fall entirely before `fromDate`, so runs stay efficient while still honoring the date window passed from the UI.
 - Use `MONAQASAT_TENDER_MAX_PAGES` (default `10`) to bound how many pages are fetched per run, preventing runaway scraping while still covering the window that executives typically request.
 - Monaqasat adapters force the English locale via `Accept-Language` headers, culture cookies, and an explicit `/Main/ChangeLang` call so fields are consistent even when the portal defaults to Arabic.
-- When an Arabic title still appears, collectors translate it to English and store the Arabic text in `titleOriginal` for future bilingual support.
+- When an Arabic title still appears, collectors translate it to English and store the Arabic text in `titleOriginal` for future bilingual support. If translation fails, the tender record is skipped so we never store untranslated Arabic in `title`.
+- Smart tender classification uses semantic embeddings stored in Postgres (pgvector).
 
 ### Curated Events
 
@@ -178,7 +182,7 @@ Deduplication:
 
 ## Potential Opportunities Filtering (Future)
 
-Potential opportunities pulled from public tenders should be filtered to ITSQ-relevant projects. Add an AI/smart filtering layer to classify tenders by ITSQ professional activities before storing/showing them (manual override available).
+Potential opportunities pulled from public tenders should be filtered to ITSQ-relevant projects. The planned smart filter design (rules engine + activities + reprocess flow) is documented in `docs/smartFilter.md`. Manual overrides remain available via promote/Go-No-Go.
 
 ## Normalization Shape
 

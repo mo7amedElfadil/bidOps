@@ -287,7 +287,39 @@ export interface MinistryTender {
 	opportunityId?: string | null
 	goNoGoStatus?: string | null
 	goNoGoUpdatedAt?: string | null
+	classification?: TenderClassification | null
 	createdAt?: string
+	updatedAt?: string
+}
+
+export type TenderScope = 'ITSQ' | 'IOT_SHABAKA' | 'OTHER'
+
+export interface TenderClassification {
+	id: string
+	tenderId: string
+	classificationVersion: number
+	score: number
+	scoreItsq: number
+	scoreIotShabaka: number
+	scoreOther: number
+	isNew: boolean
+	matchedActivityIds: string[]
+	matchedScopes: TenderScope[]
+	matchedKeywords: string[]
+	reasons: string[]
+	updatedAt?: string
+}
+
+export interface TenderActivity {
+	id: string
+	name: string
+	description?: string
+	scope: TenderScope
+	keywords: string[]
+	negativeKeywords: string[]
+	weight?: number | null
+	isHighPriority: boolean
+	isActive: boolean
 	updatedAt?: string
 }
 
@@ -856,6 +888,71 @@ export const api = {
 			body: JSON.stringify(payload || {})
 		})
 	},
+	listTenderActivities() {
+		return request<TenderActivity[]>(`/tenders/activities`)
+	},
+	createTenderActivity(input: Partial<TenderActivity> & { name: string; scope: TenderScope }) {
+		return request<TenderActivity>(`/tenders/activities`, {
+			method: 'POST',
+			body: JSON.stringify(input)
+		})
+	},
+	updateTenderActivity(id: string, input: Partial<TenderActivity>) {
+		return request<TenderActivity>(`/tenders/activities/${id}`, {
+			method: 'PATCH',
+			body: JSON.stringify(input)
+		})
+	},
+	reprocessTenderClassifications(payload: { fromDate?: string; toDate?: string; portal?: string }) {
+		return request<{
+			runId: string
+			processed: number
+			errors: number
+			errorSamples?: Array<{ tenderId: string; message: string }>
+		}>(`/tenders/reprocess`, {
+			method: 'POST',
+			body: JSON.stringify(payload || {})
+		})
+	},
+	translateTenderTitles(payload: {
+		fromDate?: string
+		toDate?: string
+		portal?: string
+		limit?: number
+		dryRun?: boolean
+	}) {
+		return request<{
+			scanned: number
+			translated: number
+			skipped: number
+			failed: number
+			errors?: Array<{ tenderId: string; message: string }>
+		}>(`/tenders/translate`, {
+			method: 'POST',
+			body: JSON.stringify(payload || {})
+		})
+	},
+	sendTenderRecommendations(payload: {
+		scopes?: string | string[]
+		minScore?: number
+		limit?: number
+		includePromoted?: boolean
+		includeClosed?: boolean
+		onlyNew?: boolean
+		portal?: string
+	}) {
+		return request<{
+			total: number
+			selected: number
+			recipients: number
+		}>(`/tenders/recommendations`, {
+			method: 'POST',
+			body: JSON.stringify(payload)
+		})
+	},
+	getTenderClassification(id: string) {
+		return request<TenderClassification | null>(`/tenders/${id}/classification`)
+	},
 
 	// Users
 	listUsers(params: Record<string, string | number | undefined> = {}) {
@@ -943,6 +1040,15 @@ export const api = {
 	changePassword(input: { currentPassword: string; newPassword: string }) {
 		return request<{ ok: boolean; access_token: string }>(`/auth/change-password`, {
 			method: 'POST',
+			body: JSON.stringify(input)
+		})
+	},
+	getSocialSettings() {
+		return request<{ linkedin: string; x: string; instagram: string; youtube: string }>(`/settings/socials`)
+	},
+	saveSocialSettings(input: { linkedin?: string; x?: string; instagram?: string; youtube?: string }) {
+		return request<{ linkedin: string; x: string; instagram: string; youtube: string }>(`/settings/socials`, {
+			method: 'PUT',
 			body: JSON.stringify(input)
 		})
 	},

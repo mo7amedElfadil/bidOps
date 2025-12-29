@@ -63,6 +63,17 @@
   - Tender collector endpoint now accepts `fromDate`/`toDate` so available tenders can be limited to a date window
   - Notifications: Business roles added (admin-managed) and user preferences + routing defaults added
   - Notifications: Event-driven dispatch for opportunity creation and review requests; SLA alerts de-duped with longer cadence
+  - Tenders: Added smart filter data model (activities/classifications), API endpoints, and classifier integration
+  - Collectors: Available tenders now classify on ingest using shared tender-classifier package
+  - Web: Available tenders page now exposes smart filter pills, score, and match badges
+  - Tenders: Seed script added for default ITSQ/IoT activities; smart filters default to off and "New" now uses tender timestamps (not classification)
+  - Web: Added admin Tender Activities page with edit + translate + reprocess controls
+  - Tenders: Seed script now merges Arabic keyword variants (stored as Unicode escapes)
+  - Collectors: Arabic titles now require translation; Arabic source is preserved in titleOriginal and skipped if translation fails
+  - Tenders API: Arabic titles now translated on create/update with originals stored in `titleOriginal`; added `/tenders/translate` admin endpoint to backfill existing data
+  - Tenders: Smart filter now uses semantic embeddings (pgvector) with similarity thresholds and stored embeddings for tenders/activities
+  - Tenders: Embeddings/translation backfills now batch requests to reduce API calls during reprocess
+  - Tenders: Recommendation notifications default to new tenders; Sales/Executive/Admin can send manual recommendations with scope/threshold criteria
 * Completed iterations:
   - M0: Foundations (monorepo, Docker, CI, schema, auth, storage) ✓
   - M1: Core Opportunities, SLA engine, document vault ✓

@@ -192,13 +192,24 @@ GET /analytics/onboarding # Onboarding setup + approval turnaround metrics (admi
 ### Available Ministry Tenders
 | Method | Path | Description | Roles |
 |--------|------|-------------|-------|
-| GET | `/tenders` | List available tenders (optional: fromDate, toDate) | All |
+| GET | `/tenders` | List available tenders (optional: fromDate, toDate, scopes, minScore, isNew, promoted, goNoGoStatus, sortBy, sortDir) | All |
+| GET | `/tenders/activities` | List tender activities | All |
+| POST | `/tenders/activities` | Create tender activity | ADMIN |
+| PATCH | `/tenders/activities/:id` | Update tender activity | ADMIN |
+| POST | `/tenders/reprocess` | Recompute tender classifications | ADMIN |
+| POST | `/tenders/translate` | Translate Arabic tender titles to English (body: portal, fromDate, toDate, limit, dryRun) | ADMIN |
+| POST | `/tenders/recommendations` | Send tender recommendations (body: scopes, minScore, limit, onlyNew, includeClosed, includePromoted, portal) | ADMIN, Sales/Executive |
 | GET | `/tenders/:id` | Get tender | All |
+| GET | `/tenders/:id/classification` | Get tender classification | All |
 | POST | `/tenders` | Create tender | MANAGER, ADMIN |
 | PATCH | `/tenders/:id` | Update tender | MANAGER, ADMIN |
 | DELETE | `/tenders/:id` | Delete tender | ADMIN |
 | POST | `/tenders/:id/promote` | Promote tender to opportunity | MANAGER, ADMIN |
 | POST | `/tenders/collect` | Trigger available tenders collector | MANAGER, ADMIN |
+
+Notes:
+- Tender `title` is stored in English; when Arabic is provided, the API translates it and stores the Arabic in `titleOriginal`.
+- Tender recommendations can be sent by admins or users with a business role that includes “Sales” or “Executive”.
 
 ### Users
 | Method | Path | Description | Roles |

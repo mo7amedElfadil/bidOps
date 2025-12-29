@@ -108,3 +108,23 @@ Suggested fields (high level):
 2. Enable admin role config.
 3. Enable notifications UI.
 4. Switch SLA from per-minute to event/digest.
+
+## Email templates
+
+We render every outbound email through the shared templates in `notifications/email/templates`. Each notification payload can provide `templateName` (without `.html`) and `templateData` (placeholders) when scheduling a notification. The renderer automatically injects:
+
+* `APP_BASE_URL` / `APP_LOGO_URL` (fallbacks to `/assets/logo.png`)
+ *`SUPPORT_EMAIL`* and `SOCIAL_LINK_*` keys via tenant settings (`social.linkedin`, `social.x`, etc.)
+ *`CTA_URL`, `CTA_TEXT`*, and any additional custom placeholders provided in `templateData`
+
+Current templates:
+
+1. `invite` – invitation with hero banner, CTA button, and social links.  
+2. `approval-request` – manager/bid owner request with project details and CTA.  
+3. `access-request` / `access-status` – onboarding emails that reuse the shared layout.  
+4. `sla-reminder` – low-frequency alert with SLA detail and digest contexts.  
+5. `opportunity-created` – new opportunity alert (hero, stats grid, owner info, summary link).  
+6. `approval-decision` – decision summary (status chip, stage, comment, action link).  
+7. `bond-reminder` – tender bond checklist reminder with CTA to the opportunity.
+
+Document these placeholders when wiring `NotificationsService.dispatch` so every template receives the data it expects. The worker job handles HTML/text generation and automatically strips tags for the fallback text version, so you only need to provide the `templateName` and `templateData` when creating the notification record.

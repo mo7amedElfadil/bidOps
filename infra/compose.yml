@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:15
+    image: pgvector/pgvector:pg15
     container_name: bidops-postgres
     environment:
       POSTGRES_USER: bidops
@@ -154,6 +154,7 @@ services:
       - ../apps/api:/app/apps/api
       - ../packages:/app/packages
       - ../apps/collectors:/app/apps/collectors
+      - ../shared:/app/shared
       - ../package.json:/app/package.json
       - ../pnpm-workspace.yaml:/app/pnpm-workspace.yaml
       - ../turbo.json:/app/turbo.json
@@ -234,6 +235,8 @@ services:
       - ../apps/workers:/app/apps/workers
       - ../apps/api:/app/apps/api
       - ../packages:/app/packages
+      - ../shared:/app/shared
+      - ../notifications:/app/notifications
       - ../package.json:/app/package.json
       - ../pnpm-lock.yaml:/app/pnpm-lock.yaml
       - ../pnpm-workspace.yaml:/app/pnpm-workspace.yaml

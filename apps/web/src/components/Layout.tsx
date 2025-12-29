@@ -21,6 +21,7 @@ const routeLabels: Record<string, string> = {
 	'/account': 'Account',
 	'/admin/users': 'Users',
 	'/admin/business-roles': 'Business Roles',
+	'/admin/tender-activities': 'Tender Activities',
 	'/search': 'Search',
 	'/settings/sla': 'SLA Settings',
 	'/settings/lifecycle': 'Opportunity Lists',
@@ -60,6 +61,7 @@ const navGroups = [
 		items: [
 			{ to: '/admin/users', label: 'Users' },
 			{ to: '/admin/business-roles', label: 'Business Roles' },
+			{ to: '/admin/tender-activities', label: 'Tender Activities' },
 			{ to: '/settings/sla', label: 'SLA' },
 			{ to: '/settings/lifecycle', label: 'Opportunity Lists' },
 			{ to: '/settings/system', label: 'System Settings' }

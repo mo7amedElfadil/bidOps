@@ -186,10 +186,13 @@ export class AwardsService {
 	}
 
 	async triggerCollector(payload: { adapterId?: string; fromDate?: string; toDate?: string }) {
+		const today = new Date().toISOString().slice(0, 10)
+		const normalizedFrom = normalizeDateInput(payload.fromDate)
+		const normalizedTo = normalizeDateInput(payload.toDate) || today
 		const job = await enqueueAwardCollector({
 			adapterId: payload.adapterId,
-			fromDate: normalizeDateInput(payload.fromDate),
-			toDate: normalizeDateInput(payload.toDate)
+			fromDate: normalizedFrom,
+			toDate: normalizedTo
 		})
 		return { jobId: job.id, status: 'queued' }
 	}

@@ -11,6 +11,7 @@ import { IsArray, IsEmail, IsIn, IsOptional, IsString, IsUUID, MaxLength } from 
 import { NotificationsService } from '../modules/notifications/notifications.service'
 import { NotificationActivities } from '../modules/notifications/notifications.constants'
 import { buildFrontendUrl } from '../utils/frontend-url'
+import { getAppBaseUrl, getAppLogoUrl } from '../../../../shared/branding'
 
 class InviteUserDto {
 	@IsEmail()
@@ -197,11 +198,34 @@ export class AuthController {
 		}
 
 		const link = await this.createInviteLink(user.id, tenantId)
-		await this.queueEmail({
-			to: user.email,
-			subject: 'You have been invited to BidOps',
-			body: `You have been invited to BidOps. Use this link to set your password:\n\n${link}\n\nThis link expires in 24 hours.`
-		}, user, tenantId, 'auth.invite')
+		const subject = 'You have been invited to BidOps'
+		const appUrl = getAppBaseUrl()
+		await this.notifications.dispatch({
+			activity: NotificationActivities.AUTH_INVITE,
+			tenantId,
+			subject,
+			body: 'You have been invited to BidOps. Use the secure link below to set your password.',
+			userIds: [user.id],
+			channels: [NotificationChannel.EMAIL, NotificationChannel.IN_APP],
+			payload: {
+				templateName: 'invite',
+				templateData: {
+					SUBJECT: subject,
+					FIRST_NAME: user.name,
+					HERO_HEADLINE: 'Set up your BidOps access',
+					HERO_SUBTEXT: 'You were invited by your admin to collaborate on bids.',
+					BODY_INTRO: 'Click below to choose a password and start working with your team.',
+					POINT_1: 'Passwords are encrypted and stored securely.',
+					POINT_2: 'You can reset this link if needed.',
+					POINT_3: 'Contact support if anything looks wrong.',
+					CTA_URL: link,
+					CTA_TEXT: 'Set your password',
+					APP_LOGO_URL: getAppLogoUrl()
+				},
+				actionUrl: link,
+				actionLabel: 'Set your password'
+			}
+		})
 
 		return { userId: user.id, link }
 	}
@@ -407,7 +431,7 @@ export class AuthController {
 		return `${process.env.WEB_ORIGIN || 'http://localhost:8080'}/auth/accept-invite?token=${encodeURIComponent(token)}`
 	}
 
-	private async queueUserSignupNotifications(user: { id: string; email: string; name: string; tenantId: string }) {
+	private async queueUserSignupNotifications(user: { id: string; email: string; name: string; tenantId: string; role: Role }) {
 		const admins = await this.prisma.user.findMany({
 			where: { tenantId: user.tenantId, role: Role.ADMIN, status: UserStatus.ACTIVE, isActive: true },
 			select: { id: true }
@@ -425,6 +449,17 @@ export class AuthController {
 				userIds: adminIds,
 				channels: [NotificationChannel.EMAIL, NotificationChannel.IN_APP],
 				payload: {
+					templateName: 'access-request',
+					templateData: {
+						SUBJECT: subject,
+						BODY_INTRO: 'A requester just signed up and is awaiting your approval.',
+						REQUESTER_NAME: user.name,
+						REQUESTER_EMAIL: user.email,
+						REQUESTED_ROLE: user.role,
+						TENANT: user.tenantId,
+						NEXT_ACTION: 'Review the new access request and approve or reject it.',
+						CTA_TEXT: 'Review access requests'
+					},
 					actionUrl: formActionUrl,
 					actionLabel: 'Review access requests'
 				},
@@ -439,8 +474,18 @@ export class AuthController {
 			userIds: [user.id],
 			channels: [NotificationChannel.EMAIL, NotificationChannel.IN_APP],
 			payload: {
+				templateName: 'access-status',
+				templateData: {
+					SUBJECT: 'Access request pending',
+					HERO_HEADLINE: 'Your BidOps access request is pending review',
+					BODY_INTRO: 'Thanks for requesting access. We notified your administrators, and they will approve you shortly.',
+					STATUS_LABEL: 'Pending',
+					BODY_DETAILS: 'You will receive another email once your access is approved.',
+					CTA_URL: buildFrontendUrl('/notifications'),
+					CTA_TEXT: 'View notification center'
+				},
 				actionUrl: buildFrontendUrl('/notifications'),
-				actionLabel: 'View application status'
+				actionLabel: 'View notifications'
 			}
 		})
 	}

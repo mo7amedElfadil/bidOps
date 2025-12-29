@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { api, BusinessRole, MinistryTender, UserAccount } from '../../api/client'
+import { api, BusinessRole, MinistryTender, TenderActivity, UserAccount } from '../../api/client'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import Input from '../../components/ui/Input'
@@ -17,7 +17,13 @@ export default function AvailableTendersPage() {
 	const [rows, setRows] = useState<MinistryTender[]>([])
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
-	const [filter, setFilter] = useState({ q: '', status: 'all' })
+	const [filter, setFilter] = useState({ q: '' })
+	const [smartFilters, setSmartFilters] = useState({
+		isNew: false,
+		promoted: false,
+		scopes: { ITSQ: false, IOT_SHABAKA: false, GROUP: false },
+		goNoGoStatus: 'all'
+	})
 	const [running, setRunning] = useState(false)
 	const [runError, setRunError] = useState<string | null>(null)
 	const [runSummary, setRunSummary] = useState<string | null>(null)
@@ -37,9 +43,47 @@ export default function AvailableTendersPage() {
 	const [reviewerUserIds, setReviewerUserIds] = useState<string[]>([])
 	const [businessRoles, setBusinessRoles] = useState<BusinessRole[]>([])
 	const [users, setUsers] = useState<UserAccount[]>([])
+	const [activities, setActivities] = useState<TenderActivity[]>([])
 	const [selected, setSelected] = useState<Record<string, boolean>>({})
+	const [sortBy, setSortBy] = useState<string | null>(null)
+	const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+	const [me, setMe] = useState<UserAccount | null>(null)
+	const [recommendationForm, setRecommendationForm] = useState({
+		scopes: { ITSQ: false, IOT_SHABAKA: false, GROUP: false },
+		minScore: '',
+		limit: '',
+		portal: '',
+		onlyNew: true,
+		includePromoted: false,
+		includeClosed: false
+	})
+	const [sendingRecommendations, setSendingRecommendations] = useState(false)
+	const [recommendationMessage, setRecommendationMessage] = useState<string | null>(null)
+	const [recommendationError, setRecommendationError] = useState<string | null>(null)
 	const selectedRows = rows.filter(r => selected[r.id])
 	const allSelected = rows.length > 0 && rows.every(r => selected[r.id])
+	const activityMap = useMemo(() => {
+		const map = new Map<string, { name: string; scope: TenderActivity['scope'] }>()
+		for (const activity of activities) {
+			map.set(activity.id, { name: activity.name, scope: activity.scope })
+		}
+		return map
+	}, [activities])
+	const scopeFilter = useMemo(() => {
+		const list: TenderActivity['scope'][] = []
+		if (smartFilters.scopes.ITSQ) list.push('ITSQ')
+		if (smartFilters.scopes.IOT_SHABAKA) list.push('IOT_SHABAKA')
+		return { list, hasGroup: smartFilters.scopes.GROUP }
+	}, [smartFilters.scopes])
+	const canSendRecommendations = useMemo(() => {
+		if (role === 'ADMIN') return true
+		const roleNames = me?.businessRoles?.map(role => role.name) || []
+		return roleNames.some(name => /sales|executive/i.test(name))
+	}, [me?.businessRoles, role])
+	const pillClass = (active: boolean) =>
+		`rounded-full border px-3 py-1 text-xs font-semibold ${
+			active ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border hover:bg-muted'
+		}`
 	const goNoGoMeta = (status?: string | null) => {
 		switch (status) {
 			case 'APPROVED':
@@ -52,6 +96,19 @@ export default function AvailableTendersPage() {
 				return { label: 'Not requested', className: 'bg-muted text-muted-foreground' }
 		}
 	}
+	function toggleScope(scopeKey: 'ITSQ' | 'IOT_SHABAKA' | 'GROUP') {
+		setSmartFilters(prev => ({
+			...prev,
+			scopes: { ...prev.scopes, [scopeKey]: !prev.scopes[scopeKey] }
+		}))
+	}
+
+	function toggleSmartFlag(key: 'isNew' | 'promoted') {
+		setSmartFilters(prev => ({
+			...prev,
+			[key]: !prev[key]
+		}))
+	}
 
 	function toggleAllRows(checked: boolean) {
 		const map: Record<string, boolean> = {}
@@ -63,6 +120,22 @@ export default function AvailableTendersPage() {
 
 	function toggleRowSelect(id: string, checked: boolean) {
 		setSelected(prev => ({ ...prev, [id]: checked }))
+	}
+
+	function applySort(column: string) {
+		let nextDir: 'asc' | 'desc' = 'desc'
+		if (sortBy === column) {
+			nextDir = sortDir === 'asc' ? 'desc' : 'asc'
+		}
+		setSortBy(column)
+		setSortDir(nextDir)
+		setPagination(prev => ({ ...prev, page: 1 }))
+		load(1, { sortBy: column, sortDir: nextDir })
+	}
+
+	function sortIndicator(column: string) {
+		if (sortBy !== column) return ''
+		return sortDir === 'asc' ? '^' : 'v'
 	}
 	const [editingTender, setEditingTender] = useState<MinistryTender | null>(null)
 	const [editSaving, setEditSaving] = useState(false)
@@ -78,17 +151,31 @@ export default function AvailableTendersPage() {
 		status: 'new'
 	})
 
-	async function load(pageOverride?: number) {
+	async function load(
+		pageOverride?: number,
+		sortOverride?: { sortBy: string | null; sortDir: 'asc' | 'desc' }
+	) {
 		setLoading(true)
 		setError(null)
 		try {
 			const normalizedFrom = normalizeDateInput(fromDate)
 			const normalizedTo = normalizeDateInput(toDate)
+			const scopeList: string[] = []
+			if (smartFilters.scopes.ITSQ) scopeList.push('ITSQ')
+			if (smartFilters.scopes.IOT_SHABAKA) scopeList.push('IOT_SHABAKA')
+			if (smartFilters.scopes.GROUP) scopeList.push('GROUP')
+			const activeSortBy = sortOverride?.sortBy ?? sortBy
+			const activeSortDir = sortOverride?.sortDir ?? sortDir
 			const data = await api.listMinistryTenders({
 				q: filter.q || undefined,
-				status: filter.status !== 'all' ? filter.status : undefined,
+				scopes: scopeList.length ? scopeList.join(',') : undefined,
+				isNew: smartFilters.isNew ? '1' : undefined,
+				promoted: smartFilters.promoted ? '1' : undefined,
+				goNoGoStatus: smartFilters.goNoGoStatus !== 'all' ? smartFilters.goNoGoStatus : undefined,
 				fromDate: normalizedFrom || undefined,
 				toDate: normalizedTo || undefined,
+				sortBy: activeSortBy || undefined,
+				sortDir: activeSortBy ? activeSortDir : undefined,
 				page: pageOverride || pagination.page,
 				pageSize: pagination.pageSize
 			})
@@ -103,6 +190,14 @@ export default function AvailableTendersPage() {
 
 	useEffect(() => {
 		load()
+	}, [])
+
+	useEffect(() => {
+		api.getCurrentUser().then(setMe).catch(() => {})
+	}, [])
+
+	useEffect(() => {
+		api.listTenderActivities().then(setActivities).catch(() => {})
 	}, [])
 
 	useEffect(() => {
@@ -138,6 +233,35 @@ export default function AvailableTendersPage() {
 			setRunError(e.message || 'Collector run failed')
 		}
 		setRunning(false)
+	}
+
+	async function sendRecommendations() {
+		setSendingRecommendations(true)
+		setRecommendationError(null)
+		setRecommendationMessage(null)
+		try {
+			const scopes: string[] = []
+			if (recommendationForm.scopes.ITSQ) scopes.push('ITSQ')
+			if (recommendationForm.scopes.IOT_SHABAKA) scopes.push('IOT_SHABAKA')
+			if (recommendationForm.scopes.GROUP) scopes.push('GROUP')
+			const minScore = recommendationForm.minScore.trim()
+			const limit = recommendationForm.limit.trim()
+			const res = await api.sendTenderRecommendations({
+				scopes: scopes.length ? scopes.join(',') : undefined,
+				minScore: minScore === '' ? undefined : Number(minScore),
+				limit: limit === '' ? undefined : Number(limit),
+				onlyNew: recommendationForm.onlyNew,
+				includeClosed: recommendationForm.includeClosed,
+				includePromoted: recommendationForm.includePromoted,
+				portal: recommendationForm.portal.trim() || undefined
+			})
+			setRecommendationMessage(
+				`Sent to ${res.recipients} recipients. ${res.selected}/${res.total} tenders included.`
+			)
+		} catch (e: any) {
+			setRecommendationError(e.message || 'Failed to send recommendations')
+		}
+		setSendingRecommendations(false)
 	}
 
 	function openEditModal(tender: MinistryTender) {
@@ -303,21 +427,63 @@ export default function AvailableTendersPage() {
 							}
 						}}
 					/>
-					<select
-						className="rounded border px-3 py-1.5 text-sm"
-						value={filter.status}
-						onChange={e => {
-							setFilter({ ...filter, status: e.target.value })
-							setPagination(prev => ({ ...prev, page: 1 }))
-						}}
-					>
-						<option value="all">All</option>
-						<option value="new">new</option>
-						<option value="promoted">promoted</option>
-					</select>
 					<Button variant="secondary" size="sm" onClick={() => load(1)} disabled={loading}>
 						Apply Filters
 					</Button>
+				</div>
+				<div className="mt-2 flex flex-wrap items-center gap-2">
+					<span className="text-xs text-muted-foreground">Smart filters:</span>
+					<button
+						type="button"
+						className={pillClass(smartFilters.isNew)}
+						onClick={() => toggleSmartFlag('isNew')}
+					>
+						New
+					</button>
+					<button
+						type="button"
+						className={pillClass(smartFilters.scopes.ITSQ)}
+						onClick={() => toggleScope('ITSQ')}
+					>
+						ITSQ
+					</button>
+					<button
+						type="button"
+						className={pillClass(smartFilters.scopes.IOT_SHABAKA)}
+						onClick={() => toggleScope('IOT_SHABAKA')}
+					>
+						IoT
+					</button>
+					<button
+						type="button"
+						className={pillClass(smartFilters.scopes.GROUP)}
+						onClick={() => toggleScope('GROUP')}
+					>
+						Group
+					</button>
+					<button
+						type="button"
+						className={pillClass(smartFilters.promoted)}
+						onClick={() => toggleSmartFlag('promoted')}
+					>
+						Promoted
+					</button>
+					<select
+						className="rounded border px-3 py-1.5 text-xs"
+						value={smartFilters.goNoGoStatus}
+						onChange={e => setSmartFilters(prev => ({ ...prev, goNoGoStatus: e.target.value }))}
+					>
+						<option value="all">Go/No-Go: all</option>
+						<option value="PENDING">Go/No-Go: pending</option>
+						<option value="APPROVED">Go/No-Go: approved</option>
+						<option value="REJECTED">Go/No-Go: rejected</option>
+					</select>
+					<Button variant="ghost" size="sm" onClick={() => load(1)} disabled={loading}>
+						Apply Smart Filters
+					</Button>
+					{activities.length === 0 && (
+						<span className="text-xs text-amber-600">No activities configured yet.</span>
+					)}
 				</div>
 
 				<Card className="mt-4">
@@ -370,6 +536,126 @@ export default function AvailableTendersPage() {
 						</div>
 					)}
 				</Card>
+				{canSendRecommendations && (
+					<Card className="mt-4">
+						<div className="flex flex-wrap items-end gap-4">
+							<div>
+								<label className="text-xs font-medium text-muted-foreground">Scopes</label>
+								<div className="mt-2 flex flex-wrap gap-2">
+									<label className="flex items-center gap-2 text-xs">
+										<input
+											type="checkbox"
+											checked={recommendationForm.scopes.ITSQ}
+											onChange={e =>
+												setRecommendationForm(prev => ({
+													...prev,
+													scopes: { ...prev.scopes, ITSQ: e.target.checked }
+												}))
+											}
+										/>
+										<span>ITSQ</span>
+									</label>
+									<label className="flex items-center gap-2 text-xs">
+										<input
+											type="checkbox"
+											checked={recommendationForm.scopes.IOT_SHABAKA}
+											onChange={e =>
+												setRecommendationForm(prev => ({
+													...prev,
+													scopes: { ...prev.scopes, IOT_SHABAKA: e.target.checked }
+												}))
+											}
+										/>
+										<span>IoT</span>
+									</label>
+									<label className="flex items-center gap-2 text-xs">
+										<input
+											type="checkbox"
+											checked={recommendationForm.scopes.GROUP}
+											onChange={e =>
+												setRecommendationForm(prev => ({
+													...prev,
+													scopes: { ...prev.scopes, GROUP: e.target.checked }
+												}))
+											}
+										/>
+										<span>Group</span>
+									</label>
+								</div>
+							</div>
+							<div>
+								<label className="text-xs font-medium text-muted-foreground">Min score</label>
+								<input
+									type="number"
+									min={0}
+									className="mt-1 block h-10 w-[140px] rounded border px-3 py-1.5 text-sm"
+									value={recommendationForm.minScore}
+									onChange={e => setRecommendationForm(prev => ({ ...prev, minScore: e.target.value }))}
+									placeholder="Default"
+								/>
+							</div>
+							<div>
+								<label className="text-xs font-medium text-muted-foreground">Limit</label>
+								<input
+									type="number"
+									min={1}
+									className="mt-1 block h-10 w-[120px] rounded border px-3 py-1.5 text-sm"
+									value={recommendationForm.limit}
+									onChange={e => setRecommendationForm(prev => ({ ...prev, limit: e.target.value }))}
+									placeholder="Default"
+								/>
+							</div>
+							<div>
+								<label className="text-xs font-medium text-muted-foreground">Portal</label>
+								<input
+									type="text"
+									className="mt-1 block h-10 w-[160px] rounded border px-3 py-1.5 text-sm"
+									value={recommendationForm.portal}
+									onChange={e => setRecommendationForm(prev => ({ ...prev, portal: e.target.value }))}
+									placeholder="Optional"
+								/>
+							</div>
+							<div className="flex flex-col gap-2 text-xs">
+								<label className="flex items-center gap-2">
+									<input
+										type="checkbox"
+										checked={recommendationForm.onlyNew}
+										onChange={e => setRecommendationForm(prev => ({ ...prev, onlyNew: e.target.checked }))}
+									/>
+									<span>Only new tenders</span>
+								</label>
+								<label className="flex items-center gap-2">
+									<input
+										type="checkbox"
+										checked={recommendationForm.includeClosed}
+										onChange={e =>
+											setRecommendationForm(prev => ({ ...prev, includeClosed: e.target.checked }))
+										}
+									/>
+									<span>Include closed</span>
+								</label>
+								<label className="flex items-center gap-2">
+									<input
+										type="checkbox"
+										checked={recommendationForm.includePromoted}
+										onChange={e =>
+											setRecommendationForm(prev => ({ ...prev, includePromoted: e.target.checked }))
+										}
+									/>
+									<span>Include promoted</span>
+								</label>
+							</div>
+							<Button variant="primary" size="sm" onClick={sendRecommendations} disabled={sendingRecommendations}>
+								{sendingRecommendations ? 'Sending...' : 'Send Recommendations'}
+							</Button>
+						</div>
+						<p className="mt-2 text-xs text-muted-foreground">
+							Sends to the notification defaults for Tender recommendations (admins can edit in Notifications).
+						</p>
+						{recommendationError && <p className="mt-2 text-sm text-destructive">{recommendationError}</p>}
+						{recommendationMessage && <p className="mt-2 text-sm text-green-700">{recommendationMessage}</p>}
+					</Card>
+				)}
 				{error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 
 				{loading ? (
@@ -388,16 +674,68 @@ export default function AvailableTendersPage() {
 											onChange={e => toggleAllRows(e.target.checked)}
 										/>
 									</th>
-									<th className="px-3 py-2 text-left">Tender Ref</th>
-									<th className="px-3 py-2 text-left">Title</th>
-									<th className="px-3 py-2 text-left">Ministry</th>
-									<th className="px-3 py-2 text-left">Publish</th>
-									<th className="px-3 py-2 text-left">Close</th>
-									<th className="px-3 py-2 text-left">Bond</th>
-									<th className="px-3 py-2 text-left">Docs</th>
-									<th className="px-3 py-2 text-left">Type</th>
+									<th className="px-3 py-2 text-left">
+										<button type="button" className="inline-flex items-center gap-1" onClick={() => applySort('tenderRef')}>
+											Tender Ref
+											{sortIndicator('tenderRef') ? <span className="text-[10px]">{sortIndicator('tenderRef')}</span> : null}
+										</button>
+									</th>
+									<th className="px-3 py-2 text-left">
+										<button type="button" className="inline-flex items-center gap-1" onClick={() => applySort('title')}>
+											Title
+											{sortIndicator('title') ? <span className="text-[10px]">{sortIndicator('title')}</span> : null}
+										</button>
+									</th>
+									<th className="px-3 py-2 text-left">
+										<button type="button" className="inline-flex items-center gap-1" onClick={() => applySort('ministry')}>
+											Ministry
+											{sortIndicator('ministry') ? <span className="text-[10px]">{sortIndicator('ministry')}</span> : null}
+										</button>
+									</th>
+									<th className="px-3 py-2 text-left">
+										<button type="button" className="inline-flex items-center gap-1" onClick={() => applySort('publishDate')}>
+											Publish
+											{sortIndicator('publishDate') ? <span className="text-[10px]">{sortIndicator('publishDate')}</span> : null}
+										</button>
+									</th>
+									<th className="px-3 py-2 text-left">
+										<button type="button" className="inline-flex items-center gap-1" onClick={() => applySort('closeDate')}>
+											Close
+											{sortIndicator('closeDate') ? <span className="text-[10px]">{sortIndicator('closeDate')}</span> : null}
+										</button>
+									</th>
+									<th className="px-3 py-2 text-left">
+										<button type="button" className="inline-flex items-center gap-1" onClick={() => applySort('tenderBondValue')}>
+											Bond
+											{sortIndicator('tenderBondValue') ? <span className="text-[10px]">{sortIndicator('tenderBondValue')}</span> : null}
+										</button>
+									</th>
+									<th className="px-3 py-2 text-left">
+										<button type="button" className="inline-flex items-center gap-1" onClick={() => applySort('documentsValue')}>
+											Docs
+											{sortIndicator('documentsValue') ? <span className="text-[10px]">{sortIndicator('documentsValue')}</span> : null}
+										</button>
+									</th>
+									<th className="px-3 py-2 text-left">
+										<button type="button" className="inline-flex items-center gap-1" onClick={() => applySort('tenderType')}>
+											Type
+											{sortIndicator('tenderType') ? <span className="text-[10px]">{sortIndicator('tenderType')}</span> : null}
+										</button>
+									</th>
 									<th className="px-3 py-2 text-left">Purchase</th>
-									<th className="px-3 py-2 text-left">Status</th>
+									<th className="px-3 py-2 text-left">
+										<button type="button" className="inline-flex items-center gap-1" onClick={() => applySort('status')}>
+											Status
+											{sortIndicator('status') ? <span className="text-[10px]">{sortIndicator('status')}</span> : null}
+										</button>
+									</th>
+									<th className="px-3 py-2 text-left">
+										<button type="button" className="inline-flex items-center gap-1" onClick={() => applySort('score')}>
+											Score
+											{sortIndicator('score') ? <span className="text-[10px]">{sortIndicator('score')}</span> : null}
+										</button>
+									</th>
+									<th className="px-3 py-2 text-left">Matches</th>
 									<th className="px-3 py-2 text-left">Go/No-Go</th>
 									<th className="px-3 py-2 text-left"></th>
 								</tr>
@@ -409,6 +747,34 @@ export default function AvailableTendersPage() {
 									const approvalPending = row.goNoGoStatus === 'PENDING'
 									const approvalRejected = row.goNoGoStatus === 'REJECTED'
 									const approvalApproved = row.goNoGoStatus === 'APPROVED'
+									const classification = row.classification
+									const allowedScopes =
+										scopeFilter.list.length && !scopeFilter.hasGroup ? new Set(scopeFilter.list) : null
+									const matchedEntries = classification?.matchedActivityIds
+										?.map(id => activityMap.get(id))
+										.filter(Boolean) as Array<{ name: string; scope: TenderActivity['scope'] }> | undefined
+									const filteredEntries = allowedScopes
+										? matchedEntries?.filter(entry => allowedScopes.has(entry.scope))
+										: matchedEntries
+									const scopeScores = classification
+										? {
+												ITSQ: classification.scoreItsq ?? 0,
+												IOT_SHABAKA: classification.scoreIotShabaka ?? 0,
+												OTHER: classification.scoreOther ?? 0
+											}
+										: null
+									const displayScore =
+										classification && allowedScopes
+											? scopeFilter.list.reduce((sum, scope) => sum + (scopeScores?.[scope] ?? 0), 0)
+											: classification?.score
+									const scopeLabels = classification?.matchedScopes?.filter(scope =>
+										allowedScopes ? allowedScopes.has(scope) : true
+									)
+									const matchLabels =
+										filteredEntries && filteredEntries.length
+											? filteredEntries.map(entry => entry.name)
+											: (scopeLabels?.map(scope => scope.replace('IOT_SHABAKA', 'IoT')) ?? [])
+									const reasonsText = classification?.reasons?.join('; ') || ''
 									return (
 										<tr key={row.id} className="border-t align-top">
 										<td className="px-3 py-2">
@@ -446,6 +812,44 @@ export default function AvailableTendersPage() {
 										</td>
 										<td className="px-3 py-2">
 											<span className="rounded bg-muted px-2 py-0.5 text-xs">{row.status || 'new'}</span>
+										</td>
+										<td className="px-3 py-2 text-xs">
+											{classification ? (
+												<div className="flex flex-col gap-1">
+													<span className="font-semibold">{displayScore ?? 0}</span>
+													{classification.isNew ? (
+														<span className="inline-flex w-fit rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">
+															New
+														</span>
+													) : null}
+												</div>
+											) : (
+												'-'
+											)}
+										</td>
+										<td className="px-3 py-2 text-xs" title={reasonsText || undefined}>
+											{classification ? (
+												<div className="flex flex-wrap gap-1">
+													{matchLabels.slice(0, 3).map(label => (
+														<span
+															key={`${row.id}-${label}`}
+															className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-foreground"
+														>
+															{label}
+														</span>
+													))}
+													{matchLabels.length > 3 ? (
+														<span className="text-[10px] text-muted-foreground">
+															+{matchLabels.length - 3}
+														</span>
+													) : null}
+													{classification.reasons?.length ? (
+														<span className="text-[10px] text-muted-foreground">Why</span>
+													) : null}
+												</div>
+											) : (
+												'-'
+											)}
 										</td>
 										<td className="px-3 py-2">
 											<span className={`rounded px-2 py-0.5 text-xs ${goNoGo.className}`}>{goNoGo.label}</span>

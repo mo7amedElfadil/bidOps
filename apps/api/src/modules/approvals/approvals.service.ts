@@ -43,6 +43,26 @@ const actionLabelMap: Record<string, string> = {
 	EXECUTIVE: 'Approve Final Submission'
 }
 
+const statusLabelMap: Record<string, string> = {
+	APPROVED: 'Approved',
+	APPROVED_WITH_CONDITIONS: 'Approved with conditions',
+	CHANGES_REQUESTED: 'Changes requested',
+	REJECTED: 'Rejected',
+	RESUBMITTED: 'Resubmitted',
+	PENDING: 'Pending',
+	IN_REVIEW: 'In review'
+}
+
+const statusClassMap: Record<string, string> = {
+	APPROVED: 'status-approved',
+	APPROVED_WITH_CONDITIONS: 'status-approved',
+	PENDING: 'status-flagged',
+	CHANGES_REQUESTED: 'status-flagged',
+	REJECTED: 'status-flagged',
+	RESUBMITTED: 'status-approved',
+	IN_REVIEW: 'status-flagged'
+}
+
 function getStageLabel(stage?: string | null, type?: string | null) {
 	return stageLabelMap[stage || ''] ?? stageLabelMap[type || ''] ?? 'Approval'
 }
@@ -244,6 +264,23 @@ export class ApprovalsService {
 		}
 
 		try {
+			const reviewUrl = buildFrontendUrl(`/opportunity/${opportunity.id}/approvals`)
+			const daysLeftLabel =
+				opportunity.daysLeft !== null && opportunity.daysLeft !== undefined
+					? String(opportunity.daysLeft)
+					: 'TBD'
+			const templateData = {
+				HERO_KICKER: 'Review requested',
+				HERO_HEADLINE: 'Go/No-Go decision needed',
+				HERO_SUBTEXT: opportunity.description ?? opportunity.title,
+				OPPORTUNITY_TITLE: opportunity.title,
+				DAYS_LEFT: daysLeftLabel,
+				BODY_DETAILS: dto.comment
+					? `Comment: ${dto.comment}`
+					: 'No additional notes were supplied.',
+				CTA_URL: reviewUrl,
+				CTA_TEXT: 'Review Go/No-Go'
+			}
 			await this.notifications.dispatch({
 				activity: NotificationActivities.REVIEW_REQUESTED,
 				stage: 'GO_NO_GO',
@@ -255,8 +292,10 @@ export class ApprovalsService {
 				opportunityId: opportunity.id,
 				actorId: user.id,
 				payload: {
-					actionUrl: buildFrontendUrl(`/opportunity/${opportunity.id}/approvals`),
-					actionLabel: 'Review Go/No-Go'
+					actionUrl: reviewUrl,
+					actionLabel: 'Review Go/No-Go',
+					templateName: 'approval-request',
+					templateData
 				}
 			})
 		} catch (err) {
@@ -448,6 +487,22 @@ export class ApprovalsService {
 		try {
 			const tenantId = pack.opportunity?.tenantId || 'default'
 			const actionUrl = buildFrontendUrl(`/opportunity/${pack.opportunityId}/submission`)
+			const finalizer = userId
+				? await this.prisma.user.findUnique({ where: { id: userId }, select: { name: true } })
+				: null
+			const finalTemplateData = {
+				STATUS_LABEL: 'Finalized',
+				STATUS_CLASS: 'status-approved',
+				HERO_HEADLINE: 'Final approval captured',
+				HERO_SUBTEXT: 'All required approvals are complete and ready for submission.',
+				STAGE_LABEL: 'Final submission',
+				OPPORTUNITY_TITLE: pack.opportunity?.title || 'Opportunity',
+				APPROVER_NAME: finalizer?.name || 'System',
+				DECISION_COMMENT: 'Submission checklist is ready',
+				DECISION_DATE: new Date().toISOString().split('T')[0],
+				CTA_URL: actionUrl,
+				CTA_TEXT: 'Review submission readiness'
+			}
 			await this.notifications.dispatch({
 				activity: NotificationActivities.FINALIZATION_COMPLETED,
 				stage: 'FINAL_SUBMISSION',
@@ -459,7 +514,9 @@ export class ApprovalsService {
 				includeDefaults: true,
 				payload: {
 					actionUrl,
-					actionLabel: 'Review submission readiness'
+					actionLabel: 'Review submission readiness',
+					templateName: 'approval-decision',
+					templateData: finalTemplateData
 				}
 			})
 		} catch (err) {
@@ -587,7 +644,27 @@ export class ApprovalsService {
 			const stageLabel =
 				stageLabelMap[approval.stage || approval.type || ''] ?? getStageLabel(approval.stage, approval.type)
 			const subject = `${stageLabel} ${body.status}`
-			const actionUrl = opportunity ? buildFrontendUrl(`/opportunity/${opportunity.id}/approvals`) : undefined
+			const actionUrl = opportunity
+				? buildFrontendUrl(`/opportunity/${opportunity.id}/approvals`)
+				: buildFrontendUrl('/approvals/review')
+			const statusLabel = statusLabelMap[body.status] ?? body.status
+			const statusClass = statusClassMap[body.status] ?? 'status-flagged'
+			const approver = userId
+				? await this.prisma.user.findUnique({ where: { id: userId }, select: { name: true } })
+				: null
+			const templateData = {
+				STATUS_LABEL: statusLabel,
+				STATUS_CLASS: statusClass,
+				HERO_HEADLINE: `${stageLabel} ${statusLabel}`,
+				HERO_SUBTEXT: `Decision recorded for ${opportunity?.title || 'Opportunity'}.`,
+				STAGE_LABEL: stageLabel,
+				OPPORTUNITY_TITLE: opportunity?.title || 'Opportunity',
+				APPROVER_NAME: approver?.name || 'Approver',
+				DECISION_COMMENT: body.comment ?? approval.comment ?? 'No additional comments',
+				DECISION_DATE: new Date().toISOString().split('T')[0],
+				CTA_URL: actionUrl,
+				CTA_TEXT: `View ${stageLabel.toLowerCase()}`
+			}
 			await this.notifications.dispatch({
 				activity: NotificationActivities.APPROVAL_DECISION,
 				stage: approval.stage ?? undefined,
@@ -602,7 +679,9 @@ export class ApprovalsService {
 					stage: approval.stage,
 					approvalId: approval.id,
 					actionUrl,
-					actionLabel: `View ${stageLabel.toLowerCase()} approval`
+					actionLabel: `View ${stageLabel.toLowerCase()} approval`,
+					templateName: 'approval-decision',
+					templateData
 				}
 			})
 		} catch (err) {
