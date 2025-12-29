@@ -17,6 +17,37 @@ export function clearToken() {
 
 export function redirectToLogin() {
 	if (typeof window === 'undefined') return
-	window.location.replace('/auth/dev')
+	window.location.replace('/auth/login')
 }
 
+export function parseJwt(token: string): Record<string, any> | null {
+	try {
+		const parts = token.split('.')
+		if (parts.length < 2) return null
+		const decoded = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
+		return JSON.parse(decoded)
+	} catch {
+		return null
+	}
+}
+
+export function getUserRole(): string | null {
+	const token = getToken()
+	if (!token) return null
+	const payload = parseJwt(token)
+	return payload?.role || null
+}
+
+export function getUserId(): string | null {
+	const token = getToken()
+	if (!token) return null
+	const payload = parseJwt(token)
+	return payload?.sub || null
+}
+
+export function getMustChangePassword(): boolean {
+	const token = getToken()
+	if (!token) return false
+	const payload = parseJwt(token)
+	return Boolean(payload?.mustChangePassword)
+}

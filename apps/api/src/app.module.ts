@@ -17,10 +17,17 @@ import { ApprovalsModule } from './modules/approvals/approvals.module';
 import { SubmissionModule } from './modules/submission/submission.module';
 import { OutcomesModule } from './modules/outcomes/outcomes.module';
 import { AwardsModule } from './modules/awards/awards.module';
+import { TendersModule } from './modules/tenders/tenders.module';
+import { UsersModule } from './modules/users/users.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { TenantModule } from './tenant/tenant.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { RolesGuard } from './auth/roles.guard';
+import { AiModule } from './modules/ai/ai.module';
+import { ProposalModule } from './modules/proposal/proposal.module';
+import { ChangeRequestsModule } from './modules/change-requests/change-requests.module';
+import { BusinessRolesModule } from './modules/business-roles/business-roles.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
 	imports: [
@@ -29,7 +36,7 @@ import { RolesGuard } from './auth/roles.guard';
 			limit: Number(process.env.RATE_LIMIT_LIMIT || 120)
 		}]),
 		TenantModule,
-		AuthModule, OpportunitiesModule, ClientsModule, ImportModule, SettingsModule, AttachmentsModule, SearchModule, ComplianceModule, ClarificationsModule, PricingModule, ApprovalsModule, SubmissionModule, OutcomesModule, AwardsModule, AnalyticsModule
+		AuthModule, OpportunitiesModule, ClientsModule, ImportModule, SettingsModule, AttachmentsModule, SearchModule, ComplianceModule, ClarificationsModule, PricingModule, ApprovalsModule, SubmissionModule, OutcomesModule, AwardsModule, TendersModule, UsersModule, AnalyticsModule, AiModule, ProposalModule, ChangeRequestsModule, BusinessRolesModule, NotificationsModule
 	],
 	controllers: [HealthController],
 	providers: [
@@ -40,5 +47,3 @@ import { RolesGuard } from './auth/roles.guard';
 	]
 })
 export class AppModule { }
-
-

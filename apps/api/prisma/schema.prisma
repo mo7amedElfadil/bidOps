@@ -14,6 +14,23 @@ enum Role {
   VIEWER
 }
 
+enum PricingWorkspace {
+  BOQ
+  PACK
+}
+
+enum PricingTemplateScope {
+  GLOBAL
+  OPPORTUNITY
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+  INVITED
+  PENDING
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -21,10 +38,48 @@ model User {
   role      Role     @default(VIEWER)
   team      String?
   passwordHash String?
+  isActive  Boolean  @default(true)
+  status    UserStatus @default(ACTIVE)
+  mustChangePassword Boolean @default(false)
+  lastLoginAt DateTime?
+  passwordChangedAt DateTime?
+  userType  String   @default("INTERNAL")
   tenantId  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   opportunities Opportunity[] @relation("OwnerOpps")
+  bidOwnerLinks OpportunityBidOwner[]
+  businessRoleLinks UserBusinessRole[]
+  notificationPreferences NotificationPreference[]
+  notifications Notification[]
+  inviteTokens InviteToken[]
+  resetTokens PasswordResetToken[]
+}
+
+model InviteToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Client {
@@ -44,12 +99,16 @@ model Opportunity {
   id             String   @id @default(uuid())
   clientId       String
   ownerId        String?
+  boqTemplateId  String?
+  packTemplateId String?
   tenderRef      String?
   title          String
   description    String?
   sourcePortal   String?
+  sourceTenderId String?
   discoveryDate  DateTime?
   submissionDate DateTime?
+  startDate      DateTime?
   status         String?
   stage          String?
   priorityRank   Int?
@@ -62,15 +121,45 @@ model Opportunity {
   tenantId       String   @default("default")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  goNoGoStatus   ApprovalStatus @default(PENDING)
+  goNoGoUpdatedAt DateTime?
+  bondReminderSentAt DateTime?
+  reviewFreezeReminderSentAt DateTime?
+  portalRehearsalReminderSentAt DateTime?
+  slaLastNotifiedLevel String?
+  slaLastNotifiedAt DateTime?
 
   client Client @relation(fields: [clientId], references: [id])
-  owner  User?  @relation("OwnerOpps", fields: [ownerId], references: [id])
+  owner  User?  @relation("OwnerOpps", fields: [ownerId], references: [id], onDelete: SetNull)
+  bidOwners OpportunityBidOwner[]
+  boqTemplate  PricingTemplate? @relation("BoqTemplate", fields: [boqTemplateId], references: [id])
+  packTemplate PricingTemplate? @relation("PackTemplate", fields: [packTemplateId], references: [id])
+  pricingTemplates PricingTemplate[] @relation("TemplateOwner")
   boqItems        BoQItem[]
   vendorQuotes    VendorQuote[]
   pricingPacks    PricingPack[]
+  pricingPackRows PricingPackRow[]
+  proposalSections ProposalSection[]
   outcomes        Outcome[]
   complianceClauses ComplianceClause[]
   clarifications  Clarification[]
+  importIssues    ImportIssue[]
+  checklist      OpportunityChecklist?
+  changeRequests ChangeRequest[]
+  notifications Notification[]
+}
+
+model OpportunityBidOwner {
+  id            String   @id @default(uuid())
+  opportunityId String
+  userId        String
+  createdAt     DateTime @default(now())
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([opportunityId, userId])
+  @@index([userId])
 }
 
 model BoQItem {
@@ -84,8 +173,10 @@ model BoQItem {
   oem           String?
   sku           String?
   unitCost      Float    @default(0)
+  unitCurrency  String   @default("QAR")
   markup        Float    @default(0) // e.g., 0.15 for 15%
   unitPrice     Float    @default(0)
+  customFields  Json?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -127,6 +218,112 @@ model PricingPack {
   @@index([opportunityId])
 }
 
+model PricingPackRow {
+  id            String   @id @default(uuid())
+  opportunityId String
+  lineNo        Int
+  description   String
+  qty           Float    @default(1)
+  unit          String?
+  unitCost      Float    @default(0)
+  unitCurrency  String   @default("QAR")
+  customFields  Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+  @@index([opportunityId])
+}
+
+model PricingTemplate {
+  id            String   @id @default(uuid())
+  name          String
+  workspace     PricingWorkspace
+  scope         PricingTemplateScope @default(GLOBAL)
+  columns       Json
+  tenantId      String   @default("default")
+  opportunityId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  opportunity   Opportunity? @relation("TemplateOwner", fields: [opportunityId], references: [id])
+  boqOpportunities  Opportunity[] @relation("BoqTemplate")
+  packOpportunities Opportunity[] @relation("PackTemplate")
+  @@index([tenantId])
+}
+
+model FxRate {
+  id        String   @id @default(uuid())
+  currency  String
+  rateToQar Float
+  tenantId  String   @default("default")
+  updatedAt DateTime @updatedAt
+
+  @@unique([currency, tenantId])
+  @@index([tenantId])
+}
+
+model ProposalSection {
+  id            String   @id @default(uuid())
+  opportunityId String
+  sectionNo     String?
+  title         String
+  content       String
+  sourcePrompt  String?
+  sourceAttachments String[]
+  provider      String?
+  model         String?
+  meta          Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+  @@index([opportunityId])
+}
+
+model ImportIssue {
+  id            String   @id @default(uuid())
+  opportunityId String
+  fieldName     String
+  columnName    String?
+  rowIndex      Int
+  rawValue      String?
+  message       String
+  resolvedAt    DateTime?
+  createdAt     DateTime @default(now())
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+  @@index([opportunityId])
+  @@index([fieldName])
+}
+
+model BusinessRole {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  tenantId    String   @default("default")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users UserBusinessRole[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model UserBusinessRole {
+  id             String   @id @default(uuid())
+  userId         String
+  businessRoleId String
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessRole BusinessRole @relation(fields: [businessRoleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, businessRoleId])
+  @@index([businessRoleId])
+}
+
 enum ApprovalType {
   LEGAL
   FINANCE
@@ -135,6 +332,40 @@ enum ApprovalType {
 
 enum ApprovalStatus {
   PENDING
+  IN_REVIEW
+  APPROVED
+  APPROVED_WITH_CONDITIONS
+  CHANGES_REQUESTED
+  RESUBMITTED
+  REJECTED
+}
+
+enum TenderScope {
+  ITSQ
+  IOT_SHABAKA
+  OTHER
+}
+
+enum TenderClassificationRunType {
+  COLLECTOR
+  REPROCESS
+}
+
+enum NotificationChannel {
+  EMAIL
+  IN_APP
+}
+
+enum NotificationDigestMode {
+  INSTANT
+  DAILY
+  WEEKLY
+  OFF
+}
+
+enum ChangeRequestStatus {
+  PENDING
+  IN_REVIEW
   APPROVED
   REJECTED
 }
@@ -142,18 +373,118 @@ enum ApprovalStatus {
 model Approval {
   id         String         @id @default(uuid())
   packId     String
+  stage      ApprovalStage @default(GO_NO_GO)
   type       ApprovalType
   approverRole String?
+  approverIds String[] @default([])
   approverId String?
   status     ApprovalStatus @default(PENDING)
+  comment    String?
+  attachments Json?
+  requestedAt DateTime?
+  decidedAt   DateTime?
+  reworkCount Int @default(0)
+  lateDecision Boolean @default(false)
   signedOn   DateTime?
   signature  String?
   remarks    String?
+  changesRequestedDueDate DateTime?
+  sourceTenderId String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   pack PricingPack @relation(fields: [packId], references: [id])
   @@index([packId])
+}
+
+model OpportunityChecklist {
+  id                           String   @id @default(uuid())
+  opportunityId                String   @unique
+  bondPurchased                Boolean  @default(false)
+  bondPurchasedAt              DateTime?
+  bondPurchasedById            String?
+  bondPurchaseAttachmentId     String?
+  formsCompleted               Boolean  @default(false)
+  formsCompletedAt             DateTime?
+  formsCompletedById           String?
+  formsAttachmentId            String?
+  finalPdfReady                Boolean  @default(false)
+  finalPdfReadyAt              DateTime?
+  finalPdfReadyById            String?
+  finalPdfAttachmentId         String?
+  portalCredentialsVerified    Boolean  @default(false)
+  portalCredentialsVerifiedAt  DateTime?
+  portalCredentialsVerifiedById String?
+  portalCredentialsAttachmentId String?
+  complianceCreated            Boolean  @default(false)
+  complianceCreatedAt          DateTime?
+  complianceCreatedById        String?
+  complianceCreatedAttachmentId String?
+  clarificationsSent           Boolean  @default(false)
+  clarificationsSentAt         DateTime?
+  clarificationsSentById       String?
+  clarificationsSentAttachmentId String?
+  pricingApproved              Boolean  @default(false)
+  pricingApprovedAt            DateTime?
+  pricingApprovedById          String?
+  notes                        Json?
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+  @@index([opportunityId])
+}
+
+model ChangeRequest {
+  id            String   @id @default(uuid())
+  opportunityId String
+  changes       String
+  impact        String?
+  status        ChangeRequestStatus   @default(PENDING)
+  requestedById String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+  @@index([opportunityId])
+  @@index([status])
+}
+
+model NotificationPreference {
+  id         String   @id @default(uuid())
+  userId     String
+  activity   String
+  channel    NotificationChannel
+  enabled    Boolean  @default(true)
+  digestMode NotificationDigestMode @default(INSTANT)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, activity, channel])
+  @@index([userId])
+}
+
+model NotificationRoutingDefault {
+  id               String   @id @default(uuid())
+  tenantId         String   @default("default")
+  activity         String
+  stage            String?
+  userIds          String[]
+  businessRoleIds  String[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([tenantId, activity, stage])
+  @@index([tenantId])
+}
+
+enum ApprovalStage {
+  GO_NO_GO
+  WORKING
+  PRICING
+  FINAL_SUBMISSION
+  CLARIFICATIONS
 }
 
 enum OutcomeStatus {
@@ -182,8 +513,9 @@ model AwardStaging {
   id            String   @id @default(uuid())
   portal        String
   tenderRef     String?
-  buyer         String?
+  client        String?
   title         String?
+  titleOriginal String?
   closeDate     DateTime?
   awardDate     DateTime?
   winners       String[]
@@ -200,14 +532,99 @@ model AwardEvent {
   id         String   @id @default(uuid())
   portal     String
   tenderRef  String?
-  buyer      String?
+  client     String?
   title      String?
+  titleOriginal String?
   awardDate  DateTime?
   winners    String[]
   awardValue Float?
   codes      String[]
   sourceUrl  String?
   createdAt  DateTime @default(now())
+}
+
+model MinistryTender {
+  id                  String   @id @default(uuid())
+  portal              String
+  tenderRef           String?
+  title               String?
+  titleOriginal       String?
+  embedding           Unsupported("vector")?
+  ministry            String?
+  publishDate         DateTime?
+  closeDate           DateTime?
+  requestedSectorType String?
+  tenderBondValue     Float?
+  documentsValue      Float?
+  tenderType          String?
+  purchaseUrl         String?
+  sourceUrl           String?
+  status              String?
+  tenantId            String   @default("default")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  classification      TenderClassification?
+
+  @@index([portal])
+  @@index([tenderRef])
+  @@unique([portal, tenderRef])
+  @@unique([portal, sourceUrl])
+}
+
+model TenderActivity {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  scope           TenderScope
+  keywords        String[] @default([])
+  negativeKeywords String[] @default([])
+  embedding       Unsupported("vector")?
+  weight          Float?
+  isHighPriority  Boolean @default(false)
+  isActive        Boolean @default(true)
+  tenantId        String  @default("default")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId])
+  @@unique([tenantId, name])
+}
+
+model TenderClassification {
+  id                   String   @id @default(uuid())
+  tenderId             String   @unique
+  classificationVersion Int     @default(1)
+  score                Int
+  scoreItsq            Int     @default(0)
+  scoreIotShabaka      Int     @default(0)
+  scoreOther           Int     @default(0)
+  isNew                Boolean @default(false)
+  matchedActivityIds   String[] @default([])
+  matchedScopes        TenderScope[] @default([])
+  matchedKeywords      String[] @default([])
+  reasons              String[] @default([])
+  tenantId             String  @default("default")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  tender MinistryTender @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+model TenderClassificationRun {
+  id                   String   @id @default(uuid())
+  runType              TenderClassificationRunType
+  classificationVersion Int
+  rangeFrom            DateTime?
+  rangeTo              DateTime?
+  startedAt            DateTime @default(now())
+  finishedAt           DateTime?
+  stats                Json?
+  triggeredBy          String?
+  tenantId             String  @default("default")
+
+  @@index([tenantId])
 }
 
 model Attachment {
@@ -277,15 +694,24 @@ model AppSetting {
 
 model Notification {
   id         String   @id @default(uuid())
-  type       String   // email
-  to         String
-  subject    String
-  body       String
+  type       String   // email or event type
+  channel    NotificationChannel @default(EMAIL)
+  activity   String?
+  to         String?
+  userId     String?
+  subject    String?
+  body       String?
+  payload    Json?
   status     String   @default("pending") // pending|sent|failed
   attempts   Int      @default(0)
   lastError  String?
   createdAt  DateTime @default(now())
   sentAt     DateTime?
+  readAt     DateTime?
+  opportunityId String?
+  actorId    String?
+  tenantId   String   @default("default")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  opportunity Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
 }
-
-

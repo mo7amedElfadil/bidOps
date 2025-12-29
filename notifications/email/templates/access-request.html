@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>{{SUBJECT}}</title>
+  <style>body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#F3F5F7;} .container{max-width:600px;margin:0 auto;padding:0 24px;} .card{background:#fff;border-radius:18px;padding:24px;border:1px solid #E2E8F0;} button{background:#2563EB;color:#fff;border:none;padding:10px 18px;border-radius:999px;font-weight:700;cursor:pointer;}</style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h2 style="margin:0 0 6px;">New access request</h2>
+      <p>{{BODY_INTRO}}</p>
+      <p><strong>Requester:</strong> {{REQUESTER_NAME}} ({{REQUESTER_EMAIL}})</p>
+      <p><strong>Requested role:</strong> {{REQUESTED_ROLE}}</p>
+      <p><strong>Tenant:</strong> {{TENANT}}</p>
+      <p style="margin-top:18px;"><strong>Next step:</strong> {{NEXT_ACTION}}</p>
+      <p style="margin-top:16px;">
+        <a href="{{CTA_URL}}"><button>{{CTA_TEXT}}</button></a>
+      </p>
+      <p style="margin-top:12px;font-size:12px;color:#64748B;">This link expires in 24 hours.</p>
+    </div>
+    <div style="text-align:center;margin-top:12px;">
+      <small style="color:#94A3B8;">Follow ITSQ on <a href="{{SOCIAL_LINK_LINKEDIN}}">LinkedIn</a> &middot; <a href="{{SOCIAL_LINK_X}}">X</a></small>
+    </div>
+  </div>
+</body>
+</html>

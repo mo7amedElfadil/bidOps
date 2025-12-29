@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>{{SUBJECT}}</title>
+  <style>
+    body { margin:0; font-family: 'Segoe UI', system-ui, sans-serif; background:#F3F5F7; }
+    .container { width:100%; max-width:600px; margin:0 auto; padding:24px; }
+    .panel { background:#FFFFFF; border-radius:18px; padding:24px; box-shadow:0 20px 45px rgba(15,23,42,0.08); }
+    .hero { background:#0f172a; color:#fff; border-radius:18px; padding:26px; }
+    .hero h1 { margin:10px 0 6px; font-size:28px; line-height:34px; }
+    .hero p { margin:0 0 8px; color:#CBD5F5; }
+    .status { font-size:14px; color:#94a3b8; letter-spacing:0.4px; text-transform:uppercase; }
+    .cta { display:inline-flex; align-items:center; justify-content:center; background:#FCD34D; color:#0F172A; border-radius:999px; padding:12px 20px; font-weight:700; text-decoration:none; margin-top:18px; font-size:14px; }
+    .grid { display:grid; gap:18px; margin-top:24px; }
+    .feature { background:#F8FAFC; padding:16px; border-radius:14px; border:1px dashed #E2E8F0; }
+    .footer { font-size:13px; color:#5B6171; margin-top:26px; }
+    .footer a { color:#0F172A; text-decoration:none; }
+    .social { margin-top:16px; }
+    .social a { margin-right:10px; color:#0F172A; text-decoration:none; font-weight:600; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <div class="status">{{HERO_KICKER}}</div>
+      <h1>{{HERO_HEADLINE}}</h1>
+      <p>{{HERO_SUBTEXT}}</p>
+      <a class="cta" href="{{CTA_URL}}">{{CTA_TEXT}}</a>
+    </div>
+
+    <div class="panel" style="margin-top:20px;">
+      <p style="margin:0 0 12px;">{{BODY_INTRO_PARAGRAPH}}</p>
+      <div class="grid">
+        <div class="feature"><strong>Opportunity</strong><br/>{{OPPORTUNITY_TITLE}}</div>
+        <div class="feature"><strong>Client</strong><br/>{{CLIENT_NAME}}</div>
+        <div class="feature"><strong>Submission</strong><br/>{{SUBMISSION_DATE}} · {{DAYS_LEFT}} days left</div>
+        <div class="feature"><strong>Owner</strong><br/>{{BUSINESS_OWNER}}</div>
+      </div>
+      <div style="margin-top:20px; font-size:14px; color:#475569;">
+        {{BODY_DETAILS}}
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:20px; text-align:center;">
+      <p style="margin:0;">Need a quick summary? <a href="{{SUMMARY_URL}}">View the opportunity</a></p>
+      <div class="social">
+        <a href="{{SOCIAL_LINK_LINKEDIN}}">LinkedIn</a>
+        <a href="{{SOCIAL_LINK_X}}">X</a>
+        <a href="{{SOCIAL_LINK_INSTAGRAM}}">Instagram</a>
+      </div>
+    </div>
+
+    <div class="footer">
+      Sent by <strong>BidOps</strong>. Need help? Contact <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a>.
+    </div>
+  </div>
+</body>
+</html>

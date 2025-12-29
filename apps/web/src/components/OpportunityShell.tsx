@@ -31,21 +31,39 @@ export function OpportunityShell({ active, children }: { active: TabKey; childre
 		enabled: Boolean(id),
 		queryFn: () => api.getOpportunity(id || '')
 	})
+	const goNoGoMeta = (status?: string | null) => {
+		switch (status) {
+			case 'APPROVED':
+				return { label: 'Go/No-Go approved', className: 'bg-emerald-100 text-green-600' }
+			case 'REJECTED':
+				return { label: 'Go/No-Go rejected', className: 'bg-rose-100 text-rose-800' }
+			case 'PENDING':
+				return { label: 'Awaiting Go/No-Go', className: 'bg-amber-100 text-amber-600' }
+			default:
+				return null
+		}
+	}
+	const goNoGo = goNoGoMeta(data?.goNoGoStatus)
 
 	return (
 		<div className="mx-auto max-w-6xl p-6">
 			<header className="flex flex-wrap items-center justify-between gap-3">
 				<div>
-					<Link to="/" className="text-sm text-blue-600 hover:underline">
+					<Link to="/opportunities" className="text-sm text-accent hover:underline">
 						← Opportunities
 					</Link>
 					<h1 className="mt-1 text-xl font-semibold">{data?.title || 'Opportunity'}</h1>
-					<p className="text-sm text-slate-600">
-						Client: {data?.clientId || '—'} • Stage: {data?.stage || '—'} • Status: {data?.status || '—'}
+					<p className="text-sm text-muted-foreground">
+						Client: {data?.clientName || '—'}
 					</p>
+					{goNoGo && (
+						<span className={`mt-2 inline-flex rounded px-2 py-0.5 text-xs font-medium ${goNoGo.className}`}>
+							{goNoGo.label}
+						</span>
+					)}
 				</div>
 				<div className="flex items-center gap-2 text-sm">
-					<span className="rounded bg-slate-100 px-2 py-1 font-medium">
+					<span className="rounded bg-muted px-2 py-1 font-medium">
 						Due: {data?.submissionDate ? data.submissionDate.slice(0, 10) : '—'}
 					</span>
 					<SlaBadge daysLeft={data?.daysLeft} />
@@ -57,8 +75,8 @@ export function OpportunityShell({ active, children }: { active: TabKey; childre
 					<Link
 						key={tab.key}
 						to={tab.href(id || '')}
-						className={`rounded px-3 py-1.5 hover:bg-slate-100 ${
-							active === tab.key ? 'bg-slate-200 font-medium' : ''
+						className={`rounded px-3 py-1.5 hover:bg-muted/80 ${
+							active === tab.key ? 'bg-muted font-medium' : ''
 						}`}
 					>
 						{tab.label}
@@ -66,11 +84,11 @@ export function OpportunityShell({ active, children }: { active: TabKey; childre
 				))}
 			</nav>
 
-			<div className="mt-4 rounded border bg-white shadow-sm">
+			<div className="mt-4 rounded border bg-card shadow-sm">
 				{isLoading ? (
-					<p className="p-4 text-sm text-slate-600">Loading opportunity...</p>
+					<p className="p-4 text-sm text-muted-foreground">Loading opportunity...</p>
 				) : error ? (
-					<p className="p-4 text-sm text-red-600">Failed to load: {(error as Error).message}</p>
+					<p className="p-4 text-sm text-destructive">Failed to load: {(error as Error).message}</p>
 				) : (
 					<div>{children}</div>
 				)}
@@ -78,4 +96,3 @@ export function OpportunityShell({ active, children }: { active: TabKey; childre
 		</div>
 	)
 }
-

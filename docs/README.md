@@ -15,9 +15,11 @@ Sections:
 - pricing.md — BoQ, vendor quotes, approvals, margin guardrails
 - compliance.md — clause extraction, matrix, evidence, exports
 - analytics.md — metrics, KPIs, semantic model, refresh
+- Note: Power BI dataset integration is deferred; use CSV exports.
 - security.md — AAD SSO, RBAC, RLS, secrets, retention, residency
 - ops.md — Makefile targets, Docker, envs, migrations, runbooks, SLOs
   - Note: `AUTH_PROVIDER` toggles `local|aad`; `WEB_API_URL` bakes frontend API base
+- smartFilter.md — tender smart filtering logic, activities, and UI filters
 
 Memory Bank (critical for continuity):
 
@@ -29,5 +31,3 @@ Memory Bank (critical for continuity):
 - memory-bank/techContext.md — stack and tooling
 - memory-bank/activeContext.md — current sprint, decisions, risks
 - memory-bank/progress.md — status, issues, decision log
-
-

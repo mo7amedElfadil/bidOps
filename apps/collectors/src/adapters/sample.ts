@@ -22,7 +22,7 @@ export class SampleAdapter extends BaseAdapter {
 			{
 				portal: this.id,
 				tenderRef: `SAMPLE-${Date.now()}-001`,
-				buyer: 'Ministry of Technology',
+				client: 'Ministry of Technology',
 				title: 'IT Infrastructure Upgrade Project',
 				awardDate: new Date(),
 				winners: ['TechCorp Solutions LLC'],
@@ -34,7 +34,7 @@ export class SampleAdapter extends BaseAdapter {
 			{
 				portal: this.id,
 				tenderRef: `SAMPLE-${Date.now()}-002`,
-				buyer: 'Qatar University',
+				client: 'Qatar University',
 				title: 'Campus Network Modernization',
 				awardDate: new Date(Date.now() - 86400000), // Yesterday
 				winners: ['NetWorks Qatar', 'Cisco Partner LLC'],
@@ -46,7 +46,7 @@ export class SampleAdapter extends BaseAdapter {
 			{
 				portal: this.id,
 				tenderRef: `SAMPLE-${Date.now()}-003`,
-				buyer: 'Hamad Medical Corporation',
+				client: 'Hamad Medical Corporation',
 				title: 'Healthcare Management System',
 				awardDate: new Date(Date.now() - 172800000), // 2 days ago
 				winners: ['HealthTech Arabia'],
@@ -61,4 +61,3 @@ export class SampleAdapter extends BaseAdapter {
 		return awards
 	}
 }
-

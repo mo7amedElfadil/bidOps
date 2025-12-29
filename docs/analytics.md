@@ -6,7 +6,7 @@ KPIs and model:
 - Star schema with curated fact/dim tables:
   - Facts: `FactOpportunity`, `FactPricing`, `FactClarification`, `FactSubmission`, `FactOutcome`
   - Dimensions: `DimClient`, `DimDate`, `DimSector`, `DimUser`, `DimCompetitor`, `DimOEM`
-- Power BI semantic model and scheduled refresh
+- Power BI semantic model and scheduled refresh (deferred; use CSV exports for now)
 
 Artifacts:
 - Data dictionary
@@ -17,4 +17,6 @@ Current exports
 - GET `/analytics/export/opportunities.csv`
 - `make pbi-export` downloads both into `./exports`
 
+Deferred
+- Full Power BI integration (dataset, semantic model, scheduled refresh)
 

@@ -1,10 +1,10 @@
+import './env-config';
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
-import { AuditInterceptor } from './interceptors/audit.interceptor';
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule, { cors: true });
@@ -22,9 +22,6 @@ async function bootstrap() {
 		})
 	);
 
-	// Global audit interceptor for mutating requests
-	app.useGlobalInterceptors(app.get(AuditInterceptor));
-
 	const config = new DocumentBuilder()
 		.setTitle('ITSQ BidOps API')
 		.setDescription('REST API for BidOps')
@@ -34,11 +31,9 @@ async function bootstrap() {
 	SwaggerModule.setup('/docs', app, document);
 
 	const port = process.env.PORT || 3000;
-	await app.listen(port as number);
+	await app.listen(port as number, '0.0.0.0');
 	// eslint-disable-next-line no-console
 	console.log(`API listening on http://localhost:${port}`);
 }
 
 bootstrap();
-
-

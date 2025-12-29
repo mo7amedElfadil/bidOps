@@ -10,10 +10,11 @@
     "sourceMap": true,
     "outDir": "dist",
     "baseUrl": ".",
+    "paths": {
+      "shared/*": ["../shared/*"]
+    },
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["src", "prisma"]
+  "include": ["src", "prisma", "../shared"]
 }
-
-

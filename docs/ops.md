@@ -24,6 +24,8 @@ make up
 # Mailhog: http://localhost:8025
 ```
 
+> **Note:** `make down` now leaves the database volumes intact. Run `make down-volumes` only when you intentionally want to wipe all data and start completely from scratch.
+
 ## Makefile Targets
 
 ### Infrastructure
@@ -31,6 +33,7 @@ make up
 |--------|-------------|
 | `make bootstrap` | Install toolchains, pnpm, pre-commit hooks |
 | `make up` | Start all services (Docker Compose) |
+| `make up-monitoring` | Start monitoring stack (Grafana/Prometheus/OTEL/Dashboards) |
 | `make down` | Stop all services |
 | `make logs` | Tail logs from all services |
 | `make logs-backend` | Tail API and workers logs |
@@ -78,6 +81,7 @@ make up
 | `postgres` | 5432 | PostgreSQL database |
 | `redis` | 6379 | Redis for queues and cache |
 | `opensearch` | 9200 | OpenSearch for full-text search |
+|  |  | Set `OPENSEARCH_INITIAL_ADMIN_PASSWORD` (e.g., `BidOps!2025`) so the container starts |
 | `dashboards` | 5601 | OpenSearch Dashboards |
 | `mailhog` | 1025, 8025 | Dev email server (SMTP: 1025, UI: 8025) |
 | `prometheus` | 9090 | Metrics collection |
@@ -85,6 +89,23 @@ make up
 | `otel-collector` | 4317, 4318 | OpenTelemetry collector |
 | `api` | 4000 | BidOps API |
 | `web` | 8080 | BidOps Web UI |
+| `collectors` | (internal) | Award collectors server (Playwright) |
+| `workers` | (internal) | BullMQ worker for SLA ticks, notification/email batches, and queued collector jobs |
+
+Postgres runs with pgvector enabled for semantic tender filtering.
+
+Mail delivery uses `SMTP_*` variables from the root `.env`. For local dev you can point SMTP to `mailhog`; for production wire it to an external SMTP provider (Office 365, SES, etc.).
+
+### Job queue
+
+The `workers` service listens on the Redis-backed BullMQ queue called `bidops-default`. API endpoints such as `POST /awards/collect` and `/tenders/collect` enqueue `collect-awards` or `collect-tenders` jobs via `enqueueAwardCollector`/`enqueueTenderCollector`, and the worker delegates them to the collectors service through `COLLECTORS_URL`. The same queue can host other heavy/async workloads you may add later (SLA/notification bursts, tracker imports, parser/OCR jobs, AI extraction slices, etc.) so that the API stays responsive while background work is serialized through Redis.
+
+Additional workloads that can be routed through this queue include:
+- Tracker-import processing (CSV parsing + field reconciliation) so uploads do not block the API.
+- Pricing recalculations and worksheet lift/pack rebuilds when there are many line items.
+- AI extraction for attachments or compliance/parser jobs that need chunking or OCR.
+- Large exports (opportunities, awards, analytics snapshots) so the UI can poll the queue for completion.
+- Ad-hoc maintenance jobs (reindexing OpenSearch, cleaning storage) you want to run safely in the background.
 
 ### Optional Services
 
@@ -164,7 +185,7 @@ Scraped targets:
 | Metric | Target |
 |--------|--------|
 | API p95 latency | < 300ms |
-| SLA engine tick | ≤ 60s |
+| SLA engine tick | Configurable (default 6h) |
 | Queue lag | < 30s |
 | Parser throughput | ≥ 40 pages/min |
 | Collector parse error | ≤ 2% |
@@ -216,10 +237,11 @@ docker compose -f infra/compose.yml restart api
 
 **Rebuild from scratch:**
 ```bash
-make down
-docker volume prune  # Warning: removes all volumes
+make down-volumes
 make up
 ```
+
+Use `make down` when you just want to stop services but keep the volumes intact; `make down-volumes` is the new helper that also cleans those volumes before restarting.
 
 ### Database Issues
 
@@ -259,6 +281,12 @@ docker exec bidops-postgres pg_dump -U bidops bidops > backup.sql
 cat backup.sql | docker exec -i bidops-postgres psql -U bidops bidops
 ```
 
+### Retention Policy
+
+- Default retention: 5 years.
+- Maintain external backups per policy (offsite or separate Azure subscription).
+- Retention period configurable via `GET/PUT /settings/retention` (ADMIN).
+
 ### Monitoring Alerts
 
 Configure alerts in Grafana for:
@@ -271,3 +299,13 @@ Configure alerts in Grafana for:
 
 See `apps/api/example.env` for full list of API environment variables.
 See `apps/collectors/example.env` for collector-specific variables.
+
+### Collector-specific
+- `MONAQASAT_AVAILABLE_PATH` – path to the Monaqasat available tenders list (default: `/TendersOnlineServices/AvailableMinistriesTenders/1`)
+- `MONAQASAT_TENDER_MAX_PAGES` – max pages to scan when running `/tenders/collect` (default: `10`, mirrors `MONAQASAT_MAX_PAGES` used by awards)
+- `MONAQASAT_TENDER_FROM_DATE` / `MONAQASAT_TENDER_TO_DATE` – optional YYYY-MM-DD window passed from the UI; the collector filters results and stops when it reaches the earliest requested date
+
+AI (proposal extraction):
+- `AI_PROVIDER` = `openai|gemini` (default: openai)
+- `OPENAI_API_KEY`, `OPENAI_MODEL` (e.g., `gpt-4o-mini`)
+- `GEMINI_API_KEY`, `GEMINI_MODEL` (e.g., `gemini-1.5-flash`)

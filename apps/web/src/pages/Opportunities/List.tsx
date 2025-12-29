@@ -1,180 +1,339 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { api, type Opportunity } from '../../api/client'
-import { SlaBadge } from '../../components/SlaBadge'
 import { Page } from '../../components/Page'
+import CountdownRing from '../../components/CountdownRing'
+import { downloadWithAuth } from '../../utils/download'
+import { DEFAULT_STAGE_LIST, DEFAULT_STATUS_LIST } from '../../constants/opportunity-lists'
+import { isPostSubmission } from '../../utils/postSubmission'
+import PaginationControls from '../../components/PaginationControls'
+
+function toIsoWithOffset(value: string, offsetHours: number) {
+	const [datePart, timePart = '00:00'] = value.split('T')
+	const [year, month, day] = datePart.split('-').map(Number)
+	const [hour, minute] = timePart.split(':').map(Number)
+	const utc = Date.UTC(year, month - 1, day, hour - offsetHours, minute)
+	return new Date(utc).toISOString()
+}
+
+function formatWithOffset(value: string, offsetHours: number) {
+	const date = new Date(value)
+	const shifted = new Date(date.getTime() + offsetHours * 60 * 60 * 1000)
+	const yyyy = shifted.getUTCFullYear()
+	const mm = String(shifted.getUTCMonth() + 1).padStart(2, '0')
+	const dd = String(shifted.getUTCDate()).padStart(2, '0')
+	const hh = String(shifted.getUTCHours()).padStart(2, '0')
+	const min = String(shifted.getUTCMinutes()).padStart(2, '0')
+	const sign = offsetHours >= 0 ? '+' : ''
+	return `${yyyy}-${mm}-${dd} ${hh}:${min} (UTC${sign}${offsetHours})`
+}
 
 export default function List() {
 	const qc = useQueryClient()
 	const nav = useNavigate()
+	const loc = useLocation()
 	const [filters, setFilters] = useState({ q: '', stage: '', client: '' })
+	const [mineOnly, setMineOnly] = useState(false)
 	const [showCreate, setShowCreate] = useState(false)
-	const [form, setForm] = useState({ title: '', clientId: '', submissionDate: '' })
+	const [form, setForm] = useState({
+		title: '',
+		clientInput: '',
+		submissionDate: '',
+		modeOfSubmission: 'Monaqasat',
+		sourcePortal: 'Monaqasat'
+	})
+	const [page, setPage] = useState(1)
+	const [pageSize] = useState(25)
+	const [now, setNow] = useState(Date.now())
+	const timezoneQuery = useQuery({ queryKey: ['timezone'], queryFn: api.getTimezoneSettings })
+	const stageListQuery = useQuery({ queryKey: ['opportunity-stages'], queryFn: api.getOpportunityStages })
+	const statusListQuery = useQuery({ queryKey: ['opportunity-statuses'], queryFn: api.getOpportunityStatuses })
+	const stageOptions = stageListQuery.data?.stages ?? DEFAULT_STAGE_LIST
+	const statusOptions = statusListQuery.data?.statuses ?? DEFAULT_STATUS_LIST
 
 	const opportunities = useQuery({
-		queryKey: ['opportunities'],
-		queryFn: () => api.listOpportunities()
+		queryKey: ['opportunities', page, pageSize, filters.stage, filters.client, filters.q, mineOnly],
+		queryFn: () =>
+			api.listOpportunities({
+				page,
+				pageSize,
+				stage: filters.stage || undefined,
+				clientId: filters.client || undefined,
+				q: filters.q || undefined,
+				mine: mineOnly ? 'true' : undefined
+			})
 	})
-	const clients = useQuery({ queryKey: ['clients'], queryFn: api.listClients })
+	const clients = useQuery({
+		queryKey: ['clients'],
+		queryFn: () => api.listClients({ page: 1, pageSize: 500 })
+	})
 
 	const createMutation = useMutation({
-		mutationFn: () => api.createOpportunity(form),
+		mutationFn: () => {
+			const name = form.clientInput.trim()
+			const match = clients.data?.items?.find(c => c.name.toLowerCase() === name.toLowerCase())
+			const offsetHours = timezoneQuery.data?.offsetHours ?? 3
+			const submissionDate = form.submissionDate
+				? toIsoWithOffset(form.submissionDate, offsetHours)
+				: undefined
+			return api.createOpportunity({
+				title: form.title,
+				submissionDate,
+				modeOfSubmission: form.modeOfSubmission || undefined,
+				sourcePortal: form.sourcePortal || undefined,
+				clientId: match?.id,
+				clientName: match ? undefined : name
+			})
+		},
 		onSuccess: data => {
 			setShowCreate(false)
-			setForm({ title: '', clientId: '', submissionDate: '' })
+			setForm({
+				title: '',
+				clientInput: '',
+				submissionDate: '',
+				modeOfSubmission: 'Monaqasat',
+				sourcePortal: 'Monaqasat'
+			})
 			qc.invalidateQueries({ queryKey: ['opportunities'] })
 			nav(`/opportunity/${data.id}`)
 		}
 	})
 
-	const filtered: Opportunity[] = useMemo(() => {
-		const list = opportunities.data || []
-		const q = filters.q.toLowerCase()
-		return list.filter(o => {
-			const matchesQ = !q || o.title.toLowerCase().includes(q) || (o.clientId || '').toLowerCase().includes(q)
-			const matchesStage = !filters.stage || (o.stage || '').toLowerCase() === filters.stage.toLowerCase()
-			const matchesClient = !filters.client || o.clientId === filters.client
-			return matchesQ && matchesStage && matchesClient
-		})
-	}, [filters, opportunities.data])
+	useEffect(() => {
+		const timer = setInterval(() => setNow(Date.now()), 60000)
+		return () => clearInterval(timer)
+	}, [])
+	useEffect(() => {
+		const params = new URLSearchParams(loc.search)
+		const mineParam = params.get('mine')
+		setMineOnly(mineParam === 'true' || mineParam === '1')
+	}, [loc.search])
+	useEffect(() => {
+		const params = new URLSearchParams(loc.search)
+		const mineParam = params.get('mine')
+		const mineActive = mineParam === 'true' || mineParam === '1'
+		if (mineActive === mineOnly) return
+		if (mineOnly) {
+			params.set('mine', 'true')
+		} else {
+			params.delete('mine')
+		}
+		nav({ pathname: loc.pathname, search: params.toString() }, { replace: true })
+	}, [mineOnly, loc.pathname, loc.search, nav])
+	const rows = opportunities.data?.items || []
+	const [showPostSubmission, setShowPostSubmission] = useState(true)
+	const activeRows = rows.filter(o => !isPostSubmission(o, { stageOptions, statusOptions }))
+	const postRows = rows.filter(o => isPostSubmission(o, { stageOptions, statusOptions }))
 
 	return (
 		<Page
 			title="Opportunities"
 			subtitle="List, filter, and drill into opportunities. SLA badges reflect submission proximity."
 			actions={
-				<div className="flex gap-2">
-					<a href={`${import.meta.env.VITE_API_URL}/analytics/export/opportunities.csv`} download className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200 flex items-center">Export CSV</a>
+				<div className="flex flex-wrap gap-2">
 					<button
-						className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
+						className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80 flex items-center"
+						onClick={() =>
+							downloadWithAuth(
+								`${import.meta.env.VITE_API_URL}/analytics/export/opportunities.csv`,
+								`opportunities.csv`
+							)
+						}
+					>
+						Export CSV
+					</button>
+					<button
+						className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
 						onClick={() => setShowCreate(true)}
 					>
 						+ New
 					</button>
 					<Link
 						to="/import/tracker"
-						className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
+						className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
 					>
 						Import Tracker
 					</Link>
 				</div>
 			}
 		>
-			<div className="mt-4 flex flex-wrap gap-3 text-sm">
+			<div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
 				<input
 					className="rounded border px-3 py-2"
 					placeholder="Search title or client"
 					value={filters.q}
-					onChange={e => setFilters({ ...filters, q: e.target.value })}
+					onChange={e => {
+						setFilters({ ...filters, q: e.target.value })
+						setPage(1)
+					}}
 				/>
 				<input
 					className="rounded border px-3 py-2"
 					placeholder="Stage (e.g. Submission)"
 					value={filters.stage}
-					onChange={e => setFilters({ ...filters, stage: e.target.value })}
+					onChange={e => {
+						setFilters({ ...filters, stage: e.target.value })
+						setPage(1)
+					}}
 				/>
 				<select
 					className="rounded border px-3 py-2"
 					value={filters.client}
-					onChange={e => setFilters({ ...filters, client: e.target.value })}
+					onChange={e => {
+						setFilters({ ...filters, client: e.target.value })
+						setPage(1)
+					}}
 				>
 					<option value="">All clients</option>
-					{clients.data?.map(c => (
+					{clients.data?.items?.map(c => (
 						<option key={c.id} value={c.id}>
 							{c.name}
 						</option>
 					))}
 				</select>
-				<Link to="/board" className="rounded bg-slate-100 px-3 py-2 hover:bg-slate-200">
-					Kanban
-				</Link>
-				<Link to="/timeline" className="rounded bg-slate-100 px-3 py-2 hover:bg-slate-200">
-					Timeline
-				</Link>
-				<Link to="/awards/staging" className="rounded bg-slate-100 px-3 py-2 hover:bg-slate-200">
-					Awards
-				</Link>
+				<div className="flex items-center gap-1 rounded border border-border bg-card p-1 text-xs">
+					<span className="px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">View</span>
+					<Link
+						to="/opportunities"
+						className="rounded px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted/80"
+					>
+						Table
+					</Link>
+					<Link
+						to="/board"
+						className="rounded px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted/80"
+					>
+						Kanban
+					</Link>
+					<Link
+						to="/timeline"
+						className="rounded px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted/80"
+					>
+						Timeline
+					</Link>
+					<Link
+						to="/post-submission"
+						className="rounded px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted/80"
+					>
+						Post Submission
+					</Link>
+				</div>
+				<label className="flex items-center gap-2 text-xs text-muted-foreground">
+					<input
+						type="checkbox"
+						checked={showPostSubmission}
+						onChange={e => setShowPostSubmission(e.target.checked)}
+					/>
+					Show post-submission section
+				</label>
+				<label className="flex items-center gap-2 text-xs text-muted-foreground">
+					<input
+						type="checkbox"
+						checked={mineOnly}
+						onChange={e => {
+							setMineOnly(e.target.checked)
+							setPage(1)
+						}}
+					/>
+					My queue only
+				</label>
 			</div>
 
-			{opportunities.isLoading && <p className="mt-4 text-sm text-slate-600">Loading...</p>}
+			{opportunities.isLoading && <p className="mt-4 text-sm text-muted-foreground">Loading...</p>}
 			{opportunities.error && (
-				<p className="mt-4 text-sm text-red-600">
+				<p className="mt-4 text-sm text-destructive">
 					{(opportunities.error as Error).message || 'Failed to load opportunities'}
 				</p>
 			)}
 
-			<div className="mt-4 overflow-x-auto rounded border bg-white shadow-sm">
+			<div className="mt-4 overflow-x-auto rounded border bg-card shadow-sm">
 				<table className="min-w-full text-sm">
-					<thead className="bg-slate-100">
+					<thead className="bg-muted">
 						<tr>
 							<th className="px-3 py-2 text-left">Title</th>
 							<th className="px-3 py-2 text-left">Client</th>
+							<th className="px-3 py-2 text-left">Business Owner</th>
+							<th className="px-3 py-2 text-left">Bid Owners</th>
 							<th className="px-3 py-2 text-left">Status</th>
-							<th className="px-3 py-2 text-left">Stage</th>
-							<th className="px-3 py-2 text-left">Due</th>
+    <th className="px-3 py-2 text-left">Stage</th>
+    <th className="px-3 py-2 text-left">Start</th>
+    <th className="px-3 py-2 text-left">Due</th>
 							<th className="px-3 py-2 text-left">SLA</th>
 							<th className="px-3 py-2 text-left">Actions</th>
 						</tr>
 					</thead>
 					<tbody>
-						{filtered.map(o => (
-							<tr key={o.id} className="border-t hover:bg-slate-50">
+						{activeRows.map(o => (
+							<tr key={o.id} className="border-t hover:bg-muted/80">
 								<td className="px-3 py-2 font-medium">
 									<Link to={`/opportunity/${o.id}`} className="hover:underline">
 										{o.title}
 									</Link>
 								</td>
-								<td className="px-3 py-2">{o.clientId || '-'}</td>
-								<td className="px-3 py-2">{o.status || '-'}</td>
-								<td className="px-3 py-2">{o.stage || '-'}</td>
+								<td className="px-3 py-2">{o.clientName || o.clientId || '-'}</td>
+								<td className="px-3 py-2">{o.dataOwner || '-'}</td>
 								<td className="px-3 py-2">
-									{o.submissionDate ? o.submissionDate.slice(0, 10) : '-'}
+									{o.bidOwners?.length
+										? o.bidOwners.map(owner => owner.name || owner.email || owner.id).join(', ')
+										: '-'}
+								</td>
+								<td className="px-3 py-2">{o.status || '-'}</td>
+							<td className="px-3 py-2">{o.stage || '-'}</td>
+							<td className="px-3 py-2">
+								{o.startDate
+									? formatWithOffset(o.startDate, timezoneQuery.data?.offsetHours ?? 3)
+									: '-'}
+							</td>
+							<td className="px-3 py-2">
+									{o.submissionDate
+										? formatWithOffset(o.submissionDate, timezoneQuery.data?.offsetHours ?? 3)
+										: '-'}
 								</td>
 								<td className="px-3 py-2">
-									<SlaBadge daysLeft={o.daysLeft} />
+									<CountdownRing submissionDate={o.submissionDate} now={now} />
 								</td>
 								<td className="px-3 py-2">
 									<div className="flex flex-wrap gap-1">
 										<Link
 											to={`/opportunity/${o.id}/attachments`}
-											className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+											className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 										>
 											Docs
 										</Link>
 										<Link
 											to={`/opportunity/${o.id}/compliance`}
-											className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+											className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 										>
 											Compliance
 										</Link>
 										<Link
 											to={`/opportunity/${o.id}/clarifications`}
-											className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+											className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 										>
 											Q&A
 										</Link>
 										<Link
 											to={`/opportunity/${o.id}/pricing`}
-											className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+											className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 										>
 											Pricing
 										</Link>
 										<Link
 											to={`/opportunity/${o.id}/approvals`}
-											className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+											className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 										>
 											Approvals
 										</Link>
 										<Link
 											to={`/opportunity/${o.id}/submission`}
-											className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+											className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 										>
 											Submit
 										</Link>
 										<Link
 											to={`/opportunity/${o.id}/outcome`}
-											className="rounded bg-slate-100 px-2 py-0.5 text-xs hover:bg-slate-200"
+											className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
 										>
 											Outcome
 										</Link>
@@ -182,11 +341,11 @@ export default function List() {
 								</td>
 							</tr>
 						))}
-						{filtered.length === 0 && !opportunities.isLoading && (
+						{activeRows.length === 0 && !opportunities.isLoading && (
 							<tr>
-								<td colSpan={7} className="px-3 py-4 text-center text-slate-500">
+								<td colSpan={9} className="px-3 py-4 text-center text-muted-foreground">
 									No opportunities yet.{' '}
-									<Link to="/import/tracker" className="text-blue-600 hover:underline">
+									<Link to="/import/tracker" className="text-accent hover:underline">
 										Import your tracker
 									</Link>{' '}
 									or create a new record.
@@ -196,10 +355,93 @@ export default function List() {
 					</tbody>
 				</table>
 			</div>
+			{showPostSubmission && (
+				<div className="mt-6">
+					<div className="flex items-center justify-between">
+						<h3 className="text-sm font-semibold text-foreground">Post Submission</h3>
+						<Link to="/post-submission" className="text-xs text-accent hover:underline">
+							Open full list
+						</Link>
+					</div>
+					<div className="mt-2 overflow-x-auto rounded border bg-card shadow-sm">
+						<table className="min-w-full text-sm">
+							<thead className="bg-muted">
+								<tr>
+									<th className="px-3 py-2 text-left">Title</th>
+									<th className="px-3 py-2 text-left">Client</th>
+									<th className="px-3 py-2 text-left">Status</th>
+									<th className="px-3 py-2 text-left">Stage</th>
+									<th className="px-3 py-2 text-left">Due</th>
+									<th className="px-3 py-2 text-left">Actions</th>
+								</tr>
+							</thead>
+							<tbody>
+								{postRows.map(o => (
+									<tr key={o.id} className="border-t hover:bg-muted/80">
+										<td className="px-3 py-2 font-medium">
+											<Link to={`/opportunity/${o.id}`} className="hover:underline">
+												{o.title}
+											</Link>
+										</td>
+										<td className="px-3 py-2">{o.clientName || o.clientId || '-'}</td>
+										<td className="px-3 py-2">{o.status || '-'}</td>
+										<td className="px-3 py-2">{o.stage || '-'}</td>
+										<td className="px-3 py-2">
+											{o.submissionDate
+												? formatWithOffset(o.submissionDate, timezoneQuery.data?.offsetHours ?? 3)
+												: '-'}
+										</td>
+										<td className="px-3 py-2">
+											<div className="flex flex-wrap gap-1">
+												<Link
+													to={`/opportunity/${o.id}/approvals`}
+													className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
+												>
+													Approvals
+												</Link>
+												<Link
+													to={`/opportunity/${o.id}/submission`}
+													className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
+												>
+													Submit
+												</Link>
+												<Link
+													to={`/opportunity/${o.id}/outcome`}
+													className="rounded bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
+												>
+													Outcome
+												</Link>
+											</div>
+										</td>
+									</tr>
+								))}
+								{postRows.length === 0 && (
+									<tr>
+										<td colSpan={6} className="px-3 py-4 text-center text-muted-foreground">
+											No post-submission opportunities in this page.
+										</td>
+									</tr>
+								)}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			)}
+			{opportunities.data && (
+				<div className="mt-4 flex flex-col gap-2 text-sm text-muted-foreground">
+					<PaginationControls
+						page={opportunities.data.page}
+						pageSize={opportunities.data.pageSize}
+						total={opportunities.data.total}
+						onPageChange={setPage}
+						disabled={opportunities.isLoading}
+					/>
+				</div>
+			)}
 
 			{showCreate && (
 				<div className="fixed inset-0 z-10 flex items-center justify-center bg-black/30 p-4">
-					<div className="w-full max-w-lg rounded border bg-white p-5 shadow-lg">
+					<div className="w-full max-w-lg rounded border bg-card p-5 shadow-lg">
 						<h2 className="text-lg font-semibold">Create Opportunity</h2>
 						<div className="mt-3 grid gap-3">
 							<label className="text-sm">
@@ -212,49 +454,79 @@ export default function List() {
 							</label>
 							<label className="text-sm">
 								<span className="font-medium">Client</span>
-								<select
+								<input
+									list="client-options"
 									className="mt-1 w-full rounded border px-3 py-2"
-									value={form.clientId}
-									onChange={e => setForm({ ...form, clientId: e.target.value })}
-								>
-									<option value="">Select client</option>
-									{clients.data?.map(c => (
-										<option key={c.id} value={c.id}>
-											{c.name}
-										</option>
+									value={form.clientInput}
+									onChange={e => setForm({ ...form, clientInput: e.target.value })}
+									placeholder="Select or type a client"
+								/>
+								<datalist id="client-options">
+									{clients.data?.items?.map(c => (
+										<option key={c.id} value={c.name} />
 									))}
-								</select>
+								</datalist>
 							</label>
 							<label className="text-sm">
-								<span className="font-medium">Submission date</span>
+								<span className="font-medium">Submission date & time</span>
 								<input
-									type="date"
+									type="datetime-local"
 									className="mt-1 w-full rounded border px-3 py-2"
 									value={form.submissionDate}
 									onChange={e => setForm({ ...form, submissionDate: e.target.value })}
 								/>
 							</label>
+							<label className="text-sm">
+								<span className="font-medium">Method of submission</span>
+								<input
+									list="submission-methods"
+									className="mt-1 w-full rounded border px-3 py-2"
+									value={form.modeOfSubmission}
+									onChange={e => setForm({ ...form, modeOfSubmission: e.target.value })}
+									placeholder="Monaqasat"
+								/>
+								<datalist id="submission-methods">
+									<option value="Monaqasat" />
+									<option value="Portal" />
+									<option value="Email" />
+									<option value="Hand Delivery" />
+								</datalist>
+							</label>
+							<label className="text-sm">
+								<span className="font-medium">Source</span>
+								<input
+									list="opportunity-sources"
+									className="mt-1 w-full rounded border px-3 py-2"
+									value={form.sourcePortal}
+									onChange={e => setForm({ ...form, sourcePortal: e.target.value })}
+									placeholder="Monaqasat"
+								/>
+								<datalist id="opportunity-sources">
+									<option value="Monaqasat" />
+									<option value="Referral" />
+									<option value="Email" />
+									<option value="Direct" />
+								</datalist>
+							</label>
 						</div>
 						<div className="mt-4 flex justify-end gap-2">
-					<a href={`${import.meta.env.VITE_API_URL}/analytics/export/opportunities.csv`} download className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200 flex items-center">Export CSV</a>
 							<button
-								className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
+								className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
 								onClick={() => setShowCreate(false)}
 								disabled={createMutation.isPending}
 							>
 								Cancel
 							</button>
-					<a href={`${import.meta.env.VITE_API_URL}/analytics/export/opportunities.csv`} download className="rounded bg-slate-100 px-3 py-1.5 text-sm hover:bg-slate-200 flex items-center">Export CSV</a>
 							<button
-								className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+								className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
 								onClick={() => createMutation.mutate()}
-								disabled={!form.title || !form.clientId || createMutation.isPending}
+								disabled={!form.title || !form.clientInput.trim() || createMutation.isPending}
 							>
 								{createMutation.isPending ? 'Creating...' : 'Create'}
 							</button>
 						</div>
 						{createMutation.error && (
-							<p className="mt-2 text-sm text-red-600">
+							<p className="mt-2 text-sm text-destructive">
 								{(createMutation.error as Error).message || 'Failed to create'}
 							</p>
 						)}

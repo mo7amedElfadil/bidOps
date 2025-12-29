@@ -1,0 +1,11 @@
+ALTER TABLE "OpportunityChecklist" ADD COLUMN "complianceCreated" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "OpportunityChecklist" ADD COLUMN "complianceCreatedAt" TIMESTAMP(3);
+ALTER TABLE "OpportunityChecklist" ADD COLUMN "complianceCreatedById" TEXT;
+ALTER TABLE "OpportunityChecklist" ADD COLUMN "complianceCreatedAttachmentId" TEXT;
+ALTER TABLE "OpportunityChecklist" ADD COLUMN "clarificationsSent" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "OpportunityChecklist" ADD COLUMN "clarificationsSentAt" TIMESTAMP(3);
+ALTER TABLE "OpportunityChecklist" ADD COLUMN "clarificationsSentById" TEXT;
+ALTER TABLE "OpportunityChecklist" ADD COLUMN "clarificationsSentAttachmentId" TEXT;
+ALTER TABLE "OpportunityChecklist" ADD COLUMN "pricingApproved" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "OpportunityChecklist" ADD COLUMN "pricingApprovedAt" TIMESTAMP(3);
+ALTER TABLE "OpportunityChecklist" ADD COLUMN "pricingApprovedById" TEXT;

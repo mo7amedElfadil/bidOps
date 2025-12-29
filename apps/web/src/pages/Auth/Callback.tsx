@@ -1,16 +1,20 @@
 import { useEffect } from 'react'
-import { setToken } from '../../utils/auth'
+import { parseJwt, setToken } from '../../utils/auth'
 
 export default function Callback() {
 	useEffect(() => {
 		const hash = window.location.hash || ''
 		const m = hash.match(/token=([^&]+)/)
 		if (m) {
-			setToken(decodeURIComponent(m[1]))
+			const token = decodeURIComponent(m[1])
+			setToken(token)
+			const payload = parseJwt(token)
+			if (payload?.mustChangePassword) {
+				window.location.replace('/auth/change-password')
+				return
+			}
 		}
-		window.location.replace('/')
+		window.location.replace('/dashboard')
 	}, [])
 	return null
 }
-
-

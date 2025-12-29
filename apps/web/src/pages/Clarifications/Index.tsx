@@ -1,8 +1,11 @@
+import UploadButton from '../../components/UploadButton'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api, Clarification } from '../../api/client'
 import { OpportunityShell } from '../../components/OpportunityShell'
+import { getToken } from '../../utils/auth'
+import { downloadWithAuth } from '../../utils/download'
 
 export default function ClarificationsPage() {
 	const qc = useQueryClient()
@@ -35,31 +38,57 @@ export default function ClarificationsPage() {
 		onSuccess: () => qc.invalidateQueries({ queryKey: ['clarifications', id] })
 	})
 
+	const importCsv = useMutation({
+		mutationFn: async (file: File) => {
+			const fd = new FormData()
+			fd.append('file', file)
+			const token = getToken()
+			const res = await fetch(`${API}/clarifications/${id}/import.csv`, {
+				method: 'POST',
+				headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+				body: fd
+			})
+			if (!res.ok) throw new Error(await res.text())
+			return res.json()
+		},
+		onSuccess: () => qc.invalidateQueries({ queryKey: ['clarifications', id] })
+	})
+
 	return (
 		<OpportunityShell active="clarifications">
 			<div className="p-4">
 				<div className="flex items-center justify-between">
 					<h2 className="text-lg font-semibold">Clarifications</h2>
-					<div className="flex gap-2">
+					<div className="flex flex-wrap items-center gap-2">
+						<UploadButton
+							accept=".csv"
+							label="Import CSV"
+							onFile={fileOrList => {
+								const file = fileOrList instanceof File ? fileOrList : fileOrList?.[0]
+								if (file) importCsv.mutate(file)
+							}}
+						/>
 						<button
-							className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
+							className="rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
 							onClick={() => setShowAdd(true)}
 						>
 							+ Add Question
 						</button>
-						<a
-							className="rounded bg-slate-700 px-3 py-1.5 text-sm text-white hover:bg-slate-800"
-							href={`${API}/clarifications/${id}/export.csv`}
-							target="_blank"
-							rel="noreferrer"
+						<button
+							className="rounded bg-card px-3 py-1.5 text-sm text-foreground hover:bg-card"
+							onClick={() => downloadWithAuth(`${API}/clarifications/${id}/export.csv`, `clarifications-${id}.csv`)}
 						>
 							Export CSV
-						</a>
+						</button>
+						{importCsv.isPending && <span className="text-xs text-muted-foreground">Importing...</span>}
+						{importCsv.error && (
+							<span className="text-xs text-destructive">{(importCsv.error as Error).message}</span>
+						)}
 					</div>
 				</div>
 
 				{showAdd && (
-					<div className="mt-4 rounded border bg-white p-4 shadow-sm">
+					<div className="mt-4 rounded border bg-card p-4 shadow-sm">
 						<h3 className="font-medium">New Question</h3>
 						<div className="mt-2 grid gap-3 sm:grid-cols-2">
 							<div>
@@ -97,14 +126,14 @@ export default function ClarificationsPage() {
 						</div>
 						<div className="mt-3 flex gap-2">
 							<button
-								className="rounded bg-green-600 px-3 py-1.5 text-sm text-white hover:bg-green-700"
+								className="rounded bg-green-600 px-3 py-1.5 text-sm text-primary-foreground hover:bg-green-600/90"
 								onClick={() => addQuestion.mutate()}
 								disabled={!newQ.questionNo || !newQ.text || addQuestion.isPending}
 							>
 								{addQuestion.isPending ? 'Saving...' : 'Save'}
 							</button>
 							<button
-								className="rounded bg-slate-200 px-3 py-1.5 text-sm hover:bg-slate-300"
+								className="rounded bg-muted px-3 py-1.5 text-sm hover:bg-muted/80"
 								onClick={() => setShowAdd(false)}
 								disabled={addQuestion.isPending}
 							>
@@ -115,13 +144,13 @@ export default function ClarificationsPage() {
 				)}
 
 				{list.isLoading ? (
-					<p className="mt-4 text-sm text-slate-600">Loading...</p>
+					<p className="mt-4 text-sm text-muted-foreground">Loading...</p>
 				) : list.data?.length === 0 ? (
-					<p className="mt-4 text-sm text-slate-600">No clarifications yet. Add your first question.</p>
+					<p className="mt-4 text-sm text-muted-foreground">No clarifications yet. Add your first question.</p>
 				) : (
-					<div className="mt-4 overflow-x-auto rounded border bg-white shadow-sm">
+					<div className="mt-4 overflow-x-auto rounded border bg-card shadow-sm">
 						<table className="min-w-full text-sm">
-							<thead className="bg-slate-100">
+							<thead className="bg-muted">
 								<tr>
 									<th className="px-3 py-2 text-left">No</th>
 									<th className="px-3 py-2 text-left">Question</th>
@@ -158,7 +187,7 @@ export default function ClarificationsPage() {
 										</td>
 										<td className="px-3 py-2">
 											<button
-												className="rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-700"
+												className="rounded bg-green-600 px-2 py-1 text-xs text-primary-foreground hover:bg-green-600/90"
 												onClick={() => updateRow.mutate(r)}
 												disabled={updateRow.isPending}
 											>
@@ -175,4 +204,3 @@ export default function ClarificationsPage() {
 		</OpportunityShell>
 	)
 }
-

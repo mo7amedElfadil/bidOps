@@ -2,8 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "declaration": true,
-    "removeComments": true
+    "removeComments": true,
+    "outDir": "dist"
   }
 }
-
-

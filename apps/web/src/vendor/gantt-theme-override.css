@@ -1,0 +1,198 @@
+/* Theme overrides for gantt-task-react vendor library - NUCLEAR STRENGTH */
+
+/* SVG elements get dark background */
+[data-theme='hyprdark'] svg,
+[data-theme='hyprdark'] svg * {
+	background-color: rgb(var(--card)) !important;
+	background: rgb(var(--card)) !important;
+}
+
+/* Main containers */
+[data-theme='hyprdark'] ._3_ygE,
+[data-theme='hyprdark'] ._3ZbQT,
+[data-theme='hyprdark'] ._1eT-t,
+[data-theme='hyprdark'] ._2k9Ys,
+[data-theme='hyprdark'] ._2dZTy,
+[data-theme='hyprdark'] ._25P-K,
+[data-theme='hyprdark'] ._3gVAq,
+[data-theme='hyprdark'] ._nI1Xw {
+  background-color: rgb(var(--card)) !important;
+  background: rgb(var(--card)) !important;
+  border-color: rgb(var(--border)) !important;
+}
+
+/* Table rows */
+[data-theme='hyprdark'] ._1nBOt,
+[data-theme='hyprdark'] ._34SS0 {
+  background-color: rgb(var(--card)) !important;
+  background: rgb(var(--card)) !important;
+}
+
+/* Alternating row backgrounds */
+[data-theme='hyprdark'] ._34SS0:nth-of-type(even) {
+  background-color: rgb(var(--muted)) !important;
+  background: rgb(var(--muted)) !important;
+}
+
+/* Table cells */
+[data-theme='hyprdark'] ._3lLk3,
+[data-theme='hyprdark'] ._WuQ0f {
+  color: rgb(var(--foreground)) !important;
+}
+
+/* Grid lines */
+[data-theme='hyprdark'] ._2eZzQ {
+  border-color: rgb(var(--border)) !important;
+}
+
+/* SVG row backgrounds and grid */
+[data-theme='hyprdark'] ._2dZTy {
+  fill: rgb(var(--card)) !important;
+}
+
+[data-theme='hyprdark'] ._2dZTy:nth-child(even) {
+  fill: rgb(var(--muted)) !important;
+}
+
+[data-theme='hyprdark'] ._3rUKi,
+[data-theme='hyprdark'] ._RuwuK,
+[data-theme='hyprdark'] ._1rLuZ {
+  stroke: rgb(var(--border)) !important;
+}
+
+[data-theme='hyprdark'] ._35nLX {
+  fill: rgb(var(--card)) !important;
+  stroke: rgb(var(--border)) !important;
+}
+
+/* Small text elements */
+[data-theme='hyprdark'] ._2QjE6,
+[data-theme='hyprdark'] ._2TfEi {
+  color: rgb(var(--foreground)) !important;
+}
+
+/* Tooltip */
+[data-theme='hyprdark'] ._3T42e {
+  background: rgb(var(--card)) !important;
+  background-color: rgb(var(--card)) !important;
+  border: 1px solid rgb(var(--border)) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2) !important;
+}
+
+[data-theme='hyprdark'] ._29NTg {
+  color: rgb(var(--muted-foreground)) !important;
+}
+
+/* Override ALL possible inline style combinations for backgrounds */
+[data-theme='hyprdark'] [style*="background"],
+[data-theme='hyprdark'] [style*="Background"] {
+  background-color: rgb(var(--card)) !important;
+}
+
+[data-theme='hyprdark'] [style*="background: #fff"],
+[data-theme='hyprdark'] [style*="background:#fff"],
+[data-theme='hyprdark'] [style*="background-color: #fff"],
+[data-theme='hyprdark'] [style*="background-color:#fff"],
+[data-theme='hyprdark'] [style*="background: white"],
+[data-theme='hyprdark'] [style*="background-color: white"],
+[data-theme='hyprdark'] [style*="background-color:white"],
+[data-theme='hyprdark'] [style*="backgroundColor: rgb(255"],
+[data-theme='hyprdark'] [style*="backgroundColor:rgb(255"],
+[data-theme='hyprdark'] [style*="backgroundColor: white"],
+[data-theme='hyprdark'] [style*="backgroundColor:white"] {
+  background-color: rgb(var(--card)) !important;
+  background: rgb(var(--card)) !important;
+}
+
+/* Override gray backgrounds */
+[data-theme='hyprdark'] [style*="background-color: #f5f5f5"],
+[data-theme='hyprdark'] [style*="background-color:#f5f5f5"],
+[data-theme='hyprdark'] [style*="background: #f5f5f5"],
+[data-theme='hyprdark'] [style*="background:#f5f5f5"],
+[data-theme='hyprdark'] [style*="backgroundColor: rgb(245"],
+[data-theme='hyprdark'] [style*="backgroundColor:#f5f5f5"] {
+  background-color: rgb(var(--muted)) !important;
+  background: rgb(var(--muted)) !important;
+}
+
+/* Override ALL text colors */
+[data-theme='hyprdark'] [style*="color: #666"],
+[data-theme='hyprdark'] [style*="color:#666"],
+[data-theme='hyprdark'] [style*="color: rgb(86 86 86)"],
+[data-theme='hyprdark'] [style*="color:rgb(86 86 86)"],
+[data-theme='hyprdark'] [style*="color: #333"],
+[data-theme='hyprdark'] [style*="color:#333"],
+[data-theme='hyprdark'] [style*="color: black"],
+[data-theme='hyprdark'] [style*="color:#000"] {
+  color: rgb(var(--foreground)) !important;
+}
+
+/* Gantt chart wildcard overrides */
+[data-theme='hyprdark'] [class*="gantt"],
+[data-theme='hyprdark'] [id*="gantt"],
+[data-theme='hyprdark'] div[class*="_"],
+[data-theme='hyprdark'] div[class^="_"] {
+  background-color: rgb(var(--card)) !important;
+}
+
+/* Force all text to be visible */
+[data-theme='hyprdark'] ._3_ygE *,
+[data-theme='hyprdark'] ._3ZbQT *,
+[data-theme='hyprdark'] [class*="gantt"] * {
+  color: rgb(var(--foreground)) !important;
+}
+
+/* SVG and canvas elements */
+[data-theme='hyprdark'] svg,
+[data-theme='hyprdark'] canvas {
+  background-color: rgb(var(--card)) !important;
+  background: rgb(var(--card)) !important;
+}
+
+/* SVG rect elements - keep fill colors but add background */
+[data-theme='hyprdark'] rect[fill],
+[data-theme='hyprdark'] rect[style*="fill"] {
+  opacity: 0.9 !important;
+}
+
+/* Ensure white SVG backgrounds inherit dark theme without clobbering bars */
+[data-theme='hyprdark'] rect[fill="#fff"],
+[data-theme='hyprdark'] rect[fill="#ffffff"],
+[data-theme='hyprdark'] rect[fill="white"],
+[data-theme='hyprdark'] rect[fill="rgb(255, 255, 255)"],
+[data-theme='hyprdark'] rect[fill="rgb(255,255,255)"],
+[data-theme='hyprdark'] rect[fill="rgba(255, 255, 255, 1)"],
+[data-theme='hyprdark'] rect[fill="rgba(255,255,255,1)"],
+[data-theme='hyprdark'] rect[style*="fill: #fff"],
+[data-theme='hyprdark'] rect[style*="fill:#fff"],
+[data-theme='hyprdark'] rect[style*="fill: #ffffff"],
+[data-theme='hyprdark'] rect[style*="fill:#ffffff"],
+[data-theme='hyprdark'] rect[style*="fill: white"],
+[data-theme='hyprdark'] rect[style*="fill:white"],
+[data-theme='hyprdark'] rect[style*="fill: rgb(255"],
+[data-theme='hyprdark'] rect[style*="fill:rgba(255"] {
+  fill: rgb(var(--card)) !important;
+}
+
+/* ALL text elements including SVG */
+[data-theme='hyprdark'] text,
+[data-theme='hyprdark'] svg text,
+[data-theme='hyprdark'] tspan {
+  fill: rgb(var(--foreground)) !important;
+  color: rgb(var(--foreground)) !important;
+}
+
+/* Scrollbars */
+[data-theme='hyprdark'] ::-webkit-scrollbar-thumb {
+  background: rgb(var(--border)) !important;
+}
+
+[data-theme='hyprdark'] ::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--muted-foreground)) !important;
+}
+
+/* Nuclear option - apply to the gantt ref container and all children */
+[data-theme='hyprdark'] .gantt-wrap-text,
+[data-theme='hyprdark'] .gantt-wrap-text * {
+  color: rgb(var(--foreground)) !important;
+}

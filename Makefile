@@ -1,8 +1,12 @@
 SHELL := /bin/bash
-COMPOSE := docker compose --env-file .env -f infra/compose.yml
+COMPOSE_BASE := docker compose --env-file .env -f infra/compose.yml
+COMPOSE := $(COMPOSE_BASE)
+COMPOSE_MONITORING := $(COMPOSE_BASE) --profile monitoring
+INCLUDE_MONITORING ?= false
 DB_URL := postgresql://bidops:bidops@localhost:5432/bidops?schema=public
+LOG_SERVICES ?=
 
-.PHONY: bootstrap up down db-migrate db-seed db-reset api-dev web-dev workers-dev collectors-run lint test build pack-sample parse-rfp pbi-export
+.PHONY: bootstrap up down db-migrate db-seed db-reset api-dev web-dev workers-dev collectors-run lint test build build-packages pack-sample parse-rfp pbi-export
 .PHONY: logs logs-monitoring logs-backend logs-frontend api-start-4000 api-smoke
 .PHONY: rebuild rebuild-nc
 
@@ -13,23 +17,33 @@ bootstrap:
 	@echo "Install root dev deps (turbo)"; pnpm i -w --ignore-scripts || true
 
 up:
+ifeq ($(INCLUDE_MONITORING),true)
+	$(COMPOSE_MONITORING) up -d
+else
 	$(COMPOSE) up -d
+endif
+
+up-monitoring:
+	$(COMPOSE_MONITORING) up -d
 
 down:
+	$(COMPOSE) down
+
+down-volumes:
 	$(COMPOSE) down -v
 
 db-migrate:
 	@echo "Running Prisma migrations (API app)..."
-	@cd apps/api && pnpm prisma migrate deploy || true
+	@set -a; . ./.env; set +a; cd apps/api && pnpm prisma migrate deploy || true
 
 db-seed:
 	@echo "Seeding database (API app)..."
-	@cd apps/api && pnpm prisma db seed || true
+	@set -a; . ./.env; set +a; cd apps/api && pnpm prisma db seed || true
 	@echo "Tip: admin user seeded as admin@example.com (local auth); use /auth/dev-login"
 
 db-reset:
 	@echo "Resetting database (drop -> migrate -> seed)..."
-	@cd apps/api && pnpm prisma migrate reset --force || true
+	@set -a; . ./.env; set +a; cd apps/api && pnpm prisma migrate reset --force || true
 
 api-dev:
 	@cd apps/api && pnpm dev
@@ -51,6 +65,9 @@ test:
 
 build:
 	@pnpm build
+
+build-packages:
+	@pnpm --filter @itsq-bidops/parser-tools build
 
 api-start-4000:
 	@PORT=4000 DATABASE_URL=postgresql://bidops:bidops@localhost:5432/bidops?schema=public node apps/api/dist/main.js
@@ -96,13 +113,13 @@ seed-admin:
 
 # Logs
 logs:
-	$(COMPOSE) logs -f --tail=200
+	$(COMPOSE) logs -f --tail=200 $(LOG_SERVICES)
 
 logs-monitoring:
-	$(COMPOSE) logs -f --tail=200 grafana prometheus otel-collector opensearch dashboards
+	$(COMPOSE_MONITORING) logs -f --tail=200 grafana prometheus otel-collector dashboards
 
 logs-backend:
-	$(COMPOSE) logs -f --tail=200 api
+	$(COMPOSE) logs -f --tail=200 api workers
 
 logs-frontend:
 	$(COMPOSE) logs -f --tail=200 web
@@ -117,5 +134,3 @@ rebuild-nc:
 	@echo "Rebuilding (no cache) $(if $(SERVICES),$(SERVICES),all services) with bake..."
 	@COMPOSE_BAKE=true $(COMPOSE) build --no-cache $(SERVICES)
 	@$(COMPOSE) up -d $(SERVICES)
-
-

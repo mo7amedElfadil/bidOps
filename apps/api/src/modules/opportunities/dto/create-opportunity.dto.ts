@@ -1,8 +1,14 @@
 import { IsBoolean, IsDateString, IsInt, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator'
 
 export class CreateOpportunityDto {
+	@IsOptional()
 	@IsUUID()
-	clientId!: string
+	clientId?: string
+
+	@IsOptional()
+	@IsString()
+	@MaxLength(200)
+	clientName?: string
 
 	@IsString()
 	@MaxLength(300)
@@ -15,6 +21,18 @@ export class CreateOpportunityDto {
 	@IsOptional()
 	@IsString()
 	tenderRef?: string
+
+	@IsOptional()
+	@IsUUID()
+	boqTemplateId?: string
+
+	@IsOptional()
+	@IsUUID()
+	packTemplateId?: string
+
+	@IsOptional()
+	@IsUUID()
+	ownerId?: string
 
 	@IsOptional()
 	@IsDateString()
@@ -43,6 +61,10 @@ export class CreateOpportunityDto {
 	modeOfSubmission?: string
 
 	@IsOptional()
+	@IsString()
+	sourcePortal?: string
+
+	@IsOptional()
 	@IsBoolean()
 	bondRequired?: boolean
 
@@ -55,5 +77,3 @@ export class CreateOpportunityDto {
 	@IsString()
 	dataOwner?: string
 }
-
-

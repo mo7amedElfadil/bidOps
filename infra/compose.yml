@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:15
+    image: pgvector/pgvector:pg15
     container_name: bidops-postgres
     environment:
       POSTGRES_USER: bidops
@@ -32,12 +32,14 @@ services:
     image: opensearchproject/opensearch:2.15.0
     container_name: bidops-opensearch
     environment:
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+      - DISABLE_SECURITY_PLUGIN=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
       - cluster.name=bidops-os
       - node.name=os01
       - discovery.type=single-node
       - bootstrap.memory_lock=true
       - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
-      - plugins.security.disabled=true
     ulimits:
       memlock:
         soft: -1
@@ -60,6 +62,8 @@ services:
       - "5601:5601"
     depends_on:
       - opensearch
+    profiles:
+      - monitoring
 
   # Azurite is optional - only needed when STORAGE_PROVIDER=azure
   # For local dev with filesystem storage, you can skip this service
@@ -90,6 +94,8 @@ services:
     ports:
       - "4317:4317" # OTLP gRPC
       - "4318:4318" # OTLP HTTP
+    profiles:
+      - monitoring
 
   prometheus:
     image: prom/prometheus
@@ -103,6 +109,8 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
       - "--web.enable-lifecycle"
+    profiles:
+      - monitoring
 
   grafana:
     image: grafana/grafana
@@ -118,12 +126,16 @@ services:
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    profiles:
+      - monitoring
 
   api:
     image: node:20-alpine
     container_name: bidops-api
     working_dir: /app/apps/api
-    command: sh -c "apk add --no-cache openssl && corepack enable && pnpm install && npx prisma generate && npx prisma migrate deploy && pnpm dev"
+    env_file:
+      - ../.env
+    command: sh -c "apk add --no-cache openssl && corepack enable && pnpm install && pnpm --filter @itsq-bidops/parser-tools build && npx prisma generate && npx prisma migrate deploy && pnpm dev"
     environment:
       - NODE_ENV=development
       - PORT=4000
@@ -132,16 +144,20 @@ services:
       - WEB_ORIGIN=http://localhost:8080
       - DATABASE_URL=postgresql://bidops:bidops@postgres:5432/bidops?schema=public
       - OPENSEARCH_HOST=http://opensearch:9200
-      - SMTP_HOST=mailhog
-      - SMTP_PORT=1025
       - STORAGE_PROVIDER=local
       - LOCAL_STORAGE_PATH=/app/data/storage
       - ATTACHMENTS_CONTAINER=attachments
+      - COLLECTORS_URL=http://collectors:4100
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     volumes:
       - ../apps/api:/app/apps/api
       - ../packages:/app/packages
+      - ../apps/collectors:/app/apps/collectors
+      - ../shared:/app/shared
       - ../package.json:/app/package.json
       - ../pnpm-workspace.yaml:/app/pnpm-workspace.yaml
+      - ../turbo.json:/app/turbo.json
       - api_node_modules:/app/apps/api/node_modules
       - api_storage:/app/data/storage
     depends_on:
@@ -164,11 +180,73 @@ services:
       - ../packages:/app/packages
       - ../package.json:/app/package.json
       - ../pnpm-workspace.yaml:/app/pnpm-workspace.yaml
+      - ../turbo.json:/app/turbo.json
       - web_node_modules:/app/apps/web/node_modules
     depends_on:
       - api
     ports:
       - "8080:5173"
+
+  collectors:
+    image: mcr.microsoft.com/playwright:v1.57.0-jammy
+    container_name: bidops-collectors
+    working_dir: /app
+    env_file:
+      - ../.env
+    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm --filter @itsq-bidops/collectors build && pnpm --filter @itsq-bidops/api prisma:generate && COLLECTOR_SERVER=true COLLECTOR_PORT=4100 node /app/apps/collectors/dist/index.js"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://bidops:bidops@postgres:5432/bidops?schema=public
+      - COLLECTOR_SERVER=true
+      - COLLECTOR_PORT=4100
+      - COLLECTOR_RATE_LIMIT_MS=800
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ../apps/collectors:/app/apps/collectors
+      - ../apps/api:/app/apps/api
+      - ../packages:/app/packages
+      - ../package.json:/app/package.json
+      - ../pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ../pnpm-workspace.yaml:/app/pnpm-workspace.yaml
+      - ../turbo.json:/app/turbo.json
+      - collectors_node_modules:/app/apps/collectors/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  workers:
+    image: node:20-bullseye-slim
+    container_name: bidops-workers
+    working_dir: /app
+    env_file:
+      - ../.env
+    command: sh -c "apt-get update && apt-get install -y openssl ca-certificates && corepack enable && pnpm install --frozen-lockfile && pnpm --filter @itsq-bidops/api prisma:generate && pnpm --filter @itsq-bidops/workers build && node apps/workers/dist/index.js"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://bidops:bidops@postgres:5432/bidops?schema=public
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - COLLECTORS_URL=http://collectors:4100
+      - SLA_WARN_DAYS=7
+      - SLA_ALERT_DAYS=3
+      - SLA_URGENT_DAYS=1
+    volumes:
+      - ../apps/workers:/app/apps/workers
+      - ../apps/api:/app/apps/api
+      - ../packages:/app/packages
+      - ../shared:/app/shared
+      - ../notifications:/app/notifications
+      - ../package.json:/app/package.json
+      - ../pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ../pnpm-workspace.yaml:/app/pnpm-workspace.yaml
+      - ../turbo.json:/app/turbo.json
+      - workers_node_modules:/app/apps/workers/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   pgdata:
@@ -180,6 +258,8 @@ volumes:
   api_storage:
   api_node_modules:
   web_node_modules:
+  collectors_node_modules:
+  workers_node_modules:
 
 
 x-bake:

@@ -13,7 +13,9 @@ Covers award-result collectors, portal adapters, parsing, and scheduling.
 ┌──────────────────────────────────────────────────────┐
 │              Source Adapters (Playwright)            │
 │  - SampleAdapter                                     │
+│  - MonaqasatAdapter                                  │
 │  - QatarGovAdapter                                   │
+│  - MonaqasatAvailableAdapter                         │
 └──────────────────────────┬───────────────────────────┘
                            │
                            ▼
@@ -37,7 +39,7 @@ Covers award-result collectors, portal adapters, parsing, and scheduling.
 interface AwardRecord {
   portal: string
   tenderRef: string
-  buyer: string
+  client: string
   title: string
   awardDate: Date
   winners: string[]
@@ -61,6 +63,8 @@ interface SourceAdapter {
 | Adapter | ID | Status | Description |
 |---------|-----|--------|-------------|
 | Sample | `sample` | ✅ Active | Demo adapter with sample data |
+| Monaqasat | `monaqasat` | 🚧 In progress | Qatar MoF Monaqasat (public awards only, English locale enforced) |
+| Monaqasat Available | `monaqasat_available` | 🚧 In progress | Qatar MoF Available Ministry Tenders (purchase link + close date) |
 | Qatar Gov | `qatar-gov` | 🔧 Template | Qatar e-Procurement portal (template) |
 
 ### Adding New Adapters
@@ -84,6 +88,20 @@ COLLECTOR_ONLY=sample make collectors-run
 COLLECTOR_MODE=scheduled COLLECTOR_INTERVAL_MINUTES=60 make collectors-run
 ```
 
+Collector runs now enqueue jobs onto the `bidops-default` BullMQ queue. The new `workers` service listens to that queue, calls the collectors' `/run` or `/run-tenders` endpoints (`COLLECTORS_URL`), and also keeps SLA ticks + notification batches running even when the API restarts.
+
+UI-triggered runs can call `POST /awards/collect` with `fromDate` and `toDate` (YYYY-MM-DD).
+Available tenders can be fetched via `POST /tenders/collect` (adapter `monaqasat_available`), also supporting `fromDate` / `toDate` filters in the body so you can scrape only the desired window.
+
+Awarded tenders pagination:
+- Collector walks pages in order until it reaches a page whose newest award date is earlier than `fromDate` (or hits `MONAQASAT_MAX_PAGES`).
+- This ensures older pages are scanned when a date range is set.
+
+Deduplication:
+- In-memory de-duplication per run (prefers `tenderRef`, falls back to `sourceUrl` or title).
+- Staging cleanup per run removes older duplicates for `portal+tenderRef`.
+- Inserts delete existing staging rows by `portal+tenderRef` (or `portal+sourceUrl` when `tenderRef` is missing) before creating.
+
 ## Environment Variables
 
 | Variable | Default | Description |
@@ -92,11 +110,24 @@ COLLECTOR_MODE=scheduled COLLECTOR_INTERVAL_MINUTES=60 make collectors-run
 | `COLLECTOR_INTERVAL_MINUTES` | `60` | Minutes between scheduled runs |
 | `COLLECTOR_ONLY` | (empty) | Run only specific adapter |
 | `COLLECTOR_SAMPLE_ENABLED` | `true` | Enable sample adapter |
+| `COLLECTOR_MONAQASAT_ENABLED` | `false` | Enable Monaqasat adapter |
+| `COLLECTOR_MONAQASAT_AVAILABLE_ENABLED` | `false` | Enable Monaqasat available tenders adapter |
 | `COLLECTOR_QATAR_GOV_ENABLED` | `false` | Enable Qatar Gov adapter |
 | `COLLECTOR_RATE_LIMIT_MS` | `1000` | Delay between requests |
 | `QATAR_GOV_PORTAL_URL` | `https://portal.gov.qa` | Base portal URL |
 | `QATAR_GOV_AWARDS_PATH` | `/en/awards` | Awards listing path |
 | `QATAR_GOV_DELAY_MS` | `800` | Per-row delay for Qatar Gov |
+| `MONAQASAT_PORTAL_URL` | `https://monaqasat.mof.gov.qa` | Base portal URL |
+| `MONAQASAT_AWARDED_PATH` | `/TendersOnlineServices/AwardedTenders/1` | Awarded tenders path |
+| `MONAQASAT_AVAILABLE_PATH` | `/TendersOnlineServices/AvailableMinistriesTenders/1` | Available ministry tenders path |
+| `MONAQASAT_MAX_PAGES` | `10` | Max pages to scan when collecting awards |
+| `MONAQASAT_TENDER_MAX_PAGES` | `10` | Max pages to scan when collecting available tenders |
+| `MONAQASAT_DELAY_MS` | `800` | Per-row delay for Monaqasat |
+| `COLLECTOR_TRANSLATION_PROVIDER` | `openai` | Translation provider (openai or gemini) |
+| `EMBEDDINGS_PROVIDER` | `openai` | Embedding provider (openai or gemini) |
+| `OPENAI_EMBEDDING_MODEL` | `text-embedding-3-small` | OpenAI embedding model |
+| `GEMINI_EMBEDDING_MODEL` | `text-embedding-004` | Gemini embedding model |
+| `EMBEDDING_DIM` | `1536` | Embedding dimension (must match DB vector column) |
 
 ## API Endpoints
 
@@ -107,6 +138,26 @@ COLLECTOR_MODE=scheduled COLLECTOR_INTERVAL_MINUTES=60 make collectors-run
 | GET | `/awards/staging` | List staging records |
 | POST | `/awards/staging` | Create staging record |
 | POST | `/awards/staging/:id/curate` | Promote to curated event |
+| POST | `/tenders/collect` | Trigger available tenders collector |
+
+### Available Ministry Tenders
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/tenders` | List available tenders |
+| POST | `/tenders` | Create tender record |
+| PATCH | `/tenders/:id` | Update tender record |
+| DELETE | `/tenders/:id` | Delete tender record |
+| POST | `/tenders/:id/promote` | Promote tender to Opportunity |
+
+### Available tender collection behavior
+
+- The Monaqasat available-tender adapter now scans `AvailableMinistriesTenders/{page}` sequentially, matching the award collector's paging strategy. It increments the page number until it reaches the requested `fromDate` window or the configurable page cap.
+- Date filtering uses `MONAQASAT_TENDER_FROM_DATE`/`MONAQASAT_TENDER_TO_DATE` (YYYY-MM-DD). The collector filters each card as it goes and stops when earlier pages fall entirely before `fromDate`, so runs stay efficient while still honoring the date window passed from the UI.
+- Use `MONAQASAT_TENDER_MAX_PAGES` (default `10`) to bound how many pages are fetched per run, preventing runaway scraping while still covering the window that executives typically request.
+- Monaqasat adapters force the English locale via `Accept-Language` headers, culture cookies, and an explicit `/Main/ChangeLang` call so fields are consistent even when the portal defaults to Arabic.
+- When an Arabic title still appears, collectors translate it to English and store the Arabic text in `titleOriginal` for future bilingual support. If translation fails, the tender record is skipped so we never store untranslated Arabic in `title`.
+- Smart tender classification uses semantic embeddings stored in Postgres (pgvector).
 
 ### Curated Events
 
@@ -127,6 +178,11 @@ COLLECTOR_MODE=scheduled COLLECTOR_INTERVAL_MINUTES=60 make collectors-run
 3. **Curation**: Human review via UI → mark as `curated`
 4. **Promotion**: `POST /awards/staging/:id/curate` → creates `AwardEvent`
 5. **Analytics**: Curated events available for dashboards and exports
+6. **Client sync**: Buyer/ministry names are upserted into `Client` on each collector run
+
+## Potential Opportunities Filtering (Future)
+
+Potential opportunities pulled from public tenders should be filtered to ITSQ-relevant projects. The planned smart filter design (rules engine + activities + reprocess flow) is documented in `docs/smartFilter.md`. Manual overrides remain available via promote/Go-No-Go.
 
 ## Normalization Shape
 
@@ -134,7 +190,7 @@ COLLECTOR_MODE=scheduled COLLECTOR_INTERVAL_MINUTES=60 make collectors-run
 {
   "portal": "qatar-gov",
   "tenderRef": "QG-2024-001",
-  "buyer": "Ministry of Technology",
+  "client": "Ministry of Technology",
   "title": "IT Infrastructure Project",
   "awardDate": "2024-01-15",
   "winners": ["TechCorp Solutions LLC"],
@@ -142,6 +198,24 @@ COLLECTOR_MODE=scheduled COLLECTOR_INTERVAL_MINUTES=60 make collectors-run
   "currency": "QAR",
   "codes": ["IT-001", "INFRA-002"],
   "sourceUrl": "https://portal.gov.qa/award/001"
+}
+```
+
+### Available Tender Shape
+
+```json
+{
+  "portal": "monaqasat",
+  "tenderRef": "7144/2025",
+  "title": "Supply of Drugs (ORLISTAT 120MG) HMC/TCS/8897/2025",
+  "ministry": "Hamad Medical Corporation",
+  "publishDate": "2025-12-22",
+  "closeDate": "2026-01-12",
+  "requestedSectorType": "Suppliers / Service Providers",
+  "tenderBondValue": 65000,
+  "documentsValue": 650,
+  "tenderType": "Public Tender",
+  "purchaseUrl": "https://monaqasat.mof.gov.qa/TendersOnlineServices/TenderDetails/655609"
 }
 ```
 

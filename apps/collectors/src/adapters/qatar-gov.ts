@@ -124,7 +124,7 @@ export class QatarGovAdapter extends BaseAdapter {
 			if (!tenderRef) return null
 
 			// Extract buyer/organization
-			const buyer = await element.$eval(
+			const client = await element.$eval(
 				'.buyer, .organization, [data-field="buyer"], td:nth-child(2)',
 				(el: Element) => el.textContent?.trim() || ''
 			).catch(() => 'Unknown')
@@ -166,7 +166,7 @@ export class QatarGovAdapter extends BaseAdapter {
 			return {
 				portal: this.id,
 				tenderRef,
-				buyer,
+				client,
 				title,
 				awardDate,
 				winners,
@@ -180,4 +180,3 @@ export class QatarGovAdapter extends BaseAdapter {
 		}
 	}
 }
-

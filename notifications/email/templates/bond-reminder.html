@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>{{SUBJECT}}</title>
+  <style>
+    body { margin:0; font-family:'Segoe UI', system-ui, sans-serif; background:#F3F5F7; }
+    .container { width:100%; max-width:600px; margin:0 auto; padding:24px; }
+    .stripe { height:6px; background:#0F172A; border-radius:6px; margin-bottom:12px; }
+    .panel { background:#FFFFFF; border-radius:18px; padding:24px; border:1px solid #E2E8F0; }
+    .panel h1 { margin:0 0 6px; font-size:26px; color:#0F172A; }
+    .panel p { margin:0 0 12px; color:#475569; line-height:1.6; }
+    .checklist { list-style:none; padding:0; margin:16px 0 0; }
+    .checklist li { padding:10px 0; border-bottom:1px solid #E2E8F0; display:flex; justify-content:space-between; font-weight:600; }
+    .checklist li:last-child { border-bottom:none; }
+    .cta { display:inline-flex; margin-top:18px; background:#0F172A; color:#fff; border-radius:999px; padding:10px 22px; font-weight:700; text-decoration:none; }
+    .footer { font-size:13px; color:#94A3B8; margin-top:24px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="stripe"></div>
+    <div class="panel">
+      <h1>{{HERO_HEADLINE}}</h1>
+      <p>{{HERO_SUBTEXT}}</p>
+      <ul class="checklist">
+        <li><span>Tender bond required</span><span>{{BOND_REQUIRED}}</span></li>
+        <li><span>Submission date</span><span>{{SUBMISSION_DATE}}</span></li>
+        <li><span>Days remaining</span><span>{{DAYS_LEFT}}</span></li>
+      </ul>
+      <p>{{BODY_DETAILS}}</p>
+      <a class="cta" href="{{CTA_URL}}">{{CTA_TEXT}}</a>
+      <div class="footer">
+        Need help? Contact <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a> or open the opportunity at <a href="{{OPPORTUNITY_URL}}">{{OPPORTUNITY_URL}}</a>.
+      </div>
+    </div>
+  </div>
+</body>
+</html>

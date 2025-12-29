@@ -77,9 +77,9 @@ export default function OutcomePage() {
 		<OpportunityShell active="outcome">
 			<div className="p-6">
 				{outcome.isLoading ? (
-					<p className="text-sm text-slate-600">Loading...</p>
+					<p className="text-sm text-muted-foreground">Loading...</p>
 				) : (
-					<div className="rounded border bg-white p-6 shadow-sm">
+					<div className="rounded border bg-card p-6 shadow-sm">
 						{current && (
 							<div className="mb-4 rounded bg-blue-50 p-3 text-sm">
 								<span className="font-medium">Current Status:</span>{' '}
@@ -89,7 +89,7 @@ export default function OutcomePage() {
 											? 'text-green-700'
 											: current.status === 'LOST'
 												? 'text-red-700'
-												: 'text-amber-700'
+												: 'text-amber-600'
 									}`}
 								>
 									{current.status}
@@ -171,8 +171,8 @@ export default function OutcomePage() {
 											type="button"
 											className={`rounded border px-3 py-1 text-sm ${
 												form.reasonCodes.includes(code)
-													? 'border-blue-600 bg-blue-600 text-white'
-													: 'border-slate-300 bg-white text-slate-700 hover:border-blue-400'
+													? 'border-blue-600 bg-primary text-primary-foreground'
+													: 'border-border bg-card text-foreground hover:border-blue-400'
 											}`}
 											onClick={() => toggleReasonCode(code)}
 										>
@@ -185,14 +185,14 @@ export default function OutcomePage() {
 
 						<div className="mt-6">
 							<button
-								className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
+								className="rounded bg-green-600 px-4 py-2 text-primary-foreground hover:bg-green-600/90 disabled:opacity-50"
 								onClick={() => save.mutate()}
 								disabled={save.isPending}
 							>
 								{save.isPending ? 'Saving...' : current ? 'Update Outcome' : 'Record Outcome'}
 							</button>
 							{save.error && (
-								<p className="mt-2 text-sm text-red-600">
+								<p className="mt-2 text-sm text-destructive">
 									{(save.error as Error).message || 'Failed to save outcome'}
 								</p>
 							)}

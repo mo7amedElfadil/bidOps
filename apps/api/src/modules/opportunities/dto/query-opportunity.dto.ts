@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer'
 import { IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator'
 
 export class QueryOpportunityDto {
@@ -14,14 +15,34 @@ export class QueryOpportunityDto {
 	stage?: string
 
 	@IsOptional()
+	@IsString()
+	q?: string
+
+	@IsOptional()
+	@IsString()
+	mine?: string
+
+	@IsOptional()
 	@IsInt()
 	@Min(0)
+	@Type(() => Number)
 	maxDaysLeft?: number
 
 	@IsOptional()
 	@IsInt()
 	@Min(0)
+	@Type(() => Number)
 	minRank?: number
+
+	@IsOptional()
+	@IsInt()
+	@Min(1)
+	@Type(() => Number)
+	page?: number
+
+	@IsOptional()
+	@IsInt()
+	@Min(1)
+	@Type(() => Number)
+	pageSize?: number
 }
-
-

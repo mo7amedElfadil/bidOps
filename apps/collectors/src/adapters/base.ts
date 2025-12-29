@@ -5,8 +5,9 @@
 export interface AwardRecord {
 	portal: string
 	tenderRef: string
-	buyer: string
+	client: string
 	title: string
+	titleOriginal?: string
 	closeDate?: Date
 	awardDate?: Date
 	winners: string[]
@@ -77,4 +78,3 @@ export abstract class BaseAdapter implements SourceAdapter {
 			.trim()
 	}
 }
-

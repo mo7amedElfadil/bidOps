@@ -1,7 +1,13 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
+import UploadButton from '../../components/UploadButton'
 import { OpportunityShell } from '../../components/OpportunityShell'
 import { getToken } from '../../utils/auth'
+import { downloadWithAuth } from '../../utils/download'
+import Button from '../../components/ui/Button'
+import Card from '../../components/ui/Card'
+import Heading from '../../components/ui/Heading'
+import Input from '../../components/ui/Input'
 
 type Clause = {
 	id: string
@@ -34,7 +40,7 @@ export default function ComplianceMatrix() {
 		queryFn: () => fetchCompliance(id)
 	})
 
-	const importMutation = useMutation({
+	const importPdfMutation = useMutation({
 		mutationFn: async (file: File) => {
 			const fd = new FormData()
 			fd.append('file', file)
@@ -49,6 +55,33 @@ export default function ComplianceMatrix() {
 		},
 		onSuccess: () => list.refetch()
 	})
+
+	const importCsvMutation = useMutation({
+		mutationFn: async (file: File) => {
+			const fd = new FormData()
+			fd.append('file', file)
+			const token = getToken()
+			const res = await fetch(`${API}/compliance/${id}/import.csv`, {
+				method: 'POST',
+				headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+				body: fd
+			})
+			if (!res.ok) throw new Error(await res.text())
+			return res.json()
+		},
+		onSuccess: () => list.refetch()
+	})
+
+	function handleUpload(fileOrList: File | FileList | null) {
+		const file = fileOrList instanceof File ? fileOrList : fileOrList?.[0]
+		if (!file) return
+		const ext = file.name.split('.').pop()?.toLowerCase()
+		if (ext === 'csv') {
+			importCsvMutation.mutate(file)
+		} else {
+			importPdfMutation.mutate(file)
+		}
+	}
 
 	const saveRow = useMutation({
 		mutationFn: async (r: Clause) => {
@@ -74,40 +107,38 @@ export default function ComplianceMatrix() {
 
 	return (
 		<OpportunityShell active="compliance">
-			<div className="p-4">
-				<div className="flex flex-wrap items-center gap-2">
-					<input
-						type="file"
-						accept=".pdf"
-						onChange={e => {
-							const f = e.target.files?.[0]
-							if (f) importMutation.mutate(f)
-						}}
-					/>
-					<a
-						className="rounded bg-gray-700 px-3 py-1.5 text-white"
-						href={`${API}/compliance/${id}/export.csv`}
-						target="_blank"
-						rel="noreferrer"
-					>
-						Export CSV
-					</a>
-					{importMutation.isPending && <span className="text-sm text-slate-600">Importing...</span>}
-					{importMutation.error && (
-						<span className="text-sm text-red-600">{(importMutation.error as Error).message}</span>
-					)}
-				</div>
+			<div className="space-y-4 p-4">
+				<Heading title="Compliance Matrix" subtitle="Capture verbatim requirements and responses." />
+				<Card>
+					<div className="flex flex-wrap items-center gap-3">
+						<UploadButton accept=".pdf,.csv" label="Upload PDF/CSV" onFile={handleUpload} />
+						<Button variant="secondary" onClick={() => downloadWithAuth(`${API}/compliance/${id}/export.csv`, `compliance-${id}.csv`)}>
+							Export CSV
+						</Button>
+						{(importPdfMutation.isPending || importCsvMutation.isPending) && (
+							<span className="text-sm text-muted-foreground">Importing...</span>
+						)}
+					</div>
+					<div className="mt-2 flex flex-wrap gap-3">
+						{importPdfMutation.error && (
+							<span className="text-sm text-destructive">{(importPdfMutation.error as Error).message}</span>
+						)}
+						{importCsvMutation.error && (
+							<span className="text-sm text-destructive">{(importCsvMutation.error as Error).message}</span>
+						)}
+					</div>
+				</Card>
 
 				{list.isLoading ? (
-					<p className="mt-4 text-sm text-gray-600">Loading...</p>
+					<p className="mt-4 text-sm text-muted-foreground">Loading...</p>
 				) : list.error ? (
-					<p className="mt-4 text-sm text-red-600">
+					<p className="mt-4 text-sm text-destructive">
 						{(list.error as Error).message || 'Failed to load clauses'}
 					</p>
 				) : (
-					<div className="mt-4 overflow-x-auto rounded border bg-white">
+					<div className="mt-4 overflow-x-auto rounded border bg-card">
 						<table className="min-w-full text-sm">
-							<thead className="bg-gray-100">
+							<thead className="bg-muted">
 								<tr>
 									<th className="px-3 py-2 text-left">No</th>
 									<th className="px-3 py-2 text-left">Mandatory</th>
@@ -134,7 +165,7 @@ export default function ComplianceMatrix() {
 										</td>
 										<td className="px-3 py-2">
 											<select
-												className="rounded border p-1"
+												className="w-full rounded border border-border px-2 py-1 text-sm"
 												defaultValue={r.status || ''}
 												onChange={e => (r.status = e.target.value)}
 											>
@@ -146,33 +177,29 @@ export default function ComplianceMatrix() {
 											</select>
 										</td>
 										<td className="px-3 py-2">
-											<input
-												className="w-40 rounded border p-1"
+											<Input
 												defaultValue={r.owner || ''}
 												onChange={e => (r.owner = e.target.value)}
+												className="w-40"
 											/>
 										</td>
 										<td className="px-3 py-2">
-											<input
-												className="w-60 rounded border p-1"
+											<Input
 												defaultValue={r.evidence || ''}
 												onChange={e => (r.evidence = e.target.value)}
+												className="w-60"
 											/>
 										</td>
 										<td className="px-3 py-2">
-											<button
-												className="rounded bg-green-600 px-2 py-1 text-white"
-												onClick={() => saveRow.mutate(r)}
-												disabled={saveRow.isPending}
-											>
+											<Button size="sm" variant="primary" onClick={() => saveRow.mutate(r)} disabled={saveRow.isPending}>
 												Save
-											</button>
+											</Button>
 										</td>
 									</tr>
 								))}
 								{list.data?.length === 0 && (
 									<tr>
-										<td colSpan={8} className="px-3 py-4 text-center text-slate-500">
+										<td colSpan={8} className="px-3 py-4 text-center text-muted-foreground">
 											No clauses loaded. Import a PDF to begin.
 										</td>
 									</tr>
@@ -185,5 +212,3 @@ export default function ComplianceMatrix() {
 		</OpportunityShell>
 	)
 }
-
-
